@@ -1,0 +1,13 @@
+*.log
+*.err.log
+
+web-dashboard/node_modules/
+web-dashboard/.next/
+web-dashboard/out/
+web-dashboard/build/
+web-dashboard/.env*
+web-dashboard/*.tsbuildinfo
+web-dashboard/next-env.d.ts
+
+.DS_Store
+Thumbs.db
