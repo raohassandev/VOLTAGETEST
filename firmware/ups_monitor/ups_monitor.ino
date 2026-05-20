@@ -1,8 +1,9 @@
 /*
- * UPS Monitor Firmware  v0.5.0
+ * UPS Monitor Firmware  v0.5.1
  *
  * Commissioning portal at /config (WiFi, MQTT, board identity, calibration).
- * AP fallback: UMS-SETUP-<last4MAC> / UMSSetup2026
+ * AP is fallback/setup only by default; stays off when STA is connected unless
+ * setup_ap_always=true.  First boot and STA failure always trigger AP.
  * Configurable MQTT publish interval stored in NVS.
  * Extended identity fields in MQTT payload.
  *
@@ -33,7 +34,7 @@
 /* ================================================================
  *  Firmware identity
  * ================================================================ */
-#define FIRMWARE_VERSION        "0.5.0"
+#define FIRMWARE_VERSION        "0.5.1"
 
 /* ================================================================
  *  Hardware / sampling constants  (DO NOT CHANGE)
@@ -43,7 +44,7 @@
 #define TIMER_PERIOD_US         (1000000UL / SAMPLE_RATE_HZ)
 #define SAMPLES_PER_UPDATE      250UL
 #define AC_SCALE_PER_SAMPLE     1.72f
-#define ADC_ATTENUATION         ADC_ATTEN_DB_11
+#define ADC_ATTENUATION         ADC_ATTEN_DB_12
 #define ADC_WIDTH               ADC_WIDTH_BIT_12
 
 /* ================================================================
@@ -113,6 +114,7 @@ struct WifiSettings {
     IPAddress subnet;
     IPAddress dns1;
     IPAddress dns2;
+    bool      setupApAlways;  /* keep AP active even after STA connects */
 };
 
 struct DeviceSettings {
@@ -172,7 +174,8 @@ static unsigned long lastMqttPublish   = 0;
 static unsigned long lastWifiRetry     = 0;
 static unsigned long wifiConnectStart  = 0;
 static bool          wifiConnecting    = false;
-static bool          wifiApFallback    = false;  /* STA failed → AP-only */
+static bool          wifiApFallback    = false;  /* STA failed/unconfigured → setup AP */
+static bool          apActive          = false;  /* AP interface currently running */
 static bool          mqttLastOk        = false;  /* last publish succeeded */
 static bool          shouldRestart     = false;
 static unsigned long restartAt         = 0;
@@ -271,9 +274,10 @@ bool parseIpArg(const String& name, IPAddress& ip)
 void loadWifiSettings()
 {
     prefs.begin("wifi", true);
-    wifiSettings.ssid = prefs.getString("ssid", DEFAULT_WIFI_SSID);
-    wifiSettings.pass = prefs.getString("pass", DEFAULT_WIFI_PASS);
-    wifiSettings.dhcp = prefs.getBool(  "dhcp", true);
+    wifiSettings.ssid          = prefs.getString("ssid", DEFAULT_WIFI_SSID);
+    wifiSettings.pass          = prefs.getString("pass", DEFAULT_WIFI_PASS);
+    wifiSettings.dhcp          = prefs.getBool(  "dhcp", true);
+    wifiSettings.setupApAlways = prefs.getBool(  "setup_ap_always", false);
     wifiSettings.localIp.fromString(prefs.getString("ip",   "192.168.1.90"));
     wifiSettings.gateway.fromString(prefs.getString("gw",   "192.168.1.1"));
     wifiSettings.subnet.fromString( prefs.getString("sn",   "255.255.255.0"));
@@ -285,14 +289,15 @@ void loadWifiSettings()
 void saveWifiSettings()
 {
     prefs.begin("wifi", false);
-    prefs.putString("ssid", wifiSettings.ssid);
-    prefs.putString("pass", wifiSettings.pass);
-    prefs.putBool(  "dhcp", wifiSettings.dhcp);
-    prefs.putString("ip",   wifiSettings.localIp.toString());
-    prefs.putString("gw",   wifiSettings.gateway.toString());
-    prefs.putString("sn",   wifiSettings.subnet.toString());
-    prefs.putString("dns1", wifiSettings.dns1.toString());
-    prefs.putString("dns2", wifiSettings.dns2.toString());
+    prefs.putString("ssid",           wifiSettings.ssid);
+    prefs.putString("pass",           wifiSettings.pass);
+    prefs.putBool(  "dhcp",           wifiSettings.dhcp);
+    prefs.putBool(  "setup_ap_always",wifiSettings.setupApAlways);
+    prefs.putString("ip",             wifiSettings.localIp.toString());
+    prefs.putString("gw",             wifiSettings.gateway.toString());
+    prefs.putString("sn",             wifiSettings.subnet.toString());
+    prefs.putString("dns1",           wifiSettings.dns1.toString());
+    prefs.putString("dns2",           wifiSettings.dns2.toString());
     prefs.end();
 }
 
@@ -411,34 +416,62 @@ void factoryResetAll()
 /* ================================================================
  *  WiFi management
  * ================================================================ */
-void connectWifi()
-{
-    WiFi.mode(WIFI_AP_STA);
 
-    /* AP: always starts as UMS-SETUP-<last4MAC> */
+/* Start the setup AP (UMS-SETUP-xxxx).  Safe to call when already running. */
+void startSetupAp()
+{
+    if (apActive) return;
+    WiFi.mode(WIFI_AP_STA);
     String apSsid = getApSsid();
     WiFi.softAP(apSsid.c_str(), deviceSettings.apPass.c_str());
+    apActive = true;
     Serial.print(F("AP started: ")); Serial.println(apSsid);
-    Serial.print(F("AP IP: ")); Serial.println(WiFi.softAPIP());
+    Serial.print(F("AP IP: "));      Serial.println(WiFi.softAPIP());
+}
 
-    WiFi.disconnect(false, false);
+/* Stop the setup AP and switch to STA-only mode. */
+void stopSetupAp()
+{
+    if (!apActive) return;
+    WiFi.softAPdisconnect(true);
+    WiFi.mode(WIFI_STA);
+    apActive = false;
+    Serial.println(F("AP stopped — STA-only mode"));
+}
 
-    /* STA: apply static/DHCP config before connecting */
-    if (!wifiSettings.dhcp) {
-        WiFi.config(wifiSettings.localIp, wifiSettings.gateway,
-                    wifiSettings.subnet, wifiSettings.dns1, wifiSettings.dns2);
+void connectWifi()
+{
+    /* AP policy:
+     *   - No SSID configured → AP needed for first-boot setup
+     *   - setupApAlways = true → AP always on, even when STA is up
+     *   Otherwise AP is off at boot; starts only on STA timeout/failure
+     */
+    bool needApNow = (wifiSettings.ssid.length() == 0) || wifiSettings.setupApAlways;
+
+    if (needApNow) {
+        WiFi.mode(WIFI_AP_STA);
+        startSetupAp();
     } else {
-        WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
+        WiFi.mode(WIFI_STA);
+        apActive = false;
     }
 
     if (wifiSettings.ssid.length() > 0) {
+        /* Apply static/DHCP config before connecting */
+        if (!wifiSettings.dhcp) {
+            WiFi.config(wifiSettings.localIp, wifiSettings.gateway,
+                        wifiSettings.subnet, wifiSettings.dns1, wifiSettings.dns2);
+        } else {
+            WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
+        }
         Serial.print(F("STA: connecting to ")); Serial.println(wifiSettings.ssid);
         WiFi.begin(wifiSettings.ssid.c_str(), wifiSettings.pass.c_str());
         wifiConnecting   = true;
         wifiConnectStart = millis();
         wifiApFallback   = false;
     } else {
-        Serial.println(F("STA: no SSID configured — AP-only mode"));
+        /* No SSID — AP-only setup mode */
+        Serial.println(F("STA: no SSID configured — AP setup mode"));
         wifiConnecting = false;
         wifiApFallback = true;
     }
@@ -448,9 +481,14 @@ void reconnectWifiIfNeeded()
 {
     if (WiFi.status() == WL_CONNECTED) {
         if (wifiConnecting) {
+            /* Just connected successfully */
             wifiConnecting = false;
             wifiApFallback = false;
             Serial.print(F("WiFi connected: ")); Serial.println(WiFi.localIP());
+            /* Stop AP if user has not requested it always-on */
+            if (!wifiSettings.setupApAlways) {
+                stopSetupAp();
+            }
         }
         return;
     }
@@ -461,6 +499,7 @@ void reconnectWifiIfNeeded()
     if (wifiConnecting && (now - wifiConnectStart >= WIFI_CONNECT_TIMEOUT_MS)) {
         wifiConnecting = false;
         wifiApFallback = true;
+        startSetupAp();  /* ensure AP is up for fallback */
         Serial.println(F("WiFi: connect timeout — AP fallback active"));
     }
 
@@ -581,12 +620,22 @@ String buildDataJson()
     json += F(",\"free_heap\":");       json += ESP.getFreeHeap();
     json += F(",\"reset_reason\":");    json += (int)esp_reset_reason();
 
-    /* --- Status flags (NEW in v0.5.0) --- */
+    /* --- Status flags (v0.5.0 / updated v0.5.1) --- */
+
+    /* config_mode: true only when in setup/fallback (AP needed, STA not connected) */
     json += F(",\"config_mode\":");
     json += wifiApFallback ? F("true") : F("false");
 
+    /* setup_ap_enabled: true whenever the AP interface is actually running */
+    json += F(",\"setup_ap_enabled\":");
+    json += apActive ? F("true") : F("false");
+
+    /* wifi_mode: "STA" / "AP" / "AP+STA" */
     json += F(",\"wifi_mode\":\"");
-    json += (WiFi.status() == WL_CONNECTED) ? F("STA") : F("AP");
+    bool sta = (WiFi.status() == WL_CONNECTED);
+    if      (sta && apActive)  json += F("AP+STA");
+    else if (sta)              json += F("STA");
+    else                       json += F("AP");
     json += F("\"");
 
     json += F(",\"mqtt_connected\":");
@@ -641,7 +690,7 @@ static const char PAGE_CSS[] PROGMEM =
     "label{display:block;margin:9px 0 3px;font-weight:600;font-size:13px}"
     "input,select{width:100%;box-sizing:border-box;padding:8px 10px;"
                  "border:1px solid #b8c0cc;border-radius:5px;font-size:14px}"
-    "input[type=radio]{width:auto}"
+    "input[type=radio],input[type=checkbox]{width:auto}"
     ".row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}"
     ".row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}"
     "button,.btn{background:#1769aa;color:#fff;border:0;border-radius:6px;"
@@ -689,18 +738,24 @@ String htmlFoot()
 void handleRoot()
 {
     String wifiBadge, wifiDetail, ipStr;
-    if (WiFi.status() == WL_CONNECTED) {
-        wifiBadge  = F("<span class='badge ok'>Connected</span>");
+    bool staConnected = (WiFi.status() == WL_CONNECTED);
+    if (staConnected && !apActive) {
+        wifiBadge  = F("<span class='badge ok'>Connected (STA)</span>");
         wifiDetail = "STA &mdash; SSID: " + htmlEscape(wifiSettings.ssid)
                    + "  RSSI: " + String(WiFi.RSSI()) + " dBm";
         ipStr      = WiFi.localIP().toString();
+    } else if (staConnected && apActive) {
+        wifiBadge  = F("<span class='badge ok'>Connected (AP+STA)</span>");
+        wifiDetail = "STA: " + htmlEscape(wifiSettings.ssid)
+                   + " RSSI: " + String(WiFi.RSSI()) + " dBm  &mdash; AP always enabled";
+        ipStr      = WiFi.localIP().toString();
     } else if (wifiApFallback) {
         wifiBadge  = F("<span class='badge warn'>AP Fallback</span>");
-        wifiDetail = F("STA unreachable &mdash; serving AP only");
+        wifiDetail = F("STA unreachable &mdash; setup AP active");
         ipStr      = WiFi.softAPIP().toString();
     } else {
         wifiBadge  = F("<span class='badge warn'>Connecting&#8230;</span>");
-        wifiDetail = F("AP+STA");
+        wifiDetail = F("STA connect in progress");
         ipStr      = WiFi.softAPIP().toString();
     }
     String mqttBadge = mqttLastOk
@@ -717,13 +772,18 @@ void handleRoot()
     p += F("&nbsp;&middot;&nbsp;<a href='/update'>OTA Update</a>");
     p += F("&nbsp;&middot;&nbsp;<a href='/reboot' onclick=\"return confirm('Reboot now?')\">Reboot</a></p>");
 
-    /* Setup-mode banner */
+    /* AP active banner */
     if (wifiApFallback) {
         p += F("<section><p class='badge warn' style='font-size:13px;padding:8px 14px;display:block'>"
-               "&#9888; Setup mode active &mdash; connect to AP: <b>");
+               "&#9888; Setup/fallback AP active &mdash; SSID: <b>");
         p += htmlEscape(getApSsid());
         p += F("</b>&nbsp; Password: <b>"); p += htmlEscape(deviceSettings.apPass);
-        p += F("</b><br>Then open <b>http://192.168.4.1/config</b> to configure WiFi.</p></section>");
+        p += F("</b><br>STA not connected. Open <b>http://192.168.4.1/config</b> to configure WiFi.</p></section>");
+    } else if (apActive) {
+        p += F("<section><p class='badge ok' style='font-size:13px;padding:8px 14px;display:block'>"
+               "&#9432; AP always-enabled &mdash; SSID: <b>");
+        p += htmlEscape(getApSsid());
+        p += F("</b>&nbsp; (setup_ap_always=on &mdash; disable in <a href='/config'>config</a> for production)</p></section>");
     }
 
     /* Live data */
@@ -749,8 +809,12 @@ void handleRoot()
     /* Network */
     p += F("<section><h2>Network</h2>");
     p += F("<p>WiFi: "); p += wifiBadge; p += F(" "); p += wifiDetail; p += F("</p>");
-    p += F("<p>STA IP: "); p += ipStr;
-    p += F("&nbsp;&nbsp; AP IP: "); p += WiFi.softAPIP().toString(); p += F("</p></section>");
+    p += F("<p>IP: "); p += ipStr;
+    if (apActive) {
+        p += F(" &nbsp;&nbsp; AP IP: "); p += WiFi.softAPIP().toString();
+        p += F(" &nbsp; AP SSID: <b>"); p += htmlEscape(getApSsid()); p += F("</b>");
+    }
+    p += F("</p></section>");
 
     /* MQTT */
     p += F("<section><h2>MQTT</h2>");
@@ -880,6 +944,13 @@ void handleConfig()
            "placeholder='Leave blank to keep'></div>");
     p += F("</div>");
     p += F("<p class='muted'>Current AP SSID: <b>"); p += htmlEscape(getApSsid()); p += F("</b></p>");
+    /* setup_ap_always checkbox */
+    String chkAlways = wifiSettings.setupApAlways ? F("checked") : F("");
+    p += F("<label style='font-weight:400;display:flex;align-items:center;gap:8px;margin:10px 0'>");
+    p += F("<input type='checkbox' name='setup_ap_always' value='1' "); p += chkAlways; p += F(">");
+    p += F("<span><b>Keep setup AP always enabled</b>"
+           " <span class='muted'>(AP stays on even when connected to WiFi. "
+           "Recommended OFF for production.)</span></span></label>");
     p += F("</section>");
 
     /* --- Save + quick actions --- */
@@ -989,9 +1060,10 @@ void handleSaveConfig()
     /* ---- WiFi ---- */
     String newSsid = server.arg("ssid"); newSsid.trim();
     String newPass = server.arg("pass");  /* empty = keep existing */
-    wifiSettings.ssid = newSsid;
+    wifiSettings.ssid        = newSsid;
     if (newPass.length() > 0) wifiSettings.pass = newPass;
-    wifiSettings.dhcp = server.arg("mode") != "static";
+    wifiSettings.dhcp        = server.arg("mode") != "static";
+    wifiSettings.setupApAlways = server.hasArg("setup_ap_always");
     if (!wifiSettings.dhcp) {
         IPAddress ip, gw, sn, dns1, dns2;
         if (!parseIpArg("ip", ip) || !parseIpArg("gw", gw) || !parseIpArg("sn", sn)) {

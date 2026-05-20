@@ -1,7 +1,7 @@
 # Implementation Status — UPS Monitoring System
 
 **Branch:** `professionalization-plan`
-**Last updated:** 2026-05-20
+**Last updated:** 2026-05-21
 
 ---
 
@@ -212,7 +212,46 @@ kW / kWh / PF shown as "not supported" — see `docs/MEASUREMENT_LIMITATIONS.md`
 | New MQTT payload fields: `config_mode`, `wifi_mode`, `mqtt_connected` | ✅ Done |
 | Legacy routes kept: `/save`, `/save-device`, `/save-mqtt`, `/save-calibration` | ✅ Done |
 | PROGMEM CSS — shared stylesheet in flash, not DRAM | ✅ Done |
-| Compile note: not verified in-environment (no Arduino IDE in CI); static code review complete | ⚠️ Pending compile |
+
+### J. Firmware v0.5.1 — AP Hardening + Compile Verification
+
+| Change | Status |
+|--------|--------|
+| **Compile verified** — Arduino CLI 1.5.0, FQBN `esp32:esp32:esp32` (ESP32 Dev Module), core 3.3.8 | ✅ **0 errors** |
+| Flash: 1,007,460 bytes (76%) / RAM: 47,760 bytes (14%) | ✅ Confirmed |
+| `ADC_ATTEN_DB_11` deprecation warning eliminated → `ADC_ATTEN_DB_12` | ✅ Fixed |
+| 2 remaining framework-level deprecation warnings (legacy ADC headers) — not errors, measurement algorithm unchanged | ℹ️ Expected |
+| **AP hardening:** AP off by default when STA is connected | ✅ Done |
+| `setup_ap_always` NVS key (`wifi` namespace, bool, default `false`) | ✅ Done |
+| `startSetupAp()` / `stopSetupAp()` helpers — clean AP start/stop | ✅ Done |
+| `connectWifi()` rewritten — AP only starts when needed (no SSID or `setupApAlways=true`) | ✅ Done |
+| `reconnectWifiIfNeeded()` — stops AP on successful STA connect (unless `setupApAlways`) | ✅ Done |
+| `/config` Security section — "Keep setup AP always enabled" checkbox (default unchecked) | ✅ Done |
+| `handleSaveConfig()` — handles `setup_ap_always` checkbox | ✅ Done |
+| `apActive` runtime state — tracks whether AP interface is actually running | ✅ Done |
+| `wifi_mode` payload: `"STA"` / `"AP"` / `"AP+STA"` (corrected from v0.5.0) | ✅ Done |
+| `setup_ap_enabled` payload field — true when AP interface running | ✅ Done |
+| `config_mode` payload — true only in fallback/setup mode (not when `setupApAlways`) | ✅ Fixed |
+| Status page (`/`) — shows correct badge for STA / AP fallback / AP+STA | ✅ Done |
+| `factory-reset` clears `setup_ap_always` (via full `wifi` namespace wipe) | ✅ Done |
+| CSS: `input[type=checkbox]` added to `width:auto` rule | ✅ Done |
+
+**Routes registered and verified in `setupWebServer()`:**
+
+| Route | Method | Handler | Status |
+|-------|--------|---------|--------|
+| `/` | GET | `handleRoot` | ✅ |
+| `/config` | GET | `handleConfig` | ✅ |
+| `/save-config` | POST | `handleSaveConfig` | ✅ |
+| `/reboot` | GET | `handleReboot` | ✅ |
+| `/factory-reset` | GET | `handleFactoryReset` | ✅ |
+| `/data` | GET | `handleData` | ✅ |
+| `/update` | GET | `handleUpdatePage` | ✅ |
+| `/update` | POST | `handleUpdateFinished` + `handleUpdateUpload` | ✅ |
+| `/save` | POST | `handleSave` (legacy) | ✅ |
+| `/save-device` | POST | `handleSaveDevice` (legacy) | ✅ |
+| `/save-mqtt` | POST | `handleSaveMqtt` (legacy) | ✅ |
+| `/save-calibration` | POST | `handleSaveCalibration` (legacy) | ✅ |
 
 ---
 

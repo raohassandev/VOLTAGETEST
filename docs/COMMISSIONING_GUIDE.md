@@ -1,6 +1,6 @@
 # Commissioning Guide — UPS Monitoring System
 
-This guide covers setting up a new ESP32 monitoring module (firmware v0.5.0) for a UPS unit and registering it in the dashboard.
+This guide covers setting up a new ESP32 monitoring module (firmware v0.5.1) for a UPS unit and registering it in the dashboard.
 
 ---
 
@@ -18,7 +18,19 @@ Default publish interval is **5 seconds** (configurable via the portal).
 
 ## Step 2 — Connect to the Commissioning Portal
 
-After flashing, the ESP32 always starts an Access Point for initial setup:
+### AP Behavior (v0.5.1+)
+
+The setup AP (`UMS-SETUP-xxxx`) operates in three modes:
+
+| Scenario | AP Active? | Mode |
+|----------|------------|------|
+| No WiFi SSID configured (first boot) | **Yes** | Setup mode — AP required |
+| WiFi SSID configured, STA not yet connected | No | STA connecting; AP off |
+| STA connection fails after 30 seconds | **Yes** | AP fallback — bad credentials or unreachable network |
+| STA connected, `setup_ap_always = OFF` (default) | **No** | STA-only — production mode |
+| STA connected, `setup_ap_always = ON` | **Yes** | AP+STA — technician convenience mode |
+
+**On first boot** (no SSID in NVS), the board starts the AP immediately:
 
 - **SSID:** `UMS-SETUP-xxxx` where `xxxx` is the last 4 characters of the MAC address (e.g., `UMS-SETUP-A1B2`)
 - **Password:** `UMSSetup2026`
@@ -26,7 +38,9 @@ After flashing, the ESP32 always starts an Access Point for initial setup:
 
 Connect to the AP using a phone or laptop, then open `http://192.168.4.1` in a browser.
 
-> **Note:** After WiFi credentials are saved and the board connects to your building network, the AP remains active. You can still access the portal via `http://192.168.4.1` over the AP, or via the assigned LAN IP address. The AP SSID is always `UMS-SETUP-<last4MAC>` — it never changes to the device ID.
+> **Production recommendation:** Leave `setup_ap_always` **unchecked** (default). After commissioning, the board broadcasts STA-only with no AP. This prevents the setup AP from appearing as an unmanaged network in the building.
+
+> **Technician convenience:** Check `Keep setup AP always enabled` in the Security section of `/config` if you need to keep the AP accessible even when the board is connected to WiFi. This is useful during installation and testing. Turn it off before handover.
 
 ---
 
@@ -85,8 +99,13 @@ Static IP fields are hidden when DHCP is selected. They appear automatically whe
 |-------|-------|
 | AP Password | Password to join the `UMS-SETUP-xxxx` AP — leave blank to keep existing |
 | OTA Password | Password required for firmware update at `/update` — leave blank to keep existing |
+| Keep setup AP always enabled | Checkbox — keep AP broadcasting even when STA is connected |
 
 Password fields always appear blank. If you submit them blank, the existing saved value is preserved.
+
+**`Keep setup AP always enabled` checkbox:**
+- **Unchecked (default / production):** AP starts only when no SSID is configured or after STA connection failure. Turns off automatically when STA connects.
+- **Checked:** AP remains active regardless of STA status. Useful during installation. **Disable before handover.**
 
 ### 3e. Advanced Calibration (collapsible)
 
@@ -105,8 +124,8 @@ Click the **Reboot** button (or navigate to `/reboot`) to apply the changes.
 
 After reboot, the board will:
 1. Attempt to connect to the configured WiFi SSID.
-2. If connection succeeds within 30 seconds → full STA+AP mode (LAN + AP both active).
-3. If connection fails within 30 seconds → AP-only fallback mode. The status page shows a banner: *"Running in AP fallback mode — WiFi connection failed."* The board retries STA connection every 60 seconds.
+2. **`setup_ap_always = OFF` (default):** No AP at boot. If STA connects within 30 seconds → STA-only mode (no AP broadcast). If STA fails → AP fallback starts after 30 seconds. The status page shows a banner: *"Setup/fallback AP active — STA not connected."* The board retries STA every 60 seconds automatically.
+3. **`setup_ap_always = ON`:** AP starts immediately at boot alongside the STA attempt. AP stays on regardless of STA status.
 
 ---
 
@@ -204,6 +223,7 @@ All settings are stored in ESP32 non-volatile storage (NVS / Preferences):
 | `wifi` | `ssid` | string | WiFi SSID |
 | `wifi` | `pass` | string | WiFi password |
 | `wifi` | `dhcp` | bool | true = DHCP, false = static |
+| `wifi` | `setup_ap_always` | bool | false = AP off when STA connected (default); true = AP always on |
 | `wifi` | `local_ip` | string | Static local IP |
 | `wifi` | `gateway` | string | Static gateway |
 | `wifi` | `subnet` | string | Static subnet mask |
@@ -235,7 +255,7 @@ All settings are stored in ESP32 non-volatile storage (NVS / Preferences):
 
 ---
 
-## MQTT Payload Reference (v0.5.0)
+## MQTT Payload Reference (v0.5.1)
 
 Every published message contains:
 
@@ -265,6 +285,7 @@ Every published message contains:
   "mac": "AA:BB:CC:DD:A1:B2",
   "reset_reason": "Power on",
   "config_mode": false,
+  "setup_ap_enabled": false,
   "wifi_mode": "STA",
   "mqtt_connected": true
 }
@@ -272,6 +293,7 @@ Every published message contains:
 
 | Field | Description |
 |-------|-------------|
-| `config_mode` | `true` if running in AP fallback (STA failed) |
-| `wifi_mode` | `"STA"` = connected to network, `"AP"` = AP-only fallback |
+| `config_mode` | `true` if in setup/fallback mode (AP up because STA failed or unconfigured) |
+| `setup_ap_enabled` | `true` whenever the AP interface is currently active (fallback OR always-on) |
+| `wifi_mode` | `"STA"` = STA only; `"AP"` = AP only (fallback/setup); `"AP+STA"` = both active |
 | `mqtt_connected` | `true` if last MQTT publish cycle succeeded |
