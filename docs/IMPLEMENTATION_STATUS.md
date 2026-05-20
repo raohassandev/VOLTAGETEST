@@ -5,23 +5,98 @@
 
 ---
 
-## Milestone 2 + 3 — Completed
+## Milestone 4A — In Progress (this milestone)
 
-### A. PostgreSQL Persistence (Prisma)
+### A. Prisma Migrations
 
 | Item | Status |
 |------|--------|
-| Prisma schema with all required tables | ✅ Done |
-| `prisma/schema.prisma` | ✅ `web-dashboard/prisma/schema.prisma` |
-| `src/lib/db.ts` singleton | ✅ Done |
-| `prisma generate` passes | ✅ Verified |
-| Migration deploy on Docker startup | ✅ In Dockerfile CMD |
+| `prisma/migrations/` directory committed | ✅ Done |
+| `prisma/migrations/20260520000000_init/migration.sql` | ✅ Generated via `prisma migrate diff --from-empty` |
+| `prisma/migrations/migration_lock.toml` | ✅ Done |
+| `prisma migrate deploy` creates all tables | ✅ Verified against empty DB |
+| `prisma validate` passes | ✅ Verified |
 
-Tables created:
-- `User`, `Session` (future multi-user)
+**Production uses `prisma migrate deploy`, not `prisma db push`.** `db push` is for development exploration only and does not create migration history.
+
+### B. Schema Accuracy
+
+| Item | Status |
+|------|--------|
+| `Session` model removed from claims | ✅ Fixed — auth is env-token based, no DB sessions |
+| `Telemetry1m` model added to schema | ✅ Done |
+| All tables in schema match migration SQL | ✅ Verified |
+
+**Auth is env-token only.** The `UPS_AUTH_TOKEN` env var is compared against the session cookie. There is no `Session` table. Multi-user DB auth is a future milestone.
+
+### C. Telemetry 1m Rollup Table
+
+| Item | Status |
+|------|--------|
+| `Telemetry1m` Prisma model | ✅ Added to schema + migration |
+| Unique constraint `deviceId + bucketStart` | ✅ Done |
+| Indexes: `(deviceId, bucketStart)`, `(bucketStart)` | ✅ Done |
+| Fields: avg/min/max for volt_in/out/dc, avg/max for ct_in/out, sInVa/sOutVa, rssiAvg | ✅ Done |
+| No kW / kWh / PF fields | ✅ Correct — not supported by firmware |
+
+### D. Rollup Aggregation Job
+
+| Item | Status |
+|------|--------|
+| `worker/rollup.ts` module | ✅ Done |
+| `runRollup(prisma)` — aggregates closed minute buckets | ✅ Done |
+| Looks back 2 hours, only complete minutes (`< NOW()`) | ✅ Done |
+| Upsert-safe (no double counting) | ✅ Done |
+| Per-bucket log: `[rollup] aggregated 2026-05-20T10:41:00Z — N device buckets` | ✅ Done |
+| Scheduled every 60s in `mqtt-worker.ts` | ✅ Done |
+| Individual bucket failure does not crash worker | ✅ try/catch per upsert |
+
+### E. Retention Cleanup
+
+| Item | Status |
+|------|--------|
+| `runRetentionCleanup(prisma)` in `worker/rollup.ts` | ✅ Done |
+| Reads `rawRetentionDays`, `rollupRetentionMonths`, `alarmRetentionMonths` from DB | ✅ Done |
+| Deletes `TelemetryRaw` older than `rawRetentionDays` | ✅ Done |
+| Deletes `Telemetry1m` older than `rollupRetentionMonths` | ✅ Done |
+| Deletes cleared/non-active alarms older than `alarmRetentionMonths` | ✅ Done |
+| Runs at startup (after 10s delay) and every 24 hours | ✅ Done |
+| Logs rows deleted per table | ✅ Done |
+
+### F. History API
+
+| Item | Status |
+|------|--------|
+| `GET /api/telemetry/history` updated | ✅ Done |
+| ≤ 6 hours range → `TelemetryRaw`, `source: "raw"` | ✅ Done |
+| > 6 hours range → `Telemetry1m`, `source: "1m"` | ✅ Done |
+| `source` field in response | ✅ Done |
+| Rollup response shape: `{ deviceId, bucketStart, sampleCount, voltIn: {avg,min,max}, ... }` | ✅ Done |
+
+### G. Seed Script
+
+| Item | Status |
+|------|--------|
+| `scripts/seed.ts` | ✅ Done |
+| Creates default `SystemSettings` (always) | ✅ Done |
+| Demo data only with `--demo` flag | ✅ Done |
+| Blocked in production without `--force` | ✅ Done |
+| `npm run db:seed` | ✅ Added to package.json |
+| `npm run db:reset:local` | ✅ Added (dev only — migrate reset + seed --demo) |
+
+---
+
+## Milestone 2 + 3 — Completed
+
+### Database Tables (Production Schema)
+
+Tables present in schema and migration:
+- `User` — future multi-user auth (no UI yet)
 - `Site`, `UpsUnit`, `Device`, `CalibrationProfile`
-- `AlarmRule`, `TelemetryRaw`, `TelemetryLatest`
+- `AlarmRule`, `TelemetryRaw`, `TelemetryLatest`, `Telemetry1m`
 - `Alarm`, `AlarmEvent`, `SystemSettings`, `AuditLog`
+
+**Note:** There is no `Session` model. Auth uses env-token comparison only.
 
 ### B. DB-backed APIs
 
@@ -30,7 +105,7 @@ Tables created:
 | `GET/PUT/POST/DELETE /api/inventory` | ✅ DB-backed with JSON fallback |
 | `GET/PUT /api/settings` | ✅ DB-backed with JSON fallback |
 | `GET /api/telemetry/latest` | ✅ DB-backed with JSON fallback |
-| `GET /api/telemetry/history` | ✅ DB-backed with JSON fallback |
+| `GET /api/telemetry/history` | ✅ DB-backed (raw ≤6h / rollup >6h) with JSON fallback |
 | `GET /api/devices` | ✅ New |
 | `GET /api/devices/:deviceId` | ✅ New |
 | `GET /api/ups` | ✅ New |
@@ -38,8 +113,6 @@ Tables created:
 | `GET /api/alarms` | ✅ New |
 | `POST /api/alarms/:id/ack` | ✅ New |
 | `GET /api/health` | ✅ New |
-
-All DB-backed routes fall back to JSON file storage if `DATABASE_URL` is not set.
 
 ### C. MQTT Worker
 
@@ -49,8 +122,8 @@ All DB-backed routes fall back to JSON file storage if `DATABASE_URL` is not set
 | MQTT subscribe + reconnect | ✅ Done |
 | Telemetry persist to `telemetry_raw` | ✅ Done |
 | Upsert `telemetry_latest` | ✅ Done |
-| Update `devices` (ip, firmware, online, lastSeenAt) | ✅ Done |
-| Run alarm evaluation per message | ✅ Done |
+| 1-minute rollup every 60s | ✅ Done (via `worker/rollup.ts`) |
+| Retention cleanup every 24h | ✅ Done (via `worker/rollup.ts`) |
 | Periodic offline check (every 30s) | ✅ Done |
 | `npm run worker:start` / `worker:dev` | ✅ Scripts added |
 | Separate Docker container (`mqtt-worker`) | ✅ `Dockerfile.worker` |
@@ -75,42 +148,34 @@ All DB-backed routes fall back to JSON file storage if `DATABASE_URL` is not set
 
 | Page | Status |
 |------|--------|
-| `/login` | ✅ Unchanged — working |
-| `/` fleet dashboard | ✅ Improved — search, load%, offline indicator, nav links |
-| `/ups/[id]` UPS detail | ✅ New — live telemetry, alarms, history, notes |
+| `/login` | ✅ Unchanged |
+| `/` fleet dashboard | ✅ Search, load%, offline indicator, nav links |
+| `/ups/[id]` UPS detail | ✅ New — live telemetry, alarms, notes |
 | `/alarms` alarm management | ✅ New — list, filter, ack with comment |
 | `/admin/inventory` | ✅ New — full CRUD |
 | `/admin/settings` | ✅ New — retention + offline threshold |
 
-UPS detail page shows:
-- Input/output/battery voltage, currents, apparent power VA
-- Load percentage (sOutVa / capacityVa × 100)
-- Online/offline status, RSSI, firmware, last seen
-- Active alarms with acknowledge button
-- Alarm history table (50 rows)
-- Maintenance notes (saved via PATCH /api/ups/:id)
-
-kW / kWh / PF shown as "not supported" — not computed from firmware data.
+kW / kWh / PF shown as "not supported" — see `docs/MEASUREMENT_LIMITATIONS.md`.
 
 ### F. Auth
 
 | Item | Status |
 |------|--------|
-| Bcrypt password hash support (`UPS_AUTH_PASSWORD_HASH`) | ✅ Done |
+| Bcrypt hash support (`UPS_AUTH_PASSWORD_HASH`) | ✅ Done |
 | Plain-text fallback for development | ✅ Done |
 | Production blocks login if no token/password set | ✅ Done |
-| Remove hardcoded `admin12345` in production | ✅ Done |
-| HTTP-only session cookie | ✅ Already was, unchanged |
-| Document env vars | ✅ `.env.example` updated |
+| Hardcoded `admin12345` removed | ✅ Done |
+| HTTP-only session cookie | ✅ Done |
+| Edge-safe token comparison (no Node.js `crypto`) | ✅ Done |
 
 ### G. Deployment
 
 | Item | Status |
 |------|--------|
 | `docker-compose.yml` with postgres, mosquitto, web, worker | ✅ Done |
-| Worker `Dockerfile.worker` | ✅ Done |
-| Web `Dockerfile` with migration on startup | ✅ Done |
-| `.env.example` with all new vars | ✅ Done |
+| `Dockerfile.worker` for standalone worker | ✅ Done |
+| `Dockerfile` with `prisma migrate deploy` on startup | ✅ Done |
+| `.env.example` with all env vars documented | ✅ Done |
 | `deployment/scripts/backup.sh` | ✅ Done |
 | `deployment/scripts/restore.sh` | ✅ Done |
 | `deployment/scripts/health-check.sh` | ✅ Done |
@@ -119,24 +184,21 @@ kW / kWh / PF shown as "not supported" — not computed from firmware data.
 
 | Change | Status |
 |--------|--------|
-| `MQTT_PUBLISH_MS` default changed to `5000ms` (from 500ms) | ✅ Done |
+| `MQTT_PUBLISH_MS` default 500 → 5000 ms | ✅ Done |
 | `seq` counter added to payload | ✅ Done |
 | `free_heap` added to payload | ✅ Done |
 | `mac` address added to payload | ✅ Done |
 | `reset_reason` added to payload | ✅ Done |
-| `esp_system.h` include added | ✅ Done |
-| Existing payload keys unchanged (backward-compatible) | ✅ Verified |
-| `/data` and `/update` endpoints unchanged | ✅ Verified |
+| All existing payload keys unchanged (backward-compatible) | ✅ Verified |
 
 ---
 
 ## Pending (Future Milestones)
 
-- Telemetry rollup (1-minute aggregation into `telemetry_1m`)
-- Automatic data retention pruning (raw / rollup / alarm)
-- Multi-user DB auth with role-based access
+- Multi-user DB auth with role-based access (User table exists, no UI/API yet)
+- Per-device alarm rule overrides via AlarmRule table (engine uses hardcoded defaults today)
 - Fleet OTA management from dashboard
-- Active power (W), power factor, energy (kWh) — requires waveform-sampling firmware
+- Active power (W), power factor, energy (kWh) — requires hardware metering IC (see MEASUREMENT_LIMITATIONS.md)
 - Email/SMS/WhatsApp alarm notifications
 - Production TLS / nginx reverse proxy
-- Firmware Last Will / retained status topic (requires MQTT library upgrade)
+- Firmware Last Will / retained MQTT status topic

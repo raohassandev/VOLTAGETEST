@@ -110,17 +110,33 @@ docker compose logs -f mqtt-worker
 
 ## Database Migrations
 
-The project uses Prisma Migrate. To create a new migration after schema changes:
+The project uses **Prisma Migrate** with committed migration files.
+
+**Important:** Production always uses `prisma migrate deploy` against committed
+`prisma/migrations/` SQL files. `prisma db push` is for local exploration only —
+it does not create migration history and must not be used in production.
 
 ```bash
-# Development
+# Apply all pending migrations to production DB
 cd web-dashboard
+npx prisma migrate deploy
+
+# Development — create a new migration after editing schema.prisma
 DATABASE_URL=postgresql://ups_user:password@localhost:5432/upsmon \
   npx prisma migrate dev --name describe-change
 
-# Production (apply pending migrations)
-npx prisma migrate deploy
+# Seed default settings
+npm run db:seed
+
+# Development only: full reset + demo data
+npm run db:reset:local
 ```
+
+The initial migration `prisma/migrations/20260520000000_init/migration.sql`
+creates all production tables:
+`User`, `Site`, `UpsUnit`, `Device`, `CalibrationProfile`, `AlarmRule`,
+`TelemetryRaw`, `TelemetryLatest`, `Telemetry1m`, `Alarm`, `AlarmEvent`,
+`SystemSettings`, `AuditLog`.
 
 ---
 
@@ -132,8 +148,9 @@ cp .env.example .env.local
 # Edit .env.local with your local DB and MQTT broker
 
 npm install
-DATABASE_URL=postgresql://... npx prisma db push   # push schema without migrations
-npm run dev                                         # start Next.js
+DATABASE_URL=postgresql://... npx prisma migrate deploy   # apply committed migrations
+npm run db:seed                                           # create default SystemSettings
+npm run dev                                               # start Next.js
 
 # In a second terminal (optional — only if DB is configured):
 npm run worker:dev

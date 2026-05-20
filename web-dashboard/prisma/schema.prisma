@@ -65,6 +65,7 @@ model Device {
   updatedAt       DateTime         @updatedAt
   telemetryRaw    TelemetryRaw[]
   telemetryLatest TelemetryLatest?
+  telemetry1m     Telemetry1m[]
   alarmRules      AlarmRule[]
   alarms          Alarm[]
 }
@@ -208,6 +209,38 @@ model SystemSettings {
   alarmRetentionMonths  Int      @default(24)
   offlineThresholdSecs  Int      @default(60)
   updatedAt             DateTime @updatedAt
+}
+
+model Telemetry1m {
+  id          String   @id @default(cuid())
+  deviceId    String
+  device      Device   @relation(fields: [deviceId], references: [deviceId])
+  bucketStart DateTime
+  sampleCount Int
+  voltInAvg   Float
+  voltInMin   Float
+  voltInMax   Float
+  voltOutAvg  Float
+  voltOutMin  Float
+  voltOutMax  Float
+  voltDcAvg   Float
+  voltDcMin   Float
+  voltDcMax   Float
+  ctInAvg     Float
+  ctInMax     Float
+  ctOutAvg    Float
+  ctOutMax    Float
+  sInVaAvg    Float
+  sInVaMax    Float
+  sOutVaAvg   Float
+  sOutVaMax   Float
+  rssiAvg     Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([deviceId, bucketStart])
+  @@index([deviceId, bucketStart])
+  @@index([bucketStart])
 }
 
 model AuditLog {

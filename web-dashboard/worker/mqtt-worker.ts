@@ -10,11 +10,14 @@
 import mqtt from "mqtt";
 import { PrismaClient } from "@prisma/client";
 import { evaluateAlarms, markDeviceOffline, markDeviceOnline } from "../src/lib/alarm-engine";
+import { runRollup, runRetentionCleanup } from "./rollup";
 
 const BROKER_URL = process.env.MQTT_BROKER_URL;
 const TOPIC = process.env.MQTT_TOPIC || "building/+/ups/+/telemetry";
 const OFFLINE_THRESHOLD_MS = Number(process.env.OFFLINE_THRESHOLD_SECS || "60") * 1000;
 const OFFLINE_CHECK_INTERVAL_MS = 30_000;
+const ROLLUP_INTERVAL_MS = 60_000;
+const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 if (!BROKER_URL) {
   console.error("[worker] MQTT_BROKER_URL is not set — exiting.");
@@ -253,6 +256,24 @@ function startWorker(): void {
       console.error("[worker] offline-check error:", err instanceof Error ? err.message : err),
     );
   }, OFFLINE_CHECK_INTERVAL_MS);
+
+  setInterval(() => {
+    runRollup(prisma).catch((err) =>
+      console.error("[worker] rollup error:", err instanceof Error ? err.message : err),
+    );
+  }, ROLLUP_INTERVAL_MS);
+
+  // Retention cleanup: run once at startup (after 10s) and then every 24 hours.
+  setTimeout(() => {
+    runRetentionCleanup(prisma).catch((err) =>
+      console.error("[worker] cleanup error:", err instanceof Error ? err.message : err),
+    );
+    setInterval(() => {
+      runRetentionCleanup(prisma).catch((err) =>
+        console.error("[worker] cleanup error:", err instanceof Error ? err.message : err),
+      );
+    }, CLEANUP_INTERVAL_MS);
+  }, 10_000);
 
   console.log("[worker] Started.");
 }

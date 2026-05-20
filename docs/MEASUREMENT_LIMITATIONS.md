@@ -48,6 +48,21 @@ To enable P, PF, and kWh in a future firmware version:
 
 Until these steps are completed and validated, the firmware must **not** publish `p_in_w`, `p_out_w`, `pf_in`, or `pf_out`, and the dashboard must **not** compute or display these quantities.
 
+## Telemetry Rollup Fields
+
+The `Telemetry1m` table stores 1-minute aggregates of the raw telemetry stream.
+
+| Aggregated field | Type |
+|-----------------|------|
+| `voltIn`, `voltOut`, `voltDc` | avg / min / max |
+| `ctIn`, `ctOut` | avg / max |
+| `sInVa`, `sOutVa` (apparent power) | avg / max |
+| `rssi` | avg |
+
+**Not in rollup:** `pInW`, `pOutW`, `pfIn`, `pfOut`, `eInKwh`, `eOutKwh`
+These are NULL in raw telemetry and are not aggregated.
+Do not calculate or infer them from VA fields.
+
 ## Calibration
 
 All measurements require calibration coefficients per device:

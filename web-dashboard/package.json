@@ -11,6 +11,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:reset:local": "prisma migrate reset --force && tsx scripts/seed.ts -- --demo",
     "worker:dev": "tsx --watch worker/mqtt-worker.ts",
     "worker:start": "tsx worker/mqtt-worker.ts"
   },
