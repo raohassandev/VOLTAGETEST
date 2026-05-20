@@ -484,6 +484,7 @@ void reconnectWifiIfNeeded()
             /* Just connected successfully */
             wifiConnecting = false;
             wifiApFallback = false;
+            lastWifiRetry  = 0;  /* reset so STA-lost retry fires after WIFI_RETRY_MS, not earlier */
             Serial.print(F("WiFi connected: ")); Serial.println(WiFi.localIP());
             /* Stop AP if user has not requested it always-on */
             if (!wifiSettings.setupApAlways) {
@@ -573,8 +574,10 @@ bool mqttPublishPacket(WiFiClient& client, const String& topic, const String& pa
 /* ================================================================
  *  JSON builder
  *  Backward-compatible: all v0.4.0 keys unchanged.
- *  Added: building, floor, section, work_area, location,
- *         config_mode, wifi_mode, mqtt_connected
+ *  v0.5.0: building, floor, section, work_area, location,
+ *          config_mode, wifi_mode, mqtt_connected
+ *  v0.5.1: setup_ap_enabled; wifi_mode now includes "AP+STA";
+ *          config_mode fixed (false when STA connected normally)
  * ================================================================ */
 String buildDataJson()
 {
