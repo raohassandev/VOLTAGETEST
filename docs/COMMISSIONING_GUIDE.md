@@ -1,6 +1,6 @@
 # Commissioning Guide — UPS Monitoring System
 
-This guide covers setting up a new ESP32 monitoring module for a UPS unit and registering it in the dashboard.
+This guide covers setting up a new ESP32 monitoring module (firmware v0.5.0) for a UPS unit and registering it in the dashboard.
 
 ---
 
@@ -12,69 +12,124 @@ This guide covers setting up a new ESP32 monitoring module for a UPS unit and re
 4. Upload settings: 921600 baud, default partition scheme.
 5. Flash and verify via Serial Monitor at 921600 baud.
 
-Default publish interval is **5000 ms** (5 seconds). This is appropriate for production.
+Default publish interval is **5 seconds** (configurable via the portal).
 
 ---
 
-## Step 2 — Initial Device Setup
+## Step 2 — Connect to the Commissioning Portal
 
-After flashing, the ESP32 creates an Access Point:
-- **SSID:** `UPSMON-Setup-<MAC>` (or the configured Device ID)
-- **Password:** `ChangeMe123` (default — change immediately)
+After flashing, the ESP32 always starts an Access Point for initial setup:
 
-Connect to the AP and open `http://192.168.4.1` in a browser.
+- **SSID:** `UMS-SETUP-xxxx` where `xxxx` is the last 4 characters of the MAC address (e.g., `UMS-SETUP-A1B2`)
+- **Password:** `UMSSetup2026`
+- **Portal IP:** `http://192.168.4.1`
 
-### 2a. Device Identity
+Connect to the AP using a phone or laptop, then open `http://192.168.4.1` in a browser.
+
+> **Note:** After WiFi credentials are saved and the board connects to your building network, the AP remains active. You can still access the portal via `http://192.168.4.1` over the AP, or via the assigned LAN IP address. The AP SSID is always `UMS-SETUP-<last4MAC>` — it never changes to the device ID.
+
+---
+
+## Step 3 — Configure via /config
+
+Navigate to `http://192.168.4.1/config` (or click **Full Configuration** from the status page).
+
+The configuration page has five sections:
+
+### 3a. Board Identity
 
 Set unique identifiers that match your site plan:
 
 | Field | Example | Notes |
 |-------|---------|-------|
-| Device ID | `UPSMON-B1-01` | Unique per ESP32 module |
+| Device ID | `UPSMON-B1-01` | Unique per ESP32 module — required |
+| UPS ID | `UPS-B1-F2-01` | Unique per UPS unit — required |
 | Site ID | `SITE-HQ` | Matches your site naming |
-| UPS ID | `UPS-B1-F2-01` | Unique per UPS unit |
-| AP Password | (strong password) | Min 8 chars |
-| OTA Password | (strong password) | Min 8 chars |
+| Building | `Main Block` | Physical building name |
+| Floor | `Ground Floor` | Floor within building |
+| Section | `Server Room A` | Section/room within floor |
+| Work Area | `Rack Row 3` | Specific area within section |
+| Location | `Rack 3, Unit 12` | Precise physical location |
+| Installer Note | `Installed 2026-05-20` | Free text for field notes |
 
-Click **Save Device**.
+These fields are transmitted in every MQTT payload. Use them to locate a device in the field without needing to look up the dashboard.
 
-### 2b. MQTT Settings
+### 3b. Network / WiFi
+
+| Field | Notes |
+|-------|-------|
+| WiFi SSID | Building network SSID |
+| WiFi Password | Leave blank to keep existing |
+| IP Mode | DHCP (recommended) or Static |
+| Static IP / Gateway / Subnet / DNS1 / DNS2 | Only required if Static selected |
+
+Static IP fields are hidden when DHCP is selected. They appear automatically when you switch to Static mode.
+
+### 3c. MQTT
 
 | Field | Value |
 |-------|-------|
 | Broker Host | IP or hostname of your MQTT broker |
-| Port | 1883 (or 8883 for TLS) |
-| Username | `dashboard` (or per-device credential) |
-| Password | Your MQTT password |
+| Port | 1883 (default) |
+| Username | MQTT credential (leave blank if no auth) |
+| Password | MQTT credential — leave blank to keep existing |
 | Topic | `building/site-01/ups/UPSMON-B1-01/telemetry` |
+| Publish Interval | Seconds between payloads (default: 5) |
 
 > **Topic convention:** `building/<site-id>/ups/<device-id>/telemetry`
-> The dashboard subscribes to `building/+/ups/+/telemetry` by default.
+> The dashboard MQTT worker subscribes to `building/+/ups/+/telemetry` by default.
 
-Click **Save MQTT**.
+### 3d. Security
 
-### 2c. WiFi Settings
+| Field | Notes |
+|-------|-------|
+| AP Password | Password to join the `UMS-SETUP-xxxx` AP — leave blank to keep existing |
+| OTA Password | Password required for firmware update at `/update` — leave blank to keep existing |
 
-Enter your building WiFi credentials and click **Save and Reconnect**.
+Password fields always appear blank. If you submit them blank, the existing saved value is preserved.
 
-Verify the device connects: the Live Data panel should show voltage readings.
+### 3e. Advanced Calibration (collapsible)
 
-### 2d. Calibration (if required)
-
-Default calibration coefficients (scale=1, offset=0) are suitable for initial deployment.
-Adjust only after measured values are compared to a calibrated reference instrument.
+Default coefficients (scale=1.0, offset=0.0) are suitable for initial deployment.
+Adjust only after comparing measured values to a calibrated reference instrument.
 
 ---
 
-## Step 3 — Register in Dashboard
+## Step 4 — Save and Reboot
+
+After filling in the form, click **Save Configuration**.
+
+The portal will confirm: *"Configuration saved successfully. Network and identity changes will take effect after a reboot."*
+
+Click the **Reboot** button (or navigate to `/reboot`) to apply the changes.
+
+After reboot, the board will:
+1. Attempt to connect to the configured WiFi SSID.
+2. If connection succeeds within 30 seconds → full STA+AP mode (LAN + AP both active).
+3. If connection fails within 30 seconds → AP-only fallback mode. The status page shows a banner: *"Running in AP fallback mode — WiFi connection failed."* The board retries STA connection every 60 seconds.
+
+---
+
+## Step 5 — Factory Reset
+
+To clear all saved settings and return to defaults:
+
+1. Navigate to `http://192.168.4.1/factory-reset` (or LAN IP if connected).
+2. Confirm the reset.
+3. The board erases all NVS namespaces (`wifi`, `device`, `mqtt`, `cal`) and reboots.
+4. After reboot, connect to `UMS-SETUP-xxxx` / `UMSSetup2026` and reconfigure from Step 3.
+
+---
+
+## Step 6 — Register in Dashboard
 
 1. Log in to the dashboard at `http://<server>:3000`.
 2. Navigate to **Inventory** (`/admin/inventory`).
 3. Click **Add UPS** and fill in:
-   - **UPS ID:** Must match the `ups_id` you set on the device (e.g., `UPS-B1-F2-01`)
-   - **Device ID:** Must match the `device_id` set on the device (e.g., `UPSMON-B1-01`)
+   - **UPS ID:** Must match the `ups_id` set in the portal (e.g., `UPS-B1-F2-01`)
+   - **Device ID:** Must match the `device_id` set in the portal (e.g., `UPSMON-B1-01`)
    - **Serial:** UPS manufacturer serial number
-   - **Floor / Location:** Physical location in the building
+   - **Floor / Location:** Physical location (can match the portal fields)
    - **Capacity VA:** UPS rated capacity (e.g., `3000`)
    - **Battery nominal V:** Battery bank voltage (e.g., `48` for 48V battery)
 4. Click **Save UPS**.
@@ -84,7 +139,7 @@ Adjust only after measured values are compared to a calibrated reference instrum
 
 ---
 
-## Step 4 — Verify Telemetry
+## Step 7 — Verify Telemetry
 
 After a few seconds, the device should appear in the dashboard fleet table with live values.
 
@@ -97,7 +152,7 @@ Check:
 
 ---
 
-## Step 5 — Default Alarm Thresholds
+## Step 8 — Default Alarm Thresholds
 
 The system creates default alarm rules when telemetry is first received.
 Review these in the admin panel or adjust via the API.
@@ -116,9 +171,9 @@ Battery thresholds are computed relative to the `batteryNominalV` set in invento
 
 ---
 
-## Step 6 — Repeating for 50 Devices
+## Step 9 — Scaling to 50 Devices
 
-Repeat Steps 1–5 for each UPS module.
+Repeat Steps 1–8 for each UPS module.
 
 Naming convention recommendation:
 - Device ID: `UPSMON-<floor>-<sequence>` e.g. `UPSMON-B1-01`
@@ -131,9 +186,92 @@ All devices sharing a site should use the same MQTT broker and the same site-id 
 
 ## OTA Firmware Update
 
-1. Navigate to `http://<device-ip>/update` (use AP IP `192.168.4.1` if on same network).
+1. Navigate to `http://<device-ip>/update` (use AP IP `192.168.4.1` if on same LAN).
 2. Enter OTA password.
 3. Select the `.bin` firmware file.
 4. Click Upload — device will restart automatically.
 
 Verify the new firmware version appears in the dashboard device info.
+
+---
+
+## NVS Storage Reference (v0.5.0)
+
+All settings are stored in ESP32 non-volatile storage (NVS / Preferences):
+
+| Namespace | Key | Type | Description |
+|-----------|-----|------|-------------|
+| `wifi` | `ssid` | string | WiFi SSID |
+| `wifi` | `pass` | string | WiFi password |
+| `wifi` | `dhcp` | bool | true = DHCP, false = static |
+| `wifi` | `local_ip` | string | Static local IP |
+| `wifi` | `gateway` | string | Static gateway |
+| `wifi` | `subnet` | string | Static subnet mask |
+| `wifi` | `dns1` | string | Primary DNS |
+| `wifi` | `dns2` | string | Secondary DNS |
+| `device` | `device_id` | string | Unique device identifier |
+| `device` | `ups_id` | string | Linked UPS identifier |
+| `device` | `site_id` | string | Site identifier |
+| `device` | `building` | string | Building name |
+| `device` | `floor` | string | Floor within building |
+| `device` | `section` | string | Section/room |
+| `device` | `work_area` | string | Work area within section |
+| `device` | `location` | string | Precise physical location |
+| `device` | `note` | string | Installer note |
+| `device` | `ap_pass` | string | AP password |
+| `device` | `ota_pass` | string | OTA password |
+| `mqtt` | `server` | string | MQTT broker host |
+| `mqtt` | `port` | uint16 | MQTT port (default 1883) |
+| `mqtt` | `user` | string | MQTT username |
+| `mqtt` | `pass` | string | MQTT password |
+| `mqtt` | `topic` | string | Publish topic |
+| `mqtt` | `pub_int` | uint16 | Publish interval in seconds |
+| `cal` | `vi_sc` / `vi_os` | float | Input voltage cal |
+| `cal` | `vo_sc` / `vo_os` | float | Output voltage cal |
+| `cal` | `vb_sc` / `vb_os` | float | Battery voltage cal |
+| `cal` | `ii_sc` / `ii_os` | float | Input current cal |
+| `cal` | `io_sc` / `io_os` | float | Output current cal |
+| `cal` | `ac_zero` | float | AC zero-crossing reference |
+
+---
+
+## MQTT Payload Reference (v0.5.0)
+
+Every published message contains:
+
+```json
+{
+  "device_id": "UPSMON-B1-01",
+  "ups_id": "UPS-B1-F2-01",
+  "site_id": "SITE-HQ",
+  "building": "Main Block",
+  "floor": "Ground Floor",
+  "section": "Server Room A",
+  "work_area": "Rack Row 3",
+  "location": "Rack 3, Unit 12",
+  "volt_in": 231.5,
+  "volt_out": 230.1,
+  "volt_dc": 52.4,
+  "ct_in": 4.2,
+  "ct_out": 3.9,
+  "s_in_va": 970.3,
+  "s_out_va": 898.7,
+  "rssi": -62,
+  "ip": "192.168.1.45",
+  "firmware": "0.5.0",
+  "uptime_ms": 86400000,
+  "seq": 17280,
+  "free_heap": 210432,
+  "mac": "AA:BB:CC:DD:A1:B2",
+  "reset_reason": "Power on",
+  "config_mode": false,
+  "wifi_mode": "STA",
+  "mqtt_connected": true
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `config_mode` | `true` if running in AP fallback (STA failed) |
+| `wifi_mode` | `"STA"` = connected to network, `"AP"` = AP-only fallback |
+| `mqtt_connected` | `true` if last MQTT publish cycle succeeded |

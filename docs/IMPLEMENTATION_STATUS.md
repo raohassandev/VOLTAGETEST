@@ -191,6 +191,29 @@ kW / kWh / PF shown as "not supported" — see `docs/MEASUREMENT_LIMITATIONS.md`
 | `reset_reason` added to payload | ✅ Done |
 | All existing payload keys unchanged (backward-compatible) | ✅ Verified |
 
+### I. Firmware v0.5.0 — Commissioning Portal
+
+| Change | Status |
+|--------|--------|
+| AP SSID changed to `UMS-SETUP-<last4MAC>` (was device-ID-based) | ✅ Done |
+| AP password changed to `UMSSetup2026` (was `ChangeMe123`) | ✅ Done |
+| `GET /` — status page with live data, network status badge, identity summary | ✅ Done |
+| `GET /config` — full commissioning form (5 sections) | ✅ Done |
+| `POST /save-config` — unified save handler, validation, NVS write | ✅ Done |
+| `GET /reboot` — scheduled restart (2000ms delay) | ✅ Done |
+| `GET /factory-reset` — clears all 4 NVS namespaces and reboots | ✅ Done |
+| Password fields never expose saved values (always blank on form) | ✅ Done |
+| Static IP fields show/hide via JavaScript radio toggle | ✅ Done |
+| Validation: device_id + ups_id required; static IP fields required if mode=static | ✅ Done |
+| WiFi AP fallback after `WIFI_CONNECT_TIMEOUT_MS` (30s); retry every 60s | ✅ Done |
+| Configurable MQTT publish interval (`pub_int` NVS key, default 5s) | ✅ Done |
+| Extended `DeviceSettings`: building, floor, section, workArea, location, installerNote | ✅ Done |
+| New MQTT payload fields: `building`, `floor`, `section`, `work_area`, `location` | ✅ Done |
+| New MQTT payload fields: `config_mode`, `wifi_mode`, `mqtt_connected` | ✅ Done |
+| Legacy routes kept: `/save`, `/save-device`, `/save-mqtt`, `/save-calibration` | ✅ Done |
+| PROGMEM CSS — shared stylesheet in flash, not DRAM | ✅ Done |
+| Compile note: not verified in-environment (no Arduino IDE in CI); static code review complete | ⚠️ Pending compile |
+
 ---
 
 ## Pending (Future Milestones)
