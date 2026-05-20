@@ -8,16 +8,22 @@ export async function POST(request: Request) {
   const password = String(form.get("password") || "");
   const next = String(form.get("next") || "/");
 
-  if (!verifyCredentials(username, password)) {
+  const ok = await verifyCredentials(username, password);
+  if (!ok) {
     return NextResponse.redirect(new URL(`/login?error=1&next=${encodeURIComponent(next)}`, request.url), {
       status: 303,
     });
   }
 
+  const sessionToken = authConfig().sessionToken;
+  if (!sessionToken) {
+    return NextResponse.redirect(new URL("/login?error=notoken", request.url), { status: 303 });
+  }
+
   const response = NextResponse.redirect(new URL(next.startsWith("/") ? next : "/", request.url), {
     status: 303,
   });
-  response.cookies.set(authCookieName, authConfig().sessionToken, {
+  response.cookies.set(authCookieName, sessionToken, {
     httpOnly: true,
     maxAge: 60 * 60 * 12,
     sameSite: "lax",
@@ -25,4 +31,3 @@ export async function POST(request: Request) {
   });
   return response;
 }
-

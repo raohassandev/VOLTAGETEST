@@ -1,15 +1,20 @@
 services:
-  web:
-    build:
-      context: ../web-dashboard
+
+  postgres:
+    image: postgres:16-alpine
     environment:
-      UPS_AUTH_USERNAME: admin
-      UPS_AUTH_PASSWORD: change-this-password
-      UPS_AUTH_TOKEN: replace-with-a-long-random-session-token
+      POSTGRES_DB: upsmon
+      POSTGRES_USER: ups_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-db-password}
     ports:
-      - "3000:3000"
+      - "5432:5432"
     volumes:
-      - web_data:/app/data
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ups_user -d upsmon"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   mosquitto:
@@ -24,8 +29,54 @@ services:
       - mosquitto_log:/mosquitto/log
     restart: unless-stopped
 
+  web:
+    build:
+      context: ../web-dashboard
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://ups_user:${POSTGRES_PASSWORD:-change-this-db-password}@postgres:5432/upsmon
+      UPS_AUTH_USERNAME: ${UPS_AUTH_USERNAME:-admin}
+      UPS_AUTH_PASSWORD_HASH: ${UPS_AUTH_PASSWORD_HASH:-}
+      UPS_AUTH_PASSWORD: ${UPS_AUTH_PASSWORD:-}
+      UPS_AUTH_TOKEN: ${UPS_AUTH_TOKEN:-replace-with-a-long-random-session-token}
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      MQTT_USERNAME: ${MQTT_USERNAME:-dashboard}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-change-this-mqtt-password}
+      MQTT_TOPIC: ${MQTT_TOPIC:-building/+/ups/+/telemetry}
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    volumes:
+      - web_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mqtt-worker:
+    build:
+      context: ../web-dashboard
+      dockerfile: Dockerfile.worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://ups_user:${POSTGRES_PASSWORD:-change-this-db-password}@postgres:5432/upsmon
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      MQTT_USERNAME: ${MQTT_USERNAME:-dashboard}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-change-this-mqtt-password}
+      MQTT_TOPIC: ${MQTT_TOPIC:-building/+/ups/+/telemetry}
+      OFFLINE_THRESHOLD_SECS: ${OFFLINE_THRESHOLD_SECS:-60}
+    restart: unless-stopped
+
 volumes:
+  postgres_data:
   mosquitto_data:
   mosquitto_log:
   web_data:
-

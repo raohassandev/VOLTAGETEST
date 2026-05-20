@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <driver/adc.h>
 #include <esp_adc_cal.h>
+#include <esp_system.h>
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Preferences.h>
@@ -16,7 +17,7 @@
 #define ADC_ATTENUATION     ADC_ATTEN_DB_11
 #define ADC_WIDTH           ADC_WIDTH_BIT_12
 
-#define FIRMWARE_VERSION    "0.3.0"
+#define FIRMWARE_VERSION    "0.4.0"
 #define DEFAULT_DEVICE_ID   "UPSMON-UNASSIGNED"
 #define DEFAULT_SITE_ID     "SITE-UNASSIGNED"
 #define DEFAULT_UPS_ID      "UPS-UNASSIGNED"
@@ -29,7 +30,7 @@
 #define DEFAULT_MQTT_PASS   ""
 #define DEFAULT_MQTT_TOPIC  "building/site-01/ups/UPSMON-UNASSIGNED/telemetry"
 #define DEFAULT_OTA_PASS    "ChangeMeOTA123"
-#define MQTT_PUBLISH_MS     500UL
+#define MQTT_PUBLISH_MS     5000UL
 #define WIFI_RETRY_MS       30000UL
 
 /* ==== ADC Channels ==== */
@@ -62,6 +63,7 @@ float VA_Out    = 0;
 
 static uint32_t sampleSrNo = 0;
 static volatile bool valuesUpdated = false;
+static uint32_t mqttSeq = 0;
 
 static hw_timer_t* sampleTimer = nullptr;
 static TaskHandle_t samplerTaskH = nullptr;
@@ -529,6 +531,14 @@ String buildDataJson()
     json += WiFi.RSSI();
     json += F(",\"uptime_ms\":");
     json += millis();
+    json += F(",\"seq\":");
+    json += mqttSeq++;
+    json += F(",\"free_heap\":");
+    json += ESP.getFreeHeap();
+    json += F(",\"mac\":\"");
+    json += WiFi.macAddress();
+    json += F("\",\"reset_reason\":");
+    json += (int)esp_reset_reason();
     json += F("}");
     return json;
 }

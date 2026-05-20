@@ -1,13 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { verifySessionToken } from "@/lib/auth";
+
 export function middleware(request: NextRequest) {
   const sessionToken = request.cookies.get("ups_session")?.value;
-  const expectedToken = process.env.UPS_AUTH_TOKEN;
-  const fallbackToken = process.env.UPS_AUTH_PASSWORD
-    ? undefined
-    : "caca538b41cb5f7c05b8b267cf8772bf0422007cdab9fa1cd8222925e05c19dd";
 
-  if (sessionToken && (sessionToken === expectedToken || sessionToken === fallbackToken)) {
+  if (sessionToken && verifySessionToken(sessionToken)) {
     return NextResponse.next();
   }
 
