@@ -1,0 +1,9 @@
+# Device telemetry topics.
+pattern write building/%u/ups/%u/telemetry
+pattern write building/%u/ups/%u/status
+
+# Dashboard/backend user should be given broader read access in production.
+user dashboard
+topic read building/+/ups/+/telemetry
+topic read building/+/ups/+/status
+
