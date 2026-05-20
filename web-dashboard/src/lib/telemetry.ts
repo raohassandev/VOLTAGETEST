@@ -4,20 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 
 import mqtt from "mqtt";
 
-export type TelemetryKey = "volt_in" | "volt_out" | "volt_dc" | "ct_in" | "ct_out";
-export type MqttStatus = "connecting" | "connected" | "offline" | "error";
+import {
+  initialTelemetry,
+  normalizeTelemetry,
+  telemetryDeviceId,
+  telemetryKeys,
+  type RawTelemetry,
+  type TelemetryKey,
+} from "@/lib/telemetry-types";
 
-export type RawTelemetry = Record<TelemetryKey, number> & {
-  device_id?: string;
-  firmware?: string;
-  ip?: string;
-  rssi?: number;
-  s_in_va?: number;
-  s_out_va?: number;
-  site_id?: string;
-  uptime_ms?: number;
-  ups_id?: string;
-};
+export type MqttStatus = "connecting" | "connected" | "offline" | "error";
+export type { RawTelemetry, TelemetryKey } from "@/lib/telemetry-types";
 
 export type ParameterConfig = {
   label: string;
@@ -87,13 +84,7 @@ export type SystemSettings = {
 
 export const expectedPublishIntervalMs = 500;
 
-export const telemetryKeys: TelemetryKey[] = [
-  "volt_in",
-  "volt_out",
-  "volt_dc",
-  "ct_in",
-  "ct_out",
-];
+export { telemetryKeys } from "@/lib/telemetry-types";
 
 export const defaultConfig: ModuleConfig = {
   moduleName: "UPSMON Fleet",
@@ -108,16 +99,7 @@ export const defaultConfig: ModuleConfig = {
   },
 };
 
-export const initialTelemetry: RawTelemetry = {
-  volt_in: 0,
-  volt_out: 0,
-  volt_dc: 0,
-  ct_in: 0,
-  ct_out: 0,
-  s_in_va: 0,
-  s_out_va: 0,
-  ip: "",
-};
+export { initialTelemetry } from "@/lib/telemetry-types";
 
 export const defaultInventory: UpsInventoryItem[] = [
   {
@@ -182,25 +164,6 @@ function readStoredInventory(): UpsInventoryItem[] {
   } catch {
     return defaultInventory;
   }
-}
-
-function normalizeTelemetry(parsed: Partial<RawTelemetry>): RawTelemetry {
-  return {
-    volt_in: Number(parsed.volt_in ?? 0),
-    volt_out: Number(parsed.volt_out ?? 0),
-    volt_dc: Number(parsed.volt_dc ?? 0),
-    ct_in: Number(parsed.ct_in ?? 0),
-    ct_out: Number(parsed.ct_out ?? 0),
-    device_id: parsed.device_id,
-    firmware: parsed.firmware,
-    ip: parsed.ip ?? "",
-    rssi: Number(parsed.rssi ?? 0),
-    s_in_va: Number(parsed.s_in_va ?? 0),
-    s_out_va: Number(parsed.s_out_va ?? 0),
-    site_id: parsed.site_id,
-    uptime_ms: Number(parsed.uptime_ms ?? 0),
-    ups_id: parsed.ups_id,
-  };
 }
 
 function rowsForTelemetry(telemetry: RawTelemetry, config: ModuleConfig): TelemetryRow[] {
@@ -300,6 +263,49 @@ export function useTelemetry() {
   }, [config]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadLatestTelemetry() {
+      try {
+        const response = await fetch("/api/telemetry/latest", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { latest?: Record<string, RawTelemetry> };
+        if (cancelled || !payload.latest) return;
+
+        const nowDate = new Date();
+        const now = nowDate.toLocaleTimeString();
+        setFleet((current) => {
+          const nextFleet = { ...current };
+
+          Object.entries(payload.latest || {}).forEach(([deviceId, item]) => {
+            const next = normalizeTelemetry(item, item.topic);
+            const deviceRows = rowsForTelemetry(next, config);
+            nextFleet[deviceId] = {
+              alarms: alarmsForRows(deviceRows, now),
+              id: deviceId,
+              lastMessageAt: item.received_at ? new Date(item.received_at).toLocaleTimeString() : now,
+              lastSeenMs: item.received_at ? new Date(item.received_at).getTime() : nowDate.getTime(),
+              rows: deviceRows,
+              telemetry: next,
+            };
+          });
+
+          return nextFleet;
+        });
+      } catch {
+        // Keep browser MQTT path working if server ingestion is not configured.
+      }
+    }
+
+    loadLatestTelemetry();
+    const timer = window.setInterval(loadLatestTelemetry, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [config]);
+
+  useEffect(() => {
     window.localStorage.setItem("ups-inventory", JSON.stringify(inventory));
     if (!inventoryLoaded) return;
 
@@ -367,7 +373,7 @@ export function useTelemetry() {
         const next = normalizeTelemetry(parsed);
         const nowDate = new Date();
         const now = nowDate.toLocaleTimeString();
-        const deviceId = next.device_id || next.ups_id || next.ip || "unassigned-device";
+        const deviceId = telemetryDeviceId(next);
         const deviceRows = rowsForTelemetry(next, config);
         const deviceAlarms = alarmsForRows(deviceRows, now);
         setMessageIntervalMs((current) => {

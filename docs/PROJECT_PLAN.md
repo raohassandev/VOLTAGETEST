@@ -14,6 +14,41 @@ The system must help operators monitor live status, analyze history, identify ab
 
 ## 2. Current State
 
+### Done
+
+- Git branch `professionalization-plan` created and pushed.
+- Project documentation moved to `docs/`.
+- ESP32 firmware moved to `firmware/ups_monitor/ups_monitor.ino`.
+- Firmware `0.3.0` supports device/site/UPS identity provisioning.
+- Firmware MQTT broker/topic/username/password are provisioned, not hardcoded demo credentials.
+- Firmware local web OTA is available at `/update`.
+- Firmware uses calibrated RMS-style foundations for AC voltage/current and DC average for battery.
+- Firmware publishes identity, firmware, RSSI, uptime, and apparent power fields.
+- Dashboard has fixed-credential login and protected routes.
+- Dashboard has fleet summary/table for multiple UPS modules.
+- Dashboard has add/edit/remove UPS inventory.
+- Inventory and manufacturer retention settings are stored through JSON-backed APIs.
+- Deployment skeleton exists for Docker Compose and Mosquitto.
+- Firmware compile, dashboard lint, and dashboard build pass.
+
+### In Progress
+
+- Backend MQTT ingestion: started with `src/lib/mqtt-ingestion.ts`.
+- Server-side latest telemetry/history APIs: started with `/api/telemetry/latest` and `/api/telemetry/history`.
+- Server-side alarm evaluation.
+
+### Pending
+
+- PostgreSQL persistence and migrations.
+- Durable telemetry history and rollups.
+- Individual UPS detail route.
+- Alarm acknowledgment and audit log.
+- Server-controlled fleet OTA.
+- Real active/reactive power, power factor, and energy counters.
+- Notifications by email/SMS/WhatsApp.
+- Production TLS/reverse proxy setup.
+- Role-based multi-user database auth.
+
 ### Firmware
 
 Current file: `firmware/ups_monitor/ups_monitor.ino`
@@ -21,21 +56,18 @@ Current file: `firmware/ups_monitor/ups_monitor.ino`
 The ESP32 currently:
 
 - Samples 5 ADC channels.
-- Calculates simple averaged values for input voltage, output voltage, battery voltage, input CT, and output CT.
+- Calculates calibrated RMS-style AC voltage/current foundations and DC battery average.
 - Hosts a local WiFi configuration page.
 - Supports DHCP/static IP.
-- Publishes JSON telemetry to a public MQTT broker.
+- Publishes JSON telemetry to a configured MQTT broker.
+- Supports local web OTA.
 
 Current limitations:
 
-- Values are demo-calibrated, not production calibrated.
-- AC values are not true RMS.
-- Current is not calibrated to amperes.
+- Field calibration still must be performed per installed UPS.
 - No phase measurement, so active/reactive power and power factor are not reliable yet.
-- No device identity stored in firmware except implicit IP/MAC.
-- MQTT is public and unauthenticated.
-- No OTA firmware update flow.
 - No local buffering when network is down.
+- MQTT Last Will/status topics are not implemented yet.
 
 ### Web Dashboard
 
@@ -43,17 +75,17 @@ Current app: `web-dashboard`
 
 The dashboard currently:
 
-- Connects to MQTT from the browser.
-- Shows one module live.
-- Stores config in browser localStorage.
+- Connects to MQTT from the browser while backend ingestion is being built.
+- Shows a fleet summary and UPS table.
+- Stores inventory and retention settings through JSON-backed APIs.
 - Supports basic thresholds and active alarms.
+- Supports fixed-credential login.
 
 Current limitations:
 
-- No backend database.
-- No users or roles.
-- No multi-UPS inventory.
-- No durable history.
+- No PostgreSQL database.
+- No database-backed users or roles.
+- No durable telemetry history.
 - No server-side alarm engine.
 - No reporting, exports, or audit trail.
 
@@ -455,9 +487,9 @@ OTA requirements:
 ### Milestone 3 - Private MQTT Ingestion
 
 - Deploy Mosquitto. Started with `deployment/docker-compose.yml` and `deployment/mosquitto/`.
-- Add backend MQTT subscriber.
-- Save telemetry into database.
-- Stop browser from connecting directly to device MQTT topics.
+- Add backend MQTT subscriber. Started with JSON-backed ingestion.
+- Save telemetry into database. Pending; current bridge stores latest/history in JSON.
+- Stop browser from connecting directly to device MQTT topics. Pending; dashboard currently supports both server polling and browser MQTT.
 - Use WebSocket/SSE/API polling from backend to dashboard.
 
 ### Milestone 4 - Production Firmware
