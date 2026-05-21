@@ -46,8 +46,8 @@ export async function runRollup(prisma: PrismaClient): Promise<void> {
         AVG("sOutVa")   AS "sOutVaAvg",                                    MAX("sOutVa")   AS "sOutVaMax",
         AVG("rssi")     AS "rssiAvg"
       FROM "TelemetryRaw"
-      WHERE "receivedAt" >= NOW() - INTERVAL '2 hours'
-        AND date_trunc('minute', "receivedAt") < date_trunc('minute', NOW())
+      WHERE "receivedAt" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '2 hours'
+        AND date_trunc('minute', "receivedAt") < date_trunc('minute', NOW() AT TIME ZONE 'UTC')
       GROUP BY "deviceId", date_trunc('minute', "receivedAt")
     `;
   } catch (err) {
