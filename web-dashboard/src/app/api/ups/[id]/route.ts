@@ -36,6 +36,24 @@ export async function GET(
   const device = unit.devices[0];
   const tl = device?.telemetryLatest;
 
+  const rj = tl?.rawJson as Record<string, unknown> | undefined;
+  const commissioning = rj
+    ? {
+        seq: typeof rj.seq === "number" ? rj.seq : null,
+        freeHeap: typeof rj.free_heap === "number" ? rj.free_heap : null,
+        resetReason: typeof rj.reset_reason === "string" ? rj.reset_reason || null : null,
+        mqttConnected: typeof rj.mqtt_connected === "boolean" ? rj.mqtt_connected : null,
+        wifiMode: typeof rj.wifi_mode === "string" ? rj.wifi_mode || null : null,
+        configMode: typeof rj.config_mode === "boolean" ? rj.config_mode : null,
+        setupApEnabled: typeof rj.setup_ap_enabled === "boolean" ? rj.setup_ap_enabled : null,
+        building: typeof rj.building === "string" ? rj.building || null : null,
+        floor: typeof rj.floor === "string" ? rj.floor || null : null,
+        section: typeof rj.section === "string" ? rj.section || null : null,
+        workArea: typeof rj.work_area === "string" ? rj.work_area || null : null,
+        location: typeof rj.location === "string" ? rj.location || null : null,
+      }
+    : null;
+
   return NextResponse.json({
     unit: {
       id: unit.id,
@@ -80,6 +98,7 @@ export async function GET(
           eOutKwh: null,
         }
       : null,
+    commissioning,
     activeAlarms: device?.alarms ?? [],
     alarmHistory: unit.alarms,
   });

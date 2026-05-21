@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowLeft, BatteryCharging, Cpu, Gauge, RefreshCw, ShieldCheck, Wifi, WifiOff } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BatteryCharging, Cpu, Gauge, MapPin, Radio, RefreshCw, ShieldCheck, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -42,6 +42,20 @@ interface UpsDetail {
     pfOut: null;
     eInKwh: null;
     eOutKwh: null;
+  } | null;
+  commissioning: {
+    seq: number | null;
+    freeHeap: number | null;
+    resetReason: string | null;
+    mqttConnected: boolean | null;
+    wifiMode: string | null;
+    configMode: boolean | null;
+    setupApEnabled: boolean | null;
+    building: string | null;
+    floor: string | null;
+    section: string | null;
+    workArea: string | null;
+    location: string | null;
   } | null;
   activeAlarms: AlarmRecord[];
   alarmHistory: AlarmRecord[];
@@ -218,7 +232,7 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
     );
   }
 
-  const { unit, device, telemetry, activeAlarms, alarmHistory } = detail;
+  const { unit, device, telemetry, commissioning, activeAlarms, alarmHistory } = detail;
   const online = device?.online ?? false;
   const loadPct = telemetry?.loadPct;
 
@@ -314,12 +328,14 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
                 ["Serial", unit.serial || "--"],
                 ["Capacity", unit.capacityVa ? `${unit.capacityVa.toLocaleString()} VA` : "--"],
                 ["Battery nominal", unit.batteryNominalV ? `${unit.batteryNominalV} V` : "--"],
-                ["RSSI", telemetry?.rssi !== null ? `${telemetry?.rssi} dBm` : "--"],
+                ["RSSI", telemetry?.rssi !== null && telemetry?.rssi !== undefined ? `${telemetry.rssi} dBm` : "--"],
                 ["Last seen", device?.lastSeenAt ? new Date(device.lastSeenAt).toLocaleString() : "--"],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between border-b border-slate-100 pb-1.5">
                   <span className="text-slate-500">{label}</span>
-                  <span className="font-semibold">{value}</span>
+                  <span className={`font-semibold ${label === "RSSI" && telemetry?.rssi !== null && (telemetry?.rssi ?? 0) < -75 ? "text-amber-600" : ""}`}>
+                    {value}
+                  </span>
                 </div>
               ))}
             </dl>
@@ -345,6 +361,60 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
             >
               {notesSaving ? "Saving…" : "Save notes"}
             </button>
+          </section>
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <Radio size={18} className="text-slate-500" />
+              <h2 className="text-lg font-semibold">Commissioning status</h2>
+            </div>
+            {!commissioning ? (
+              <p className="text-sm text-slate-400">No telemetry received yet.</p>
+            ) : (
+              <dl className="grid gap-2 text-sm">
+                {([
+                  ["WiFi mode", commissioning.wifiMode ?? "—"],
+                  ["Config mode", commissioning.configMode === true ? "ACTIVE" : commissioning.configMode === false ? "No" : "—", commissioning.configMode === true],
+                  ["Setup AP enabled", commissioning.setupApEnabled === true ? "YES" : commissioning.setupApEnabled === false ? "No" : "—", commissioning.setupApEnabled === true],
+                  ["MQTT connected", commissioning.mqttConnected === true ? "Yes" : commissioning.mqttConnected === false ? "No" : "—"],
+                  ["Seq", commissioning.seq !== null ? String(commissioning.seq) : "—"],
+                  ["Free heap", commissioning.freeHeap !== null ? `${(commissioning.freeHeap / 1024).toFixed(0)} KB` : "—"],
+                  ["Reset reason", commissioning.resetReason ?? "—"],
+                ] as [string, string, boolean?][]).map(([label, value, highlight]) => (
+                  <div key={label} className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500">{label}</span>
+                    <span className={`font-semibold ${highlight ? "text-amber-600" : ""}`}>{value}</span>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <MapPin size={18} className="text-slate-500" />
+              <h2 className="text-lg font-semibold">Physical location</h2>
+            </div>
+            {!commissioning ? (
+              <p className="text-sm text-slate-400">No telemetry received yet.</p>
+            ) : (
+              <dl className="grid gap-2 text-sm">
+                {([
+                  ["Building", commissioning.building ?? "—"],
+                  ["Floor", commissioning.floor ?? "—"],
+                  ["Section", commissioning.section ?? "—"],
+                  ["Work area", commissioning.workArea ?? "—"],
+                  ["Location", commissioning.location ?? "—"],
+                ] as [string, string][]).map(([label, value]) => (
+                  <div key={label} className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500">{label}</span>
+                    <span className="font-semibold">{value}</span>
+                  </div>
+                ))}
+              </dl>
+            )}
           </section>
         </div>
 
