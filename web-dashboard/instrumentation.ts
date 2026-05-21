@@ -1,3 +1,9 @@
+const PLACEHOLDER_SECRETS: [string, string][] = [
+  ["UPS_AUTH_TOKEN", "replace-with-a-long-random-session-token"],
+  ["POSTGRES_PASSWORD", "change-this-db-password"],
+  ["MQTT_PASSWORD", "change-this-mqtt-password"],
+];
+
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const isProduction = process.env.NODE_ENV === "production";
@@ -7,6 +13,16 @@ export async function register() {
     const allowDevAuth = process.env.ALLOW_DEV_AUTH === "true";
 
     if (isProduction) {
+      // Refuse startup if any placeholder secret is still in use.
+      for (const [name, placeholder] of PLACEHOLDER_SECRETS) {
+        if (process.env[name] === placeholder) {
+          throw new Error(
+            `[startup] FATAL: ${name} is still set to the placeholder value "${placeholder}". ` +
+            `Replace it with a real secret before running in production.`,
+          );
+        }
+      }
+
       if (!hasToken) {
         console.error("[auth] FATAL: UPS_AUTH_TOKEN is not set. Login will be blocked in production.");
       }

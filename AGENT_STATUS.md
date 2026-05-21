@@ -41,7 +41,7 @@
 - `instrumentation.ts` logs FATAL on startup if production secrets missing
 
 ### Phase G — Docker deployment — OPEN (Docker not installed)
-- `Dockerfile` fixed: removed `|| true` from migration command (migration failure now stops startup)
+- `Dockerfile` fixed: removed `|| true` from migration command (commit `9bbc9b7`)
 - `docker-compose.yml`, `Dockerfile.worker` reviewed — correct
 - Cannot execute without Docker Desktop
 
@@ -72,32 +72,45 @@ Board:      online, firmware 0.5.2, RSSI -62 dBm
 
 ---
 
-## Blocker Fixes Applied This Session
+## Blocker Fixes Applied
 
-### Blocker 2 — Mosquitto files (PASS)
+### Blocker 2 — Mosquitto files (PASS — commit `9bbc9b7`)
 - Created `deployment/mosquitto/acl` with proper device/dashboard ACL rules
 - Created `deployment/mosquitto/mosquitto.dev.conf` for local dev (anonymous)
 - Created `deployment/mosquitto/setup-passwords.sh` for production password generation
 - Fixed `.gitignore`: `acl` no longer ignored; `deployment/backups/` now ignored
 
-### Blocker 4 — Dashboard data consistency (PASS)
+### Blocker 4 — Dashboard data consistency (PASS — commit `9bbc9b7`)
 - Removed `MiniGauge` cards (showed single MQTT device, could show "0 V")
-- Removed `TrendChart` (used in-memory browser MQTT history, showed "Waiting for live MQTT telemetry")
-- Removed "Current transformers" and "System status" panels (single-device MQTT data)
+- Removed `TrendChart` (used in-memory browser MQTT history)
+- Removed "Current transformers" and "System status" panels
 - `UserAlarmPanel` now fed from `fleetDevices.flatMap(d => d.alarms)` — fleet-wide API data
 - Header alarm badge consistent with fleet alarms
-- Fixed `src/app/layout.tsx`: removed Google Fonts dependency (build failed without internet access)
+- Fixed `src/app/layout.tsx`: removed Google Fonts dependency
 
-### Blocker 5 — Alarm correctness (PASS)
+### Blocker 4b — Browser MQTT removed (PASS — pending commit)
+- Removed `import mqtt from "mqtt"` from `web-dashboard/src/lib/telemetry.ts`
+- Removed `mqtt.connect(...)` browser MQTT connection entirely
+- Removed HiveMQ `wss://broker.hivemq.com:8884/mqtt` default from `defaultConfig`
+- Fleet data now exclusively from `/api/telemetry/latest` (polled every 5 s)
+- Header badge replaced: was "MQTT online/Connecting" → now "API online/API error/API unknown"
+- Badge driven by `/api/health` polling (every 30 s), not browser MQTT state
+- `expectedPublishIntervalMs` corrected: 500 → 5000 ms
+
+### Blocker 5 — Alarm correctness (PASS — commit `9bbc9b7`)
 - `alarm-engine.ts`: Added `debounceSeconds` and `hysteresisPercent` to `ThresholdCheck`; per-rule values from AlarmRule DB now used per metric
 - `mqtt-worker.ts`: Removed use of `offlineThresholdSecs` as alarm debounce; separate `FALLBACK_DEBOUNCE_SECS=30` constant used instead
 
-### Blocker 6 — Backup and restore (PASS)
+### Blocker 6 — Backup and restore (PASS — commit `9bbc9b7`)
 ```
 Command: bash deployment/scripts/backup.sh
 Output:  [backup] Done: deployment/backups/upsmon_20260521_173409.sql.gz (281K)
 No credentials in output.
 ```
+
+### Blocker 9 — Production placeholder secret guard (PASS — pending commit)
+- `instrumentation.ts` now throws on startup if `UPS_AUTH_TOKEN`, `POSTGRES_PASSWORD`, or `MQTT_PASSWORD` contain known placeholder values
+- Hard `throw new Error(...)` (not just console.error) — process crashes, container will not start
 
 ---
 
@@ -123,7 +136,9 @@ See `SHIP_BLOCKERS.md` for full evidence log.
 
 ## Commit History (this branch)
 ```
-pending  Fix alarm debounce, fleet page data consistency, mosquitto files, Dockerfile
+pending  Remove browser MQTT, add API health badge, fix publish interval, placeholder secret guard
+9bbc9b7  Fix blockers 2/4/5/6/7: alarm engine, fleet page, mosquitto, Dockerfile, burn-in
+4f396f1  chore: add agent status report
 7a5c0ec  Add calibration guide and release package (Phases H + I)
 01a50b5  Harden dashboard authentication defaults (Phase F)
 fda4611  feat(alarms): configurable alarm rule overrides with scope resolution (Phase E)

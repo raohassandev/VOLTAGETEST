@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Activity,
   AlertTriangle,
   Bell,
   BellOff,
@@ -9,8 +10,8 @@ import {
   LayoutList,
   Settings,
   ShieldCheck,
-  Wifi,
   Volume2,
+  Wifi,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -334,7 +335,7 @@ function ManufacturerSettings({
 }
 
 export default function Home() {
-  const { fleetDevices, mqttStatus, parseError, setSystemSettings, systemSettings } =
+  const { fleetDevices, apiStatus, setSystemSettings, systemSettings } =
     useTelemetry();
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -362,8 +363,8 @@ export default function Home() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2 text-sm">
-              <span className={`flex items-center gap-2 rounded-md px-3 py-2 font-semibold ${mqttStatus === "connected" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-                <Wifi size={16} /> {mqttStatus === "connected" ? "MQTT online" : "Connecting…"}
+              <span className={`flex items-center gap-2 rounded-md px-3 py-2 font-semibold ${apiStatus === "ok" ? "bg-emerald-50 text-emerald-700" : apiStatus === "degraded" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+                <Activity size={16} /> {apiStatus === "ok" ? "API online" : apiStatus === "degraded" ? "API error" : "API unknown"}
               </span>
               <span className={`flex items-center gap-2 rounded-md px-3 py-2 font-semibold ${fleetAlarms.length ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-700"}`}>
                 <AlertTriangle size={16} /> {fleetAlarms.length} alarms
@@ -388,12 +389,6 @@ export default function Home() {
 
         <FleetSummary devices={fleetDevices} nowMs={nowMs} />
         <FleetTable devices={fleetDevices} nowMs={nowMs} />
-
-        {parseError ? (
-          <section className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
-            Live data is temporarily unavailable.
-          </section>
-        ) : null}
 
         <UserAlarmPanel alarms={fleetAlarms} />
 

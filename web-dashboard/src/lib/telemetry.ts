@@ -2,18 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import mqtt from "mqtt";
-
 import {
-  initialTelemetry,
   normalizeTelemetry,
-  telemetryDeviceId,
   telemetryKeys,
   type RawTelemetry,
   type TelemetryKey,
 } from "@/lib/telemetry-types";
 
-export type MqttStatus = "connecting" | "connected" | "offline" | "error";
+export type ApiStatus = "ok" | "degraded" | "unknown";
 export type { RawTelemetry, TelemetryKey } from "@/lib/telemetry-types";
 
 export type ParameterConfig = {
@@ -28,7 +24,6 @@ export type ParameterConfig = {
 
 export type ModuleConfig = {
   moduleName: string;
-  brokerUrl: string;
   topic: string;
   parameters: Record<TelemetryKey, ParameterConfig>;
 };
@@ -82,13 +77,12 @@ export type SystemSettings = {
   alarmRetentionMonths: number;
 };
 
-export const expectedPublishIntervalMs = 500;
+export const expectedPublishIntervalMs = 5000;
 
 export { telemetryKeys } from "@/lib/telemetry-types";
 
 export const defaultConfig: ModuleConfig = {
   moduleName: "UPSMON Fleet",
-  brokerUrl: "wss://broker.hivemq.com:8884/mqtt",
   topic: "building/site-01/ups/+/telemetry",
   parameters: {
     volt_in: { label: "Input Voltage", unit: "V", scale: 1, offset: 0, low: 180, high: 250, enabled: true },
@@ -195,14 +189,8 @@ export function useTelemetry() {
   const [inventoryLoaded, setInventoryLoaded] = useState(false);
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(defaultSystemSettings);
   const [systemSettingsLoaded, setSystemSettingsLoaded] = useState(false);
-  const [telemetry, setTelemetry] = useState<RawTelemetry>(initialTelemetry);
   const [fleet, setFleet] = useState<Record<string, FleetDevice>>({});
-  const [history, setHistory] = useState<HistoryPoint[]>([]);
-  const [lastMessageAt, setLastMessageAt] = useState("");
-  const [lastPayload, setLastPayload] = useState("");
-  const [messageIntervalMs, setMessageIntervalMs] = useState<number | null>(null);
-  const [mqttStatus, setMqttStatus] = useState<MqttStatus>("offline");
-  const [parseError, setParseError] = useState("");
+  const [apiStatus, setApiStatus] = useState<ApiStatus>("unknown");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -293,7 +281,7 @@ export function useTelemetry() {
           return nextFleet;
         });
       } catch {
-        // Keep browser MQTT path working if server ingestion is not configured.
+        // API unreachable — fleet state unchanged until next poll.
       }
     }
 
@@ -346,81 +334,26 @@ export function useTelemetry() {
 
   useEffect(() => {
     let cancelled = false;
-    const statusTimer = window.setTimeout(() => {
-      setMqttStatus("connecting");
-      setParseError("");
-    }, 0);
 
-    const client = mqtt.connect(config.brokerUrl, {
-      clientId: `voltagetest-web-${Math.random().toString(16).slice(2)}`,
-      clean: true,
-      connectTimeout: 7000,
-      reconnectPeriod: 3000,
-    });
-
-    client.on("connect", () => {
-      if (cancelled) return;
-      setMqttStatus("connected");
-      client.subscribe(config.topic, { qos: 0 });
-    });
-    client.on("reconnect", () => !cancelled && setMqttStatus("connecting"));
-    client.on("offline", () => !cancelled && setMqttStatus("offline"));
-    client.on("error", () => !cancelled && setMqttStatus("error"));
-    client.on("message", (_topic, payload) => {
+    async function pollHealth() {
       try {
-        const payloadText = payload.toString();
-        const parsed = JSON.parse(payloadText) as Partial<RawTelemetry>;
-        const next = normalizeTelemetry(parsed);
-        const nowDate = new Date();
-        const now = nowDate.toLocaleTimeString();
-        const deviceId = telemetryDeviceId(next);
-        const deviceRows = rowsForTelemetry(next, config);
-        const deviceAlarms = alarmsForRows(deviceRows, now);
-        setMessageIntervalMs((current) => {
-          const previous = Number(window.sessionStorage.getItem("voltagetest-last-message-ms"));
-          window.sessionStorage.setItem("voltagetest-last-message-ms", String(nowDate.getTime()));
-          return previous ? nowDate.getTime() - previous : current;
-        });
-        setTelemetry(next);
-        setFleet((current) => ({
-          ...current,
-          [deviceId]: {
-            alarms: deviceAlarms,
-            id: deviceId,
-            lastMessageAt: now,
-            lastSeenMs: nowDate.getTime(),
-            rows: deviceRows,
-            telemetry: next,
-          },
-        }));
-        setLastMessageAt(now);
-        setLastPayload(payloadText);
-        setParseError("");
-        setHistory((current) => [
-          ...current.slice(-35),
-          { time: now, ...next },
-        ]);
+        const res = await fetch("/api/health", { cache: "no-store" });
+        if (!cancelled) {
+          const body = (await res.json()) as { status?: string };
+          setApiStatus(body.status === "ok" ? "ok" : "degraded");
+        }
       } catch {
-        setParseError("Received MQTT message was not valid JSON.");
+        if (!cancelled) setApiStatus("degraded");
       }
-    });
+    }
 
+    pollHealth();
+    const timer = window.setInterval(pollHealth, 30_000);
     return () => {
       cancelled = true;
-      window.clearTimeout(statusTimer);
-      client.end(true);
+      window.clearInterval(timer);
     };
-  }, [config]);
-
-  const rows = useMemo<TelemetryRow[]>(
-    () => rowsForTelemetry(telemetry, config),
-    [config, telemetry],
-  );
-
-  const alarms = useMemo<Alarm[]>(
-    () => alarmsForRows(rows, lastMessageAt),
-    [lastMessageAt, rows],
-  );
+  }, []);
 
   const fleetDevices = useMemo(
     () =>
@@ -440,21 +373,13 @@ export function useTelemetry() {
   );
 
   return {
-    alarms,
+    apiStatus,
     config,
     fleetDevices,
-    history,
     inventory,
-    lastMessageAt,
-    lastPayload,
-    messageIntervalMs,
-    mqttStatus,
-    parseError,
-    rows,
     setConfig,
     setInventory,
     setSystemSettings,
     systemSettings,
-    telemetry,
   };
 }
