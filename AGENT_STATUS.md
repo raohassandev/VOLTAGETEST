@@ -74,25 +74,25 @@ Board:      online, firmware 0.5.2, RSSI -62 dBm
 
 ## P0 Demo Blocker Fixes
 
-### P0.1 — volt_dc alarm engine calibration (PASS — pending commit)
+### P0.1 — volt_dc alarm engine calibration (PASS — 1dbc381)
 - **Root cause confirmed:** Firmware sends raw 12-bit ADC counts (≈556) for `volt_dc` with NVS default scale=1.0. Alarm engine compared 556 against voltage thresholds (e.g. 57.024 V), always triggering CRITICAL.
 - **Fix (`worker/mqtt-worker.ts`):** `runAlarmEvaluation()` now queries `CalibrationProfile` for the device. If no row exists, applies `VOLT_DC_DEFAULT_SCALE = 0.0442` (matches frontend `defaultConfig`). Calibrated value (`raw_adc × 0.0442 ≈ 24.6 V`) is passed to `evaluateAlarms` — within normal 48 V battery thresholds.
 
-### P0.2 — Duplicate active alarm rows (PASS — pending commit)
+### P0.2 — Duplicate active alarm rows (PASS — 1dbc381)
 - **Root cause:** `evaluateAlarms()` used `findFirst` + `update/create` — race condition between multiple worker instances created duplicate rows. `debounceMap` reset on restart also caused burst creation.
 - **Fix (`src/lib/alarm-engine.ts`):** Replaced `findFirst` + `update/create` with `updateMany` + conditional `create`. Clearing loop now uses `distinct: ["metric"]` + `updateMany` to collapse all duplicates in one pass.
 - **Startup dedup (`worker/mqtt-worker.ts`):** Added `deduplicateActiveAlarms()` — runs 5 s after startup, deletes all but the newest active alarm per (deviceId, metric) group.
 
-### P0.3 — Board IP in fleet table (PASS — pending commit)
+### P0.3 — Board IP in fleet table (PASS — 1dbc381)
 - **Fix (`src/app/page.tsx` FleetTable):** Added "Board IP" column after RSSI. Shows `device.telemetry.ip` as clickable `http://<ip>/` link with Config / Data / OTA sub-links. Shows "—" when no IP.
 
-### P0.4 — Board portal button on UPS detail (PASS — pending commit)
+### P0.4 — Board portal button on UPS detail (PASS — 1dbc381)
 - **Fix (`src/app/ups/[id]/page.tsx`):** Replaced plain-text "IP Address" row with portal action buttons: "Open portal", "Config", "OTA" — each a styled `<a>` tag. Falls back to "—" when `device.ip` is null.
 
-### P0.5 — Alarm rule UPS-scope UX (PASS — pending commit)
+### P0.5 — Alarm rule UPS-scope UX (PASS — 1dbc381)
 - **Fix (`src/app/admin/alarm-rules/page.tsx`):** Fetches `/api/ups` on mount. When scope = "ups", renders a `<select>` dropdown showing `upsId — name` labels but submitting the internal DB cuid. Removes the need for users to know the database ID.
 
-### Fleet alarms — server alarm sourcing (PASS — pending commit)
+### Fleet alarms — server alarm sourcing (PASS — 1dbc381)
 - **Fix (`src/lib/telemetry.ts`):** Added `ServerAlarm` type and 15 s poll of `/api/alarms?state=active`.
 - **Fix (`src/app/page.tsx`):** Header badge count, `FleetSummary` alarming count, FleetTable per-device status, and `UserAlarmPanel` all now driven by server alarms from the DB alarm engine. Browser-computed alarm thresholds no longer shown in the UI.
 
@@ -114,7 +114,7 @@ Board:      online, firmware 0.5.2, RSSI -62 dBm
 - Header alarm badge consistent with fleet alarms
 - Fixed `src/app/layout.tsx`: removed Google Fonts dependency
 
-### Blocker 4b — Browser MQTT removed (PASS — pending commit)
+### Blocker 4b — Browser MQTT removed (PASS — 1dbc381)
 - Removed `import mqtt from "mqtt"` from `web-dashboard/src/lib/telemetry.ts`
 - Removed `mqtt.connect(...)` browser MQTT connection entirely
 - Removed HiveMQ `wss://broker.hivemq.com:8884/mqtt` default from `defaultConfig`
@@ -134,7 +134,7 @@ Output:  [backup] Done: deployment/backups/upsmon_20260521_173409.sql.gz (281K)
 No credentials in output.
 ```
 
-### Blocker 9 — Production placeholder secret guard (PASS — pending commit)
+### Blocker 9 — Production placeholder secret guard (PASS — 1dbc381)
 - `instrumentation.ts` now throws on startup if `UPS_AUTH_TOKEN`, `POSTGRES_PASSWORD`, or `MQTT_PASSWORD` contain known placeholder values
 - Hard `throw new Error(...)` (not just console.error) — process crashes, container will not start
 

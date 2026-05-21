@@ -25,11 +25,11 @@
 
 | # | Finding | File | Severity | Status |
 |---|---------|------|----------|--------|
-| 1 | **volt_dc alarm bug**: Alarm compares raw ADC value (556.7) against voltage threshold (57.024V). Every board will show "Battery Voltage critically high: 556.7" — incorrect and confusing to any observer. | alarm-engine.ts / mqtt-worker.ts | BLOCKER | **FIXED** — pending commit. Worker now applies 0.0442 scale (CalibrationProfile or default) to volt_dc before alarm evaluation. |
-| 2 | **No board IP in fleet table**: Device IP is available in API (/api/devices) but not shown in the fleet table. Operator cannot see which device is at which address from the main view. | page.tsx FleetTable | BLOCKER | **FIXED** — pending commit. "Board IP" column added with clickable link and Config/Data/OTA sub-links. |
-| 3 | **No board portal button**: Board IP shown as plain text in UPS detail device info. No clickable link to open the board's web portal at http://\<ip\>/. | ups/[id]/page.tsx | BLOCKER | **FIXED** — pending commit. "Open portal", "Config", "OTA" buttons added in Device info section. |
-| 4 | **Alarm rule UPS-scope requires DB cuid**: Creating a rule scoped to a specific UPS requires entering the internal database cuid (e.g., cmpfc1po2001311w6r6dtc2mq), not the user-visible UPS ID (e.g., UPS-COM11-TEST). Normal users cannot use this feature. | admin/alarm-rules/page.tsx:204 | BLOCKER | **FIXED** — pending commit. UPS-scope input replaced with dropdown populated from /api/ups. |
-| 5 | **Duplicate active alarm rows**: Multiple active volt_dc alarms per device with the same firstSeenAt — alarm list appears cluttered and incorrect. | DB / alarm-engine.ts | HIGH | **FIXED** — pending commit. alarm-engine uses updateMany; startup dedup cleans existing rows. |
+| 1 | **volt_dc alarm bug**: Alarm compares raw ADC value (556.7) against voltage threshold (57.024V). Every board will show "Battery Voltage critically high: 556.7" — incorrect and confusing to any observer. | alarm-engine.ts / mqtt-worker.ts | BLOCKER | **FIXED** — 1dbc381. Worker now applies 0.0442 scale (CalibrationProfile or default) to volt_dc before alarm evaluation. |
+| 2 | **No board IP in fleet table**: Device IP is available in API (/api/devices) but not shown in the fleet table. Operator cannot see which device is at which address from the main view. | page.tsx FleetTable | BLOCKER | **FIXED** — 1dbc381. "Board IP" column added with clickable link and Config/Data/OTA sub-links. |
+| 3 | **No board portal button**: Board IP shown as plain text in UPS detail device info. No clickable link to open the board's web portal at http://\<ip\>/. | ups/[id]/page.tsx | BLOCKER | **FIXED** — 1dbc381. "Open portal", "Config", "OTA" buttons added in Device info section. |
+| 4 | **Alarm rule UPS-scope requires DB cuid**: Creating a rule scoped to a specific UPS requires entering the internal database cuid (e.g., cmpfc1po2001311w6r6dtc2mq), not the user-visible UPS ID (e.g., UPS-COM11-TEST). Normal users cannot use this feature. | admin/alarm-rules/page.tsx:204 | BLOCKER | **FIXED** — 1dbc381. UPS-scope input replaced with dropdown populated from /api/ups. |
+| 5 | **Duplicate active alarm rows**: Multiple active volt_dc alarms per device with the same firstSeenAt — alarm list appears cluttered and incorrect. | DB / alarm-engine.ts | HIGH | **FIXED** — 1dbc381. alarm-engine uses updateMany; startup dedup cleans existing rows. |
 
 ---
 
@@ -65,6 +65,6 @@
 
 | Gate | Status | Reason |
 |------|--------|--------|
-| Demo | **YES** (all P0 blockers fixed, pending commit) | volt_dc alarm fixed, board IP shown, portal buttons added, alarm rule UX fixed, duplicate alarms resolved |
+| Demo | **YES** (all P0 blockers fixed, 1dbc381) | volt_dc alarm fixed, board IP shown, portal buttons added, alarm rule UX fixed, duplicate alarms resolved |
 | Field pilot | NO | Docker not tested; P1 gaps unresolved (trend chart, responsive tables, rule edit) |
 | Production | NO | Docker and Docker MQTT not proven; user management missing; P2 gaps unresolved |

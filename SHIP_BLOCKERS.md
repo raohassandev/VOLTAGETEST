@@ -282,7 +282,7 @@ Required files status:
 
 ## Blocker 10 — volt_dc alarm calibration
 
-**Status: PASS (pending commit)**
+**Status: PASS (1dbc381)**
 
 **Root cause:** ESP32 firmware v0.5.2 publishes `volt_dc` as raw 12-bit ADC counts (≈556) when NVS calibration defaults to scale=1.0/offset=0. The alarm engine compared 556 against voltage thresholds derived from `batteryNominalV × 1.188 = 57.024 V`, triggering a permanent false CRITICAL alarm.
 
@@ -298,7 +298,7 @@ Required files status:
 
 ## Blocker 11 — Duplicate active alarm rows
 
-**Status: PASS (pending commit)**
+**Status: PASS (1dbc381)**
 
 **Root cause:** Three concurrent worker processes (started from previous debug sessions) all evaluated alarms simultaneously. Each called `findFirst` (all found no existing alarm), then all called `create`, producing 3–4 duplicate active rows. In-memory `debounceMap` was also cleared on worker restart, causing burst creation.
 
@@ -310,7 +310,7 @@ Required files status:
 
 ## Blocker 12 — Board IP not shown in fleet
 
-**Status: PASS (pending commit)**
+**Status: PASS (1dbc381)**
 
 **Fix:** `src/app/page.tsx` FleetTable: Added "Board IP" column showing `device.telemetry.ip` (already returned by `/api/telemetry/latest`). IP is a clickable link to `http://<ip>/` with Config, Data, OTA sub-links. Shows "—" when IP is empty or absent.
 
@@ -318,7 +318,7 @@ Required files status:
 
 ## Blocker 13 — No board portal button on UPS detail
 
-**Status: PASS (pending commit)**
+**Status: PASS (1dbc381)**
 
 **Fix:** `src/app/ups/[id]/page.tsx`: Replaced the plain-text "IP Address" row in Device info with portal action buttons: "Open portal", "Config", "OTA" (all `<a target="_blank">` links). Falls back to "—" when `device.ip` is null.
 
@@ -326,7 +326,7 @@ Required files status:
 
 ## Blocker 14 — Alarm rule UPS-scope requires DB cuid
 
-**Status: PASS (pending commit)**
+**Status: PASS (1dbc381)**
 
 **Fix:** `src/app/admin/alarm-rules/page.tsx`:
 - On mount, fetches `/api/ups` and stores the list as `upsList: UpsListItem[]`.
@@ -350,8 +350,8 @@ Required files status:
 | 7 — Burn-in 2h | PASS | `9bbc9b7` |
 | 8 — Release readiness | IN PROGRESS | pending Blockers 1+3 |
 | 9 — Production placeholder secret guard | PASS | `9aaadc6` |
-| 10 — volt_dc alarm calibration | PASS | pending commit |
-| 11 — Duplicate active alarm rows | PASS | pending commit |
-| 12 — Board IP not shown in fleet | PASS | pending commit |
-| 13 — No board portal button on UPS detail | PASS | pending commit |
-| 14 — Alarm rule UPS-scope UX | PASS | pending commit |
+| 10 — volt_dc alarm calibration | PASS | 1dbc381 |
+| 11 — Duplicate active alarm rows | PASS | 1dbc381 |
+| 12 — Board IP not shown in fleet | PASS | 1dbc381 |
+| 13 — No board portal button on UPS detail | PASS | 1dbc381 |
+| 14 — Alarm rule UPS-scope UX | PASS | 1dbc381 |
