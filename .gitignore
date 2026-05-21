@@ -15,3 +15,5 @@ deployment/backups/
 
 .DS_Store
 Thumbs.db
+
+firmware/ups_monitor/build/
