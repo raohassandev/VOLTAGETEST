@@ -6,6 +6,7 @@ export type AlarmState = "active" | "cleared";
 export interface TelemetrySnapshot {
   deviceId: string;
   upsId?: string;
+  upsUnitId?: string;
   siteId?: string;
   voltIn: number;
   voltOut: number;
@@ -67,6 +68,93 @@ const DEFAULT_THRESHOLDS: ThresholdCheck[] = [
   },
 ];
 
+async function resolveThresholds(
+  prisma: PrismaClient,
+  snap: TelemetrySnapshot,
+  batteryNominalV: number,
+  capacityVa: number,
+): Promise<ThresholdCheck[]> {
+  // Load all enabled rules that could apply to this device context.
+  const dbRules = await prisma.alarmRule.findMany({
+    where: {
+      enabled: true,
+      OR: [
+        { deviceId: snap.deviceId },
+        ...(snap.upsUnitId ? [{ upsUnitId: snap.upsUnitId, deviceId: null }] : []),
+        ...(snap.siteId ? [{ siteId: snap.siteId, upsUnitId: null, deviceId: null }] : []),
+        { deviceId: null, upsUnitId: null, siteId: null },
+      ],
+    },
+  });
+
+  // Compute priority: device=3, ups=2, site=1, global=0
+  const priority = (r: (typeof dbRules)[0]) => {
+    if (r.deviceId) return 3;
+    if (r.upsUnitId) return 2;
+    if (r.siteId) return 1;
+    return 0;
+  };
+
+  // Build metric → best rule map
+  const bestRule = new Map<string, (typeof dbRules)[0]>();
+  for (const rule of dbRules) {
+    const existing = bestRule.get(rule.metric);
+    if (!existing || priority(rule) > priority(existing)) {
+      bestRule.set(rule.metric, rule);
+    }
+  }
+
+  // Merge DB overrides into hardcoded defaults
+  const hardcoded = new Map<string, ThresholdCheck>(DEFAULT_THRESHOLDS.map((t) => [t.metric, t]));
+
+  const resolved: ThresholdCheck[] = [];
+  const allMetrics = new Set([...hardcoded.keys(), ...bestRule.keys()]);
+
+  for (const metric of allMetrics) {
+    const db = bestRule.get(metric);
+    const hard = hardcoded.get(metric);
+    if (db) {
+      resolved.push({
+        metric,
+        label: db.label,
+        value: 0,
+        lowCritical: db.lowCritical ?? hard?.lowCritical,
+        lowWarning: db.lowWarning ?? hard?.lowWarning,
+        highWarning: db.highWarning ?? hard?.highWarning,
+        highCritical: db.highCritical ?? hard?.highCritical,
+      });
+    } else if (hard) {
+      resolved.push({ ...hard });
+    }
+  }
+
+  // Battery threshold (volt_dc) - use DB override or compute from nominal
+  const dcDb = bestRule.get("volt_dc");
+  if (!resolved.find((r) => r.metric === "volt_dc")) {
+    resolved.push(dcDb
+      ? { metric: "volt_dc", label: dcDb.label, value: 0,
+          lowCritical: dcDb.lowCritical ?? undefined,
+          lowWarning: dcDb.lowWarning ?? undefined,
+          highWarning: dcDb.highWarning ?? undefined,
+          highCritical: dcDb.highCritical ?? undefined }
+      : buildBatteryThresholds(batteryNominalV));
+  }
+
+  // Load percent
+  if (capacityVa > 0) {
+    const loadDb = bestRule.get("load_percent");
+    if (!resolved.find((r) => r.metric === "load_percent")) {
+      resolved.push(loadDb
+        ? { metric: "load_percent", label: loadDb.label, value: 0,
+            highWarning: loadDb.highWarning ?? 80,
+            highCritical: loadDb.highCritical ?? 95 }
+        : { metric: "load_percent", label: "Output Load", value: 0, highWarning: 80, highCritical: 95 });
+    }
+  }
+
+  return resolved;
+}
+
 function buildBatteryThresholds(nominalV: number): ThresholdCheck {
   return {
     metric: "volt_dc",
@@ -126,27 +214,20 @@ export async function evaluateAlarms(
   debounceSeconds = 30,
   hysteresisPercent = 2,
 ): Promise<void> {
+  const resolved = await resolveThresholds(prisma, snap, batteryNominalV, capacityVa);
+
   const snapValues: Record<string, number> = {
     volt_in: snap.voltIn,
     volt_out: snap.voltOut,
+    volt_dc: snap.voltDc,
     ct_in: snap.ctIn,
     ct_out: snap.ctOut,
+    s_out_va: snap.sOutVa,
+    load_percent: capacityVa > 0 ? (snap.sOutVa / capacityVa) * 100 : 0,
+    overload_pct: capacityVa > 0 ? (snap.sOutVa / capacityVa) * 100 : 0,
   };
-  const checks: ThresholdCheck[] = [
-    ...DEFAULT_THRESHOLDS.map((t) => ({ ...t, value: snapValues[t.metric] ?? 0 })),
-    { ...buildBatteryThresholds(batteryNominalV), value: snap.voltDc },
-  ];
 
-  if (capacityVa > 0) {
-    const loadPct = (snap.sOutVa / capacityVa) * 100;
-    checks.push({
-      metric: "overload_pct",
-      label: "Output Load",
-      value: loadPct,
-      highWarning: 80,
-      highCritical: 95,
-    });
-  }
+  const checks: ThresholdCheck[] = resolved.map((t) => ({ ...t, value: snapValues[t.metric] ?? 0 }));
 
   const now = Date.now();
   const candidates = new Map<string, AlarmCandidate>();

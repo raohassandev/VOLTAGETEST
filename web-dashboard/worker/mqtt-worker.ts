@@ -162,6 +162,7 @@ async function runAlarmEvaluation(deviceId: string, payload: RawPayload): Promis
     {
       deviceId,
       upsId: str(payload.ups_id),
+      upsUnitId: device?.upsUnit?.id,
       siteId: str(payload.site_id),
       voltIn: num(payload.volt_in),
       voltOut: num(payload.volt_out),
