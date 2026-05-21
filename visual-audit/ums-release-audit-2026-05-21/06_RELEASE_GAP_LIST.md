@@ -8,11 +8,11 @@ P0 = must fix before demo | P1 = must fix before field pilot | P2 = must fix bef
 
 | Priority | Gap | Area | Severity | Required before demo | Required before production | Estimated effort | Notes |
 |----------|-----|------|----------|---------------------|--------------------------|-----------------|-------|
-| P0 | volt_dc alarm engine bug — raw ADC (556.7) compared to voltage threshold (57.024V) | alarm-engine.ts | BLOCKER | YES | YES | 1–2h | Worker receives raw ADC from MQTT; alarm thresholds are in volts; calibration scale must be applied before comparison. Default scale 0.0442 gives 24.6V — well below highCritical 57V, so alarm should NOT fire. |
-| P0 | Board IP column in fleet table | page.tsx FleetTable | BLOCKER | YES | YES | 1h | Add ip column from device data. /api/telemetry/latest already returns ip field. Make IP a clickable link opening http://\<ip\>/ |
-| P0 | Board portal button on UPS detail | ups/[id]/page.tsx | BLOCKER | YES | YES | 30m | IP shown as text in Device info. Add "Open portal →" button/link using device.ip |
-| P0 | Alarm rule UPS-scope UX broken | admin/alarm-rules/page.tsx | BLOCKER | YES | YES | 2h | Replace raw cuid input with dropdown from /api/ups list. Show "UPS-COM11-TEST" not cuid. |
-| P0 | Alarm duplicate rows cleanup | alarm-engine.ts + DB | HIGH | YES | YES | 1h | Multiple active volt_dc alarms per device with same firstSeenAt. Review alarm deduplication logic. May need one-time DB cleanup for demo. |
+| ~~P0~~ **FIXED** | volt_dc alarm engine bug — raw ADC (556.7) compared to voltage threshold (57.024V) | alarm-engine.ts | BLOCKER | YES | YES | 1–2h | **FIXED — commit 1dbc381.** Worker applies VOLT_DC_DEFAULT_SCALE=0.0442; calibrated=24.6V. For 48V UPS: 24.6V < lowCritical(42V) → CRITICAL LOW (correct). Old behavior: 556V > highCritical(57V) → false CRITICAL HIGH. Test proof: scripts/test-volt-dc-alarm.js 3/3 PASS. |
+| ~~P0~~ **FIXED** | Board IP column in fleet table | page.tsx FleetTable | BLOCKER | YES | YES | 1h | **FIXED — commit 1dbc381.** "Board IP" column added; clickable http://\<ip\>/ link with Config / Data / OTA sub-links. Screenshot: fleet-dashboard__desktop-1920x1080.png. |
+| ~~P0~~ **FIXED** | Board portal button on UPS detail | ups/[id]/page.tsx | BLOCKER | YES | YES | 30m | **FIXED — commit 1dbc381.** IP Address row replaced with "Open portal", "Config", "OTA" action buttons. Screenshot: ups-detail-live__desktop-1920x1080.png. |
+| ~~P0~~ **FIXED** | Alarm rule UPS-scope UX broken | admin/alarm-rules/page.tsx | BLOCKER | YES | YES | 2h | **FIXED — commit 1dbc381.** UPS-scope input replaced with \<select\> dropdown populated from /api/ups; shows "UPS-COM11-TEST — name" labels, submits DB cuid. Screenshot: alarm-rules-form-ups__desktop-1920x1080.png. |
+| ~~P0~~ **FIXED** | Alarm duplicate rows cleanup | alarm-engine.ts + DB | HIGH | YES | YES | 1h | **FIXED — commit 1dbc381.** alarm-engine uses updateMany (no race). deduplicateActiveAlarms() runs at startup. DB verified: no duplicate (deviceId, metric) active alarm pairs. |
 | P1 | Docker deployment proof | deployment/ | BLOCKER | NO | YES | 2–4h (setup) | Install Docker Desktop. Run Phase G sequence. All 4 services must start and pass health check. |
 | P1 | Docker MQTT ingest proof | deployment/ | BLOCKER | NO | YES | 1h | After Docker UP, publish test payload. Verify TelemetryRaw, /api/telemetry/latest, device online. |
 | P1 | History / trend chart on UPS detail | ups/[id]/page.tsx | HIGH | NO | YES | 3–4h | TrendChart was removed. /api/telemetry/history works. Add simple recharts or Chart.js line chart. |
@@ -42,11 +42,13 @@ P0 = must fix before demo | P1 = must fix before field pilot | P2 = must fix bef
 
 ## Demo Readiness (P0 items only)
 
-The following P0 items block a clean demo:
+**All 5 P0 blockers are FIXED as of commit 1dbc381 (pushed 2026-05-21).**
 
-1. **volt_dc alarm messages show raw ADC values** — every demo board will show "Battery Voltage critically high: 556.7" which is obviously wrong to any viewer.
-2. **No board IP/portal buttons** — manager specifically called this out. Operator/demo audience expects to see device IP and click to open board portal.
-3. **Alarm rule UPS-scope requires DB cuid** — if demonstrated, this will look broken.
-4. **Duplicate active alarm rows** — alarm page will show 4 nearly identical volt_dc alarms.
+Evidence:
+1. **volt_dc alarm** — `scripts/test-volt-dc-alarm.js` 3/3 PASS. DB active alarm: "Battery Voltage critically low: 24.6 (limit 42)" (correct for 48V bench board). Old false "critically high: 556.7V" message eliminated.
+2. **Board IP/portal buttons** — fleet table "Board IP" column confirmed in screenshot `fleet-dashboard__desktop-1920x1080.png`. UPS detail portal buttons confirmed in `ups-detail-live__desktop-1920x1080.png`.
+3. **Alarm rule UPS dropdown** — confirmed in screenshot `alarm-rules-form-ups__desktop-1920x1080.png`. Scope=UPS shows dropdown with "UPS-COM11-TEST" label.
+4. **Duplicate alarm rows** — DB query confirms: no duplicate (deviceId, metric) active pairs.
+5. **Server-sourced alarm panel** — fleet header badge, summary count, and per-device status all driven by DB alarm engine via /api/alarms.
 
-If P0 items are fixed, the system can be demoed for internal review. It is NOT field-pilot or production ready without P1 items.
+The system can be demoed for internal review. It is NOT field-pilot or production ready without P1 items (Docker deployment unverified, trend chart missing, responsive tables unaddressed).

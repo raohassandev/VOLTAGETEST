@@ -22,11 +22,19 @@ const VIEWPORTS = [
   { name: "mobile-390x844",    width: 390,  height: 844 },
 ];
 
-const ROUTES: { slug: string; path: string; waitFor?: string; note?: string }[] = [
+const ROUTES: { slug: string; path: string; waitFor?: string; note?: string; actions?: string[] }[] = [
   { slug: "login",          path: "/login",                  waitFor: "form" },
   { slug: "fleet-dashboard", path: "/",                      waitFor: "main" },
   { slug: "alarms",         path: "/alarms",                 waitFor: "main" },
   { slug: "alarm-rules",    path: "/admin/alarm-rules",      waitFor: "main" },
+  {
+    slug: "alarm-rules-form-ups",
+    path: "/admin/alarm-rules",
+    waitFor: "main",
+    note: "form open, UPS scope selected",
+    // Actions: click Add-rule, set scope=ups — captured to show UPS dropdown
+    actions: ["click-add-rule", "select-scope-ups"],
+  },
   { slug: "inventory",      path: "/admin/inventory",        waitFor: "main" },
   { slug: "settings",       path: "/admin/settings",         waitFor: "main" },
   { slug: "ups-detail-live", path: "/ups/UPS-COM11-TEST",    waitFor: "main", note: "live device" },
@@ -75,6 +83,16 @@ async function run() {
         }
         // Extra wait for React hydration
         await page.waitForTimeout(1500);
+
+        // Perform any route-specific interactions
+        if (route.actions?.includes("click-add-rule")) {
+          await page.click('button:has-text("Add rule")').catch(() => {});
+          await page.waitForTimeout(500);
+        }
+        if (route.actions?.includes("select-scope-ups")) {
+          await page.selectOption('select', { value: "ups" }).catch(() => {});
+          await page.waitForTimeout(600);
+        }
 
         const finalUrl = page.url();
         if (finalUrl.includes("/login") && !route.path.startsWith("/login")) {

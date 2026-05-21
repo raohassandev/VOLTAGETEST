@@ -12,7 +12,7 @@
 |------|---------|
 | [visual-audit/ums-release-audit-2026-05-21/00_REPO_STATE.md](visual-audit/ums-release-audit-2026-05-21/00_REPO_STATE.md) | Repo state, git log, environment, running services |
 | [visual-audit/ums-release-audit-2026-05-21/01_ROUTE_FEATURE_INVENTORY.md](visual-audit/ums-release-audit-2026-05-21/01_ROUTE_FEATURE_INVENTORY.md) | All routes, all API routes, all features with PASS/PARTIAL/MISSING/BROKEN status |
-| [visual-audit/ums-release-audit-2026-05-21/02_SCREENSHOT_INDEX.md](visual-audit/ums-release-audit-2026-05-21/02_SCREENSHOT_INDEX.md) | 36 screenshots (9 screens × 4 viewports) with visual status |
+| [visual-audit/ums-release-audit-2026-05-21/02_SCREENSHOT_INDEX.md](visual-audit/ums-release-audit-2026-05-21/02_SCREENSHOT_INDEX.md) | 40 screenshots (10 screens × 4 viewports) with visual status |
 | [visual-audit/ums-release-audit-2026-05-21/03_FUNCTIONAL_AUDIT.md](visual-audit/ums-release-audit-2026-05-21/03_FUNCTIONAL_AUDIT.md) | Functional test results for all flows A–J |
 | [visual-audit/ums-release-audit-2026-05-21/04_VISUAL_UX_AUDIT.md](visual-audit/ums-release-audit-2026-05-21/04_VISUAL_UX_AUDIT.md) | 18 UX issues; severity; responsive UI summary table |
 | [visual-audit/ums-release-audit-2026-05-21/05_CODE_ARCHITECTURE_AUDIT.md](visual-audit/ums-release-audit-2026-05-21/05_CODE_ARCHITECTURE_AUDIT.md) | Per-file status; dead code; hardcoded secrets; missing error handling |

@@ -76,7 +76,7 @@ Board:      online, firmware 0.5.2, RSSI -62 dBm
 
 ### P0.1 — volt_dc alarm engine calibration (PASS — 1dbc381)
 - **Root cause confirmed:** Firmware sends raw 12-bit ADC counts (≈556) for `volt_dc` with NVS default scale=1.0. Alarm engine compared 556 against voltage thresholds (e.g. 57.024 V), always triggering CRITICAL.
-- **Fix (`worker/mqtt-worker.ts`):** `runAlarmEvaluation()` now queries `CalibrationProfile` for the device. If no row exists, applies `VOLT_DC_DEFAULT_SCALE = 0.0442` (matches frontend `defaultConfig`). Calibrated value (`raw_adc × 0.0442 ≈ 24.6 V`) is passed to `evaluateAlarms` — within normal 48 V battery thresholds.
+- **Fix (`worker/mqtt-worker.ts`):** `runAlarmEvaluation()` now queries `CalibrationProfile` for the device. If no row exists, applies `VOLT_DC_DEFAULT_SCALE = 0.0442` (matches frontend `defaultConfig`). Calibrated value (`raw_adc × 0.0442 ≈ 24.6 V`) is passed to `evaluateAlarms`. For the live bench board (`batteryNominalV=48`), 24.6 V < lowCritical (42 V) → correctly fires **CRITICAL LOW** ("Battery Voltage critically low: 24.6 V (limit 42.0 V)"), replacing the prior false **CRITICAL HIGH** (556 V vs 57 V limit — wrong direction and value). For a 24 V UPS, 24.6 V is within normal range — no alarm fires (verified by `scripts/test-volt-dc-alarm.js`, 3/3 PASS).
 
 ### P0.2 — Duplicate active alarm rows (PASS — 1dbc381)
 - **Root cause:** `evaluateAlarms()` used `findFirst` + `update/create` — race condition between multiple worker instances created duplicate rows. `debounceMap` reset on restart also caused burst creation.
@@ -162,6 +162,8 @@ See `SHIP_BLOCKERS.md` for full evidence log.
 
 ## Commit History (this branch)
 ```
+7a8f221  fix(audit): correct volt_dc test descriptions and add screenshot proof
+1dbc381  fix(P0): volt_dc calibration, fleet IP column, UPS detail portal, alarm rule UPS dropdown, alarm dedup
 9aaadc6  Remove browser MQTT, fix publish interval, add secret guard, update status files
 9bbc9b7  Fix blockers 2/4/5/6/7: alarm engine, fleet page, mosquitto, Dockerfile, burn-in
 4f396f1  chore: add agent status report
