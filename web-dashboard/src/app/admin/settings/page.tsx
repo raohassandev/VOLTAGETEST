@@ -1,8 +1,7 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import AppShell from "@/components/AppShell";
 
 interface SettingsPayload {
   settings: {
@@ -54,19 +53,12 @@ export default function SettingsAdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#eef3f8] text-slate-950">
-      <div className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
-        <header className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">
-              <ShieldCheck size={18} />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-semibold">System Settings</h1>
-              <p className="text-sm text-slate-500">Retention, alarm, and monitoring thresholds</p>
-            </div>
-          </div>
-        </header>
+    <AppShell activeNav="settings">
+      <div className="flex max-w-3xl flex-col gap-5">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-950">System Settings</h1>
+          <p className="text-sm text-slate-500">Retention, alarm, and monitoring thresholds.</p>
+        </div>
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold">Data retention</h2>
@@ -138,6 +130,6 @@ export default function SettingsAdminPage() {
           {msg && <span className="text-sm font-semibold text-emerald-700">{msg}</span>}
         </div>
       </div>
-    </main>
+    </AppShell>
   );
 }

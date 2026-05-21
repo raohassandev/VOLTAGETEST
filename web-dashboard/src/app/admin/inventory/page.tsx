@@ -1,8 +1,9 @@
 "use client";
 
-import { Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import AppShell from "@/components/AppShell";
 
 import type { UpsInventoryItem } from "@/lib/telemetry";
 
@@ -75,19 +76,12 @@ export default function InventoryAdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#eef3f8] text-slate-950">
-      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
-        <header className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">
-              <ShieldCheck size={18} />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-semibold">UPS Inventory</h1>
-              <p className="text-sm text-slate-500">Manage UPS units, device associations, and site data</p>
-            </div>
-          </div>
-        </header>
+    <AppShell activeNav="inventory">
+      <div className="flex max-w-7xl flex-col gap-5">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-950">UPS Inventory</h1>
+          <p className="text-sm text-slate-500">Manage UPS units, device associations, and site data.</p>
+        </div>
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold">Add / update UPS</h2>
@@ -174,6 +168,6 @@ export default function InventoryAdminPage() {
           </div>
         </section>
       </div>
-    </main>
+    </AppShell>
   );
 }

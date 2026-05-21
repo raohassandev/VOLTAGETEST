@@ -1,208 +1,336 @@
 "use client";
 
 import {
-  Activity,
   AlertTriangle,
-  Bell,
-  BellOff,
+  ArrowRight,
   Cpu,
+  ExternalLink,
   Gauge,
-  LayoutList,
-  Settings,
-  ShieldCheck,
-  Volume2,
+  Server,
   Wifi,
+  WifiOff,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import AppShell from "@/components/AppShell";
 import {
   FleetDevice,
   ServerAlarm,
-  SystemSettings,
   formatNumber,
   useTelemetry,
+  VOLT_DC_SCALE,
 } from "@/lib/telemetry";
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function UserAlarmPanel({ alarms }: { alarms: ServerAlarm[] }) {
-  const [soundEnabled, setSoundEnabled] = useState(false);
-  const [speechEnabled, setSpeechEnabled] = useState(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const spokenAlarmKeysRef = useRef<Set<string>>(new Set());
-  const lastSpeechAtRef = useRef(0);
-
-  const ensureAudioContext = useCallback(() => {
-    if (!audioContextRef.current) audioContextRef.current = new AudioContext();
-    if (audioContextRef.current.state === "suspended") audioContextRef.current.resume();
-    return audioContextRef.current;
-  }, []);
-
-  const playAlarmTone = useCallback(() => {
-    const context = ensureAudioContext();
-    [0, 0.28].forEach((offset) => {
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-      const start = context.currentTime + offset;
-      const stop = start + 0.18;
-      oscillator.type = "square";
-      oscillator.frequency.setValueAtTime(760, start);
-      oscillator.frequency.setValueAtTime(960, start + 0.09);
-      gain.gain.setValueAtTime(0.001, start);
-      gain.gain.exponentialRampToValueAtTime(0.14, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, stop);
-      oscillator.connect(gain);
-      gain.connect(context.destination);
-      oscillator.start(start);
-      oscillator.stop(stop);
-    });
-  }, [ensureAudioContext]);
-
-  useEffect(() => {
-    if (!soundEnabled || alarms.length === 0) return;
-    playAlarmTone();
-    const timer = window.setInterval(playAlarmTone, 2500);
-    return () => window.clearInterval(timer);
-  }, [alarms.length, playAlarmTone, soundEnabled]);
-
-  useEffect(() => {
-    if (!speechEnabled || alarms.length === 0 || !("speechSynthesis" in window)) return;
-    const activeIds = new Set(alarms.map((a) => a.id));
-    spokenAlarmKeysRef.current.forEach((key) => {
-      if (!activeIds.has(key)) spokenAlarmKeysRef.current.delete(key);
-    });
-    const hasNew = alarms.some((a) => !spokenAlarmKeysRef.current.has(a.id));
-    const now = Date.now();
-    if (!hasNew && now - lastSpeechAtRef.current < 30000) return;
-    const text = alarms.map((a) => a.message).join(" ");
-    alarms.forEach((a) => spokenAlarmKeysRef.current.add(a.id));
-    lastSpeechAtRef.current = now;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.92;
-    window.speechSynthesis.speak(utterance);
-  }, [alarms, speechEnabled]);
-
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-950">Alarms</h2>
-          <p className="text-sm text-slate-500">Active conditions from the alarm engine.</p>
-        </div>
-        <div className="flex flex-wrap justify-end gap-2">
-          <button
-            className={`inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${soundEnabled ? "border-slate-950 bg-slate-950 text-white" : "border-slate-300 bg-white text-slate-700"}`}
-            onClick={() => { setSoundEnabled((c) => !c); ensureAudioContext(); }}
-            type="button"
-          >
-            {soundEnabled ? <Bell size={16} /> : <BellOff size={16} />}
-            Sound
-          </button>
-          <button
-            className={`inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${speechEnabled ? "border-slate-950 bg-slate-950 text-white" : "border-slate-300 bg-white text-slate-700"}`}
-            onClick={() => setSpeechEnabled((c) => !c)}
-            type="button"
-          >
-            <Volume2 size={16} />
-            Voice
-          </button>
-          <Link
-            href="/alarms"
-            className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            All alarms
-          </Link>
-          <span className={`inline-flex h-9 items-center rounded-full px-3 text-sm font-bold ${alarms.length ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
-            {alarms.length ? `${alarms.length} active` : "All normal"}
-          </span>
-        </div>
-      </div>
-      {alarms.length === 0 ? (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
-          No active alarms.
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {alarms.map((alarm) => {
-            const isCrit = alarm.severity === "critical";
-            return (
-              <div
-                key={alarm.id}
-                className={`flex flex-col gap-2 rounded-md border p-4 sm:flex-row sm:items-center sm:justify-between ${isCrit ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}
-              >
-                <div>
-                  <p className={`font-semibold ${isCrit ? "text-red-800" : "text-amber-800"}`}>
-                    {isCrit ? "CRITICAL" : "WARNING"} — {alarm.metric.replace(/_/g, " ")}
-                    {alarm.upsId ? <span className="ml-2 font-normal text-sm">({alarm.upsId})</span> : null}
-                  </p>
-                  <p className={`text-sm ${isCrit ? "text-red-700" : "text-amber-700"}`}>{alarm.message}</p>
-                </div>
-                <span className={`shrink-0 text-sm font-semibold ${isCrit ? "text-red-700" : "text-amber-700"}`}>
-                  {new Date(alarm.firstSeenAt).toLocaleTimeString()}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
+function alarmTone(alarms: ServerAlarm[]) {
+  if (alarms.some((a) => a.severity === "critical")) return "critical";
+  if (alarms.length > 0) return "warning";
+  return "normal";
 }
 
-function FleetSummary({ devices, nowMs, serverAlarms }: { devices: FleetDevice[]; nowMs: number; serverAlarms: ServerAlarm[] }) {
+// ── Summary row ───────────────────────────────────────────────────────────────
+
+function SummaryRow({
+  devices,
+  nowMs,
+  serverAlarms,
+}: {
+  devices: FleetDevice[];
+  nowMs: number;
+  serverAlarms: ServerAlarm[];
+}) {
   const online = devices.filter((d) => nowMs - d.lastSeenMs < 60_000).length;
-  const alarmingIds = new Set(serverAlarms.map((a) => a.deviceId));
-  const alarming = devices.filter((d) => alarmingIds.has(d.id)).length;
   const offline = devices.length - online;
-  const totalVa = devices.reduce((sum, d) => sum + Number(d.telemetry.s_out_va ?? 0), 0);
+  const critCount = serverAlarms.filter((a) => a.severity === "critical").length;
+  const warnCount = serverAlarms.filter((a) => a.severity === "warning").length;
+  const totalVa = devices.reduce((s, d) => s + Number(d.telemetry.s_out_va ?? 0), 0);
+
+  const stats = [
+    { label: "Total UPS",      value: devices.length,          icon: Cpu,           color: "text-slate-700",   bg: "bg-slate-100" },
+    { label: "Online",         value: online,                  icon: Wifi,           color: "text-emerald-700", bg: "bg-emerald-50" },
+    { label: "Offline",        value: offline,                 icon: WifiOff,        color: offline ? "text-red-700" : "text-slate-500", bg: offline ? "bg-red-50" : "bg-slate-100" },
+    { label: "Critical alarms",value: critCount,               icon: AlertTriangle,  color: critCount ? "text-red-700" : "text-slate-500", bg: critCount ? "bg-red-50" : "bg-slate-100" },
+    { label: "Warnings",       value: warnCount,               icon: AlertTriangle,  color: warnCount ? "text-amber-700" : "text-slate-500", bg: warnCount ? "bg-amber-50" : "bg-slate-100" },
+    { label: "Total output VA",value: formatNumber(totalVa),   icon: Gauge,          color: "text-blue-700",    bg: "bg-blue-50" },
+  ];
 
   return (
-    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {[
-        { icon: Cpu, label: "UPS units", value: devices.length, tone: "bg-slate-100 text-slate-800" },
-        { icon: Wifi, label: "Online", value: online, tone: "bg-emerald-50 text-emerald-700" },
-        { icon: AlertTriangle, label: "Offline", value: offline, tone: offline ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-700" },
-        { icon: Gauge, label: "Output VA", value: formatNumber(totalVa), tone: "bg-blue-50 text-blue-700" },
-      ].map((item) => {
-        const Icon = item.icon;
+    <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      {stats.map((s) => {
+        const Icon = s.icon;
         return (
-          <div key={item.label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-md ${item.tone}`}>
-              <Icon size={18} />
+          <div key={s.label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div className={`mb-2 inline-flex h-8 w-8 items-center justify-center rounded-md ${s.bg}`}>
+              <Icon size={16} className={s.color} />
             </div>
-            <p className="text-sm font-semibold text-slate-500">{item.label}</p>
-            <p className="mt-1 text-2xl font-semibold text-slate-950">{item.value}</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{s.label}</p>
+            <p className={`mt-0.5 text-xl font-bold ${s.color}`}>{s.value}</p>
           </div>
         );
       })}
-      {alarming > 0 && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 shadow-sm sm:col-span-2 lg:col-span-4">
-          <p className="text-sm font-bold text-red-700">
-            <AlertTriangle size={14} className="mr-1 inline" />
-            {alarming} UPS unit{alarming !== 1 ? "s" : ""} with active alarms —{" "}
-            <Link href="/alarms" className="underline">
-              View alarms
-            </Link>
-          </p>
-        </div>
-      )}
-    </section>
+    </div>
   );
 }
 
-function FleetTable({ devices, nowMs, serverAlarms }: { devices: FleetDevice[]; nowMs: number; serverAlarms: ServerAlarm[] }) {
-  const [search, setSearch] = useState("");
+// ── UPS card ──────────────────────────────────────────────────────────────────
 
-  const filtered = devices.filter((d) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      (d.telemetry.ups_id ?? d.id).toLowerCase().includes(q) ||
-      (d.telemetry.device_id ?? d.id).toLowerCase().includes(q) ||
-      (d.inventory?.floor ?? "").toLowerCase().includes(q) ||
-      (d.inventory?.location ?? "").toLowerCase().includes(q)
-    );
-  });
+function UpsCard({
+  device,
+  nowMs,
+  deviceAlarms,
+}: {
+  device: FleetDevice;
+  nowMs: number;
+  deviceAlarms: ServerAlarm[];
+}) {
+  const online = nowMs - device.lastSeenMs < 60_000;
+  const tone = alarmTone(deviceAlarms);
+  const upsId = device.inventory?.upsId || device.telemetry.ups_id || device.id;
+  const location = [device.inventory?.floor, device.inventory?.location].filter(Boolean).join(" / ") || null;
+  const boardIp = device.telemetry.ip || null;
+
+  const capacityVa = device.inventory?.capacityVa ?? 0;
+  const loadPct = capacityVa > 0
+    ? (Number(device.telemetry.s_out_va ?? 0) / capacityVa) * 100
+    : null;
+
+  const voltDcDisplay = device.telemetry.volt_dc != null
+    ? formatNumber(Number(device.telemetry.volt_dc) * VOLT_DC_SCALE)
+    : "--";
+
+  const borderColor =
+    !online ? "border-slate-200" :
+    tone === "critical" ? "border-red-200" :
+    tone === "warning" ? "border-amber-200" :
+    "border-slate-200";
+
+  const headerBg =
+    !online ? "bg-slate-50" :
+    tone === "critical" ? "bg-red-50" :
+    tone === "warning" ? "bg-amber-50" :
+    "bg-white";
+
+  return (
+    <div className={`flex flex-col rounded-lg border bg-white shadow-sm overflow-hidden ${borderColor}`}>
+      {/* Card header */}
+      <div className={`flex items-start justify-between gap-2 p-4 pb-3 ${headerBg}`}>
+        <div className="min-w-0">
+          <p className="truncate font-bold text-slate-950 leading-tight">{upsId}</p>
+          {location && (
+            <p className="mt-0.5 truncate text-xs text-slate-500">{location}</p>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {online ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
+              <Wifi size={10} /> Online
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-600">
+              <WifiOff size={10} /> Offline
+            </span>
+          )}
+          {tone === "critical" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
+              <AlertTriangle size={10} /> CRITICAL
+            </span>
+          )}
+          {tone === "warning" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
+              <AlertTriangle size={10} /> WARNING
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Metrics grid */}
+      <div className="grid grid-cols-4 divide-x divide-slate-100 border-t border-slate-100 text-center">
+        {[
+          { label: "In V",    value: formatNumber(Number(device.telemetry.volt_in ?? 0)) },
+          { label: "Out V",   value: formatNumber(Number(device.telemetry.volt_out ?? 0)) },
+          { label: "Bat V",   value: voltDcDisplay },
+          { label: "Load %",  value: loadPct !== null ? `${formatNumber(loadPct)}%` : "--" },
+        ].map(({ label, value }) => (
+          <div key={label} className="py-2.5">
+            <p className="text-xs text-slate-400">{label}</p>
+            <p className="text-sm font-bold text-slate-950">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-4 divide-x divide-slate-100 border-t border-slate-100 text-center">
+        {[
+          { label: "Out A",   value: formatNumber(Number(device.telemetry.ct_out ?? 0)) },
+          { label: "Out VA",  value: formatNumber(Number(device.telemetry.s_out_va ?? 0)) },
+          { label: "RSSI",    value: device.telemetry.rssi ? `${device.telemetry.rssi}` : "--" },
+          { label: "In A",    value: formatNumber(Number(device.telemetry.ct_in ?? 0)) },
+        ].map(({ label, value }) => (
+          <div key={label} className="py-2">
+            <p className="text-xs text-slate-400">{label}</p>
+            <p className="text-sm font-semibold text-slate-700">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Board IP */}
+      <div className="border-t border-slate-100 px-4 py-2">
+        {boardIp ? (
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-xs text-slate-500">{boardIp}</span>
+            <div className="flex gap-1">
+              <a href={`http://${boardIp}/`} target="_blank" rel="noreferrer" className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600 hover:bg-slate-200" title="Open board portal">
+                <ExternalLink size={10} className="inline" /> Portal
+              </a>
+              <a href={`http://${boardIp}/config`} target="_blank" rel="noreferrer" className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600 hover:bg-slate-200">Config</a>
+              <a href={`http://${boardIp}/update`} target="_blank" rel="noreferrer" className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600 hover:bg-slate-200">OTA</a>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-400 italic">Board IP not available</p>
+        )}
+      </div>
+
+      {/* Footer actions */}
+      <div className="mt-auto flex items-center justify-between border-t border-slate-100 bg-slate-50 px-4 py-2.5">
+        <span className="text-xs text-slate-400">
+          {device.lastMessageAt}
+        </span>
+        <Link
+          href={`/ups/${upsId}`}
+          className="inline-flex items-center gap-1 rounded-md bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+        >
+          Details <ArrowRight size={11} />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ── Compact table ─────────────────────────────────────────────────────────────
+
+function CompactTable({
+  devices,
+  nowMs,
+  alarmsByDevice,
+}: {
+  devices: FleetDevice[];
+  nowMs: number;
+  alarmsByDevice: Map<string, ServerAlarm[]>;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[900px] border-collapse text-sm">
+        <thead>
+          <tr className="border-b border-slate-200 text-left text-xs text-slate-500 uppercase tracking-wide">
+            <th className="py-2 pr-3">UPS</th>
+            <th className="py-2 pr-3">Location</th>
+            <th className="py-2 pr-3">In V</th>
+            <th className="py-2 pr-3">Out V</th>
+            <th className="py-2 pr-3">Bat V</th>
+            <th className="py-2 pr-3">Out A</th>
+            <th className="py-2 pr-3">Out VA</th>
+            <th className="py-2 pr-3">Load %</th>
+            <th className="py-2 pr-3">RSSI</th>
+            <th className="py-2 pr-3">Board IP</th>
+            <th className="py-2 pr-3">Status</th>
+            <th className="py-2">Last seen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {devices.length === 0 ? (
+            <tr>
+              <td className="py-5 text-slate-400 text-xs" colSpan={12}>
+                No UPS devices found.
+              </td>
+            </tr>
+          ) : (
+            devices.map((device) => {
+              const alarms = alarmsByDevice.get(device.id) ?? [];
+              const online = nowMs - device.lastSeenMs < 60_000;
+              const tone = alarmTone(alarms);
+              const upsId = device.inventory?.upsId || device.telemetry.ups_id || device.id;
+              const capacityVa = device.inventory?.capacityVa ?? 0;
+              const loadPct = capacityVa > 0
+                ? (Number(device.telemetry.s_out_va ?? 0) / capacityVa) * 100
+                : null;
+              const boardIp = device.telemetry.ip || "";
+              const voltDcDisplay = device.telemetry.volt_dc != null
+                ? formatNumber(Number(device.telemetry.volt_dc) * VOLT_DC_SCALE)
+                : "--";
+
+              return (
+                <tr
+                  key={device.id}
+                  className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${!online ? "opacity-60" : ""}`}
+                >
+                  <td className="py-2.5 pr-3 font-semibold">
+                    <Link href={`/ups/${upsId}`} className="text-blue-700 hover:underline">
+                      {upsId}
+                    </Link>
+                  </td>
+                  <td className="py-2.5 pr-3 text-slate-500 text-xs">
+                    {[device.inventory?.floor, device.inventory?.location].filter(Boolean).join(" / ") || "--"}
+                  </td>
+                  <td className="py-2.5 pr-3">{formatNumber(Number(device.telemetry.volt_in ?? 0))}</td>
+                  <td className="py-2.5 pr-3">{formatNumber(Number(device.telemetry.volt_out ?? 0))}</td>
+                  <td className="py-2.5 pr-3">{voltDcDisplay}</td>
+                  <td className="py-2.5 pr-3">{formatNumber(Number(device.telemetry.ct_out ?? 0))}</td>
+                  <td className="py-2.5 pr-3">{formatNumber(Number(device.telemetry.s_out_va ?? 0))}</td>
+                  <td className="py-2.5 pr-3">
+                    {loadPct !== null ? (
+                      <span className={loadPct > 95 ? "font-bold text-red-700" : loadPct > 80 ? "font-semibold text-amber-700" : ""}>
+                        {formatNumber(loadPct)}%
+                      </span>
+                    ) : "--"}
+                  </td>
+                  <td className="py-2.5 pr-3 text-xs text-slate-500">
+                    {device.telemetry.rssi ? `${device.telemetry.rssi} dBm` : "--"}
+                  </td>
+                  <td className="py-2.5 pr-3">
+                    {boardIp ? (
+                      <a href={`http://${boardIp}/`} target="_blank" rel="noreferrer" className="font-mono text-xs text-blue-700 hover:underline">
+                        {boardIp}
+                      </a>
+                    ) : (
+                      <span className="text-slate-400 text-xs">—</span>
+                    )}
+                  </td>
+                  <td className="py-2.5 pr-3">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                      !online ? "bg-slate-100 text-slate-500" :
+                      tone === "critical" ? "bg-red-100 text-red-700" :
+                      tone === "warning" ? "bg-amber-100 text-amber-700" :
+                      "bg-emerald-100 text-emerald-700"
+                    }`}>
+                      {!online ? "offline" : tone === "critical" ? "critical" : tone === "warning" ? "warning" : "normal"}
+                    </span>
+                  </td>
+                  <td className="py-2.5 text-xs text-slate-400">{device.lastMessageAt}</td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
+type FilterTab = "all" | "online" | "offline" | "alarm";
+
+export default function Home() {
+  const { fleetDevices, serverAlarms } = useTelemetry();
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [search, setSearch] = useState("");
+  const [filterTab, setFilterTab] = useState<FilterTab>("all");
+
+  useEffect(() => {
+    const t = window.setInterval(() => setNowMs(Date.now()), 5_000);
+    return () => window.clearInterval(t);
+  }, []);
 
   const alarmsByDevice = new Map<string, ServerAlarm[]>();
   for (const a of serverAlarms) {
@@ -211,223 +339,111 @@ function FleetTable({ devices, nowMs, serverAlarms }: { devices: FleetDevice[]; 
     alarmsByDevice.set(a.deviceId, list);
   }
 
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-950">UPS fleet</h2>
-          <p className="text-sm text-slate-500">Live telemetry from all registered modules.</p>
-        </div>
-        <input
-          className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm sm:w-56"
-          placeholder="Search UPS, device, location…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1080px] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-left text-slate-500">
-              <th className="py-2 pr-3">UPS</th>
-              <th className="py-2 pr-3">Device</th>
-              <th className="py-2 pr-3">Location</th>
-              <th className="py-2 pr-3">Input V</th>
-              <th className="py-2 pr-3">Output V</th>
-              <th className="py-2 pr-3">Battery V</th>
-              <th className="py-2 pr-3">Output A</th>
-              <th className="py-2 pr-3">Output VA</th>
-              <th className="py-2 pr-3">Load %</th>
-              <th className="py-2 pr-3">RSSI</th>
-              <th className="py-2 pr-3">Board IP</th>
-              <th className="py-2 pr-3">Status</th>
-              <th className="py-2 pr-3">Last seen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td className="py-5 text-slate-500" colSpan={13}>
-                  {devices.length === 0 ? "Waiting for UPS telemetry." : "No results."}
-                </td>
-              </tr>
-            ) : (
-              filtered.map((device) => {
-                const deviceAlarms = alarmsByDevice.get(device.id) ?? [];
-                const alarm = deviceAlarms.length > 0;
-                const online = nowMs - device.lastSeenMs < 60_000;
-                const upsId = device.inventory?.upsId || device.telemetry.ups_id || device.id;
-                const capacityVa = device.inventory?.capacityVa ?? 0;
-                const loadPct = capacityVa > 0 ? ((Number(device.telemetry.s_out_va ?? 0) / capacityVa) * 100) : null;
-                const boardIp = device.telemetry.ip || "";
+  const filtered = fleetDevices.filter((d) => {
+    const upsId = d.inventory?.upsId || d.telemetry.ups_id || d.id;
+    const online = nowMs - d.lastSeenMs < 60_000;
+    const hasAlarm = (alarmsByDevice.get(d.id) ?? []).length > 0;
 
-                return (
-                  <tr key={device.id} className={`border-b border-slate-100 ${!online ? "opacity-60" : ""}`}>
-                    <td className="py-3 pr-3 font-semibold">
-                      <Link href={`/ups/${upsId}`} className="text-blue-700 hover:underline">
-                        {upsId}
-                      </Link>
-                    </td>
-                    <td className="py-3 pr-3 text-slate-600">{device.telemetry.device_id || device.id}</td>
-                    <td className="py-3 pr-3 text-slate-500">
-                      {[device.inventory?.floor, device.inventory?.location].filter(Boolean).join(" / ") || "--"}
-                    </td>
-                    <td className="py-3 pr-3">{formatNumber(device.telemetry.volt_in)}</td>
-                    <td className="py-3 pr-3">{formatNumber(device.telemetry.volt_out)}</td>
-                    <td className="py-3 pr-3">{formatNumber(device.telemetry.volt_dc)}</td>
-                    <td className="py-3 pr-3">{formatNumber(device.telemetry.ct_out)}</td>
-                    <td className="py-3 pr-3">{formatNumber(Number(device.telemetry.s_out_va ?? 0))}</td>
-                    <td className="py-3 pr-3">
-                      {loadPct !== null ? (
-                        <span className={loadPct > 95 ? "font-bold text-red-700" : loadPct > 80 ? "font-semibold text-amber-700" : ""}>
-                          {formatNumber(loadPct)}%
-                        </span>
-                      ) : "--"}
-                    </td>
-                    <td className="py-3 pr-3">{device.telemetry.rssi ? `${device.telemetry.rssi} dBm` : "--"}</td>
-                    <td className="py-3 pr-3">
-                      {boardIp ? (
-                        <div className="flex flex-col gap-0.5">
-                          <a
-                            href={`http://${boardIp}/`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-mono text-xs text-blue-700 hover:underline"
-                          >
-                            {boardIp}
-                          </a>
-                          <span className="flex gap-1 text-xs">
-                            <a href={`http://${boardIp}/config`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-blue-700">Config</a>
-                            <span className="text-slate-300">·</span>
-                            <a href={`http://${boardIp}/data`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-blue-700">Data</a>
-                            <span className="text-slate-300">·</span>
-                            <a href={`http://${boardIp}/update`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-blue-700">OTA</a>
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="py-3 pr-3">
-                      <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${
-                        !online
-                          ? "border-slate-200 bg-slate-100 text-slate-500"
-                          : alarm
-                          ? "border-red-200 bg-red-50 text-red-700"
-                          : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      }`}>
-                        {!online ? "offline" : alarm ? `${deviceAlarms.length} alarm${deviceAlarms.length !== 1 ? "s" : ""}` : "normal"}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-3">{device.lastMessageAt}</td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
-}
+    if (filterTab === "online" && !online) return false;
+    if (filterTab === "offline" && online) return false;
+    if (filterTab === "alarm" && !hasAlarm) return false;
 
-function ManufacturerSettings({
-  settings,
-  setSettings,
-}: {
-  settings: SystemSettings;
-  setSettings: ReturnType<typeof useTelemetry>["setSystemSettings"];
-}) {
-  function update(field: keyof SystemSettings, value: string) {
-    setSettings((current) => ({ ...current, [field]: Number(value) }));
-  }
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      upsId.toLowerCase().includes(q) ||
+      (d.telemetry.device_id ?? "").toLowerCase().includes(q) ||
+      (d.inventory?.floor ?? "").toLowerCase().includes(q) ||
+      (d.inventory?.location ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const filterTabs: { key: FilterTab; label: string }[] = [
+    { key: "all",     label: `All (${fleetDevices.length})` },
+    { key: "online",  label: `Online (${fleetDevices.filter((d) => nowMs - d.lastSeenMs < 60_000).length})` },
+    { key: "offline", label: `Offline (${fleetDevices.filter((d) => nowMs - d.lastSeenMs >= 60_000).length})` },
+    { key: "alarm",   label: `Alarm (${new Set(serverAlarms.map((a) => a.deviceId)).size})` },
+  ];
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-950">Manufacturer settings</h2>
-          <p className="text-sm text-slate-500">Retention controls for history and alarm records.</p>
-        </div>
-        <Link href="/admin/settings" className="text-sm font-semibold text-blue-700 hover:underline">
-          Advanced settings →
-        </Link>
-      </div>
-      <div className="grid gap-3 md:grid-cols-3">
-        <label className="grid gap-1 text-sm font-semibold text-slate-700">
-          Raw history days
-          <input className="rounded-md border border-slate-300 px-3 py-2 font-normal" min={1} max={365} onChange={(e) => update("rawRetentionDays", e.target.value)} type="number" value={settings.rawRetentionDays} />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold text-slate-700">
-          Rollup history months
-          <input className="rounded-md border border-slate-300 px-3 py-2 font-normal" min={1} max={120} onChange={(e) => update("rollupRetentionMonths", e.target.value)} type="number" value={settings.rollupRetentionMonths} />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold text-slate-700">
-          Alarm history months
-          <input className="rounded-md border border-slate-300 px-3 py-2 font-normal" min={1} max={120} onChange={(e) => update("alarmRetentionMonths", e.target.value)} type="number" value={settings.alarmRetentionMonths} />
-        </label>
-      </div>
-    </section>
-  );
-}
+    <AppShell activeNav="dashboard">
+      <div className="flex flex-col gap-5">
+        {/* Summary stats */}
+        <SummaryRow devices={fleetDevices} nowMs={nowMs} serverAlarms={serverAlarms} />
 
-export default function Home() {
-  const { fleetDevices, apiStatus, setSystemSettings, systemSettings, serverAlarms } =
-    useTelemetry();
-  const [nowMs, setNowMs] = useState(() => Date.now());
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNowMs(Date.now()), 5000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  return (
-    <main className="min-h-screen bg-[#eef3f8] text-slate-950">
-      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
-        <header className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-slate-950 text-white">
-                <ShieldCheck size={28} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Live power protection</p>
-                <h1 className="mt-1 text-3xl font-semibold tracking-tight">UPS Monitoring System</h1>
-                <p className="mt-1 text-sm font-medium text-slate-500">Fleet management</p>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2 text-sm">
-              <span className={`flex items-center gap-2 rounded-md px-3 py-2 font-semibold ${apiStatus === "ok" ? "bg-emerald-50 text-emerald-700" : apiStatus === "degraded" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
-                <Activity size={16} /> {apiStatus === "ok" ? "API online" : apiStatus === "degraded" ? "API error" : "API unknown"}
-              </span>
-              <span className={`flex items-center gap-2 rounded-md px-3 py-2 font-semibold ${serverAlarms.length ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-700"}`}>
-                <AlertTriangle size={16} /> {serverAlarms.length} alarms
-              </span>
-              <Link href="/alarms" className="flex items-center gap-2 rounded-md bg-slate-100 px-3 py-2 font-semibold text-slate-700 hover:bg-slate-200">
-                <Bell size={16} /> Alarm log
-              </Link>
-              <Link href="/admin/inventory" className="flex items-center gap-2 rounded-md bg-slate-100 px-3 py-2 font-semibold text-slate-700 hover:bg-slate-200">
-                <LayoutList size={16} /> Inventory
-              </Link>
-              <Link href="/admin/settings" className="flex items-center gap-2 rounded-md bg-slate-100 px-3 py-2 font-semibold text-slate-700 hover:bg-slate-200">
-                <Settings size={16} /> Settings
-              </Link>
-              <form action="/api/logout" method="post">
-                <button className="h-full w-full rounded-md border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700" type="submit">
-                  Sign out
-                </button>
-              </form>
-            </div>
+        {/* Alarm banner */}
+        {serverAlarms.some((a) => a.severity === "critical") && (
+          <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 shadow-sm">
+            <p className="flex items-center gap-2 text-sm font-bold text-red-800">
+              <AlertTriangle size={16} />
+              {serverAlarms.filter((a) => a.severity === "critical").length} critical alarm(s) active
+            </p>
+            <Link
+              href="/alarms"
+              className="rounded-md bg-red-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-800"
+            >
+              View alarms
+            </Link>
           </div>
-        </header>
+        )}
 
-        <FleetSummary devices={fleetDevices} nowMs={nowMs} serverAlarms={serverAlarms} />
-        <FleetTable devices={fleetDevices} nowMs={nowMs} serverAlarms={serverAlarms} />
+        {/* Search + filter */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-1">
+            {filterTabs.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setFilterTab(key)}
+                type="button"
+                className={`rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  filterTab === key
+                    ? "border-slate-950 bg-slate-950 text-white"
+                    : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <input
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm placeholder:text-slate-400 sm:w-60"
+            placeholder="Search UPS, device, location…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
-        <UserAlarmPanel alarms={serverAlarms} />
+        {/* UPS card grid */}
+        {filtered.length === 0 ? (
+          <div className="rounded-lg border border-slate-200 bg-white p-10 text-center shadow-sm">
+            <Server size={32} className="mx-auto mb-3 text-slate-300" />
+            <p className="text-sm font-semibold text-slate-500">
+              {fleetDevices.length === 0 ? "Waiting for UPS telemetry…" : "No devices match the current filter."}
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+            {filtered.map((device) => (
+              <UpsCard
+                key={device.id}
+                device={device}
+                nowMs={nowMs}
+                deviceAlarms={alarmsByDevice.get(device.id) ?? []}
+              />
+            ))}
+          </div>
+        )}
 
-        <ManufacturerSettings settings={systemSettings} setSettings={setSystemSettings} />
+        {/* Compact detail table */}
+        {filtered.length > 0 && (
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">
+              Detailed list ({filtered.length})
+            </h2>
+            <CompactTable devices={filtered} nowMs={nowMs} alarmsByDevice={alarmsByDevice} />
+          </section>
+        )}
       </div>
-    </main>
+    </AppShell>
   );
 }

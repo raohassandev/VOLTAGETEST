@@ -1,8 +1,8 @@
 "use client";
 
 import { Plus, Trash2, Settings } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import AppShell from "@/components/AppShell";
 
 interface AlarmRule {
   id: string;
@@ -166,19 +166,21 @@ export default function AlarmRulesPage() {
 
   const fmt = (v: number | null) => (v !== null ? String(v) : "—");
 
-  if (loading) return <main className="flex min-h-screen items-center justify-center bg-[#eef3f8]"><p className="text-slate-500">Loading…</p></main>;
+  if (loading) {
+    return (
+      <AppShell activeNav="alarm-rules">
+        <div className="flex h-40 items-center justify-center text-slate-400">Loading…</div>
+      </AppShell>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-[#eef3f8] text-slate-950">
-      <div className="mx-auto flex max-w-5xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
-        <header className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="text-sm font-semibold text-slate-500 hover:text-slate-800">← Dashboard</Link>
-            <span className="text-slate-300">/</span>
-            <div className="flex items-center gap-2">
-              <Settings size={18} className="text-slate-500" />
-              <h1 className="text-lg font-semibold">Alarm Rules</h1>
-            </div>
+    <AppShell activeNav="alarm-rules">
+      <div className="flex max-w-5xl flex-col gap-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Settings size={18} className="text-slate-500" />
+            <h1 className="text-2xl font-bold text-slate-950">Alarm Rules</h1>
           </div>
           <button
             className="flex items-center gap-2 rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
@@ -188,7 +190,7 @@ export default function AlarmRulesPage() {
             <Plus size={15} />
             Add rule
           </button>
-        </header>
+        </div>
 
         {error && <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
@@ -338,6 +340,6 @@ export default function AlarmRulesPage() {
           <p className="mt-2 text-slate-500">Only one rule applies per metric per device. DB rules override built-in defaults — they do not stack.</p>
         </div>
       </div>
-    </main>
+    </AppShell>
   );
 }

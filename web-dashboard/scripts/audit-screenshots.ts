@@ -10,7 +10,7 @@ import * as path from "path";
 import * as fs from "fs";
 
 const BASE_URL = "http://localhost:3000";
-const OUT_DIR = path.resolve(__dirname, "../../visual-audit/ums-release-audit-2026-05-21/screenshots");
+const OUT_DIR = path.resolve(__dirname, "../../visual-audit/ums-release-audit-2026-05-21/ui-polish");
 
 const USERNAME = "admin";
 const PASSWORD = "UMS@Local2026!";
@@ -124,7 +124,7 @@ async function run() {
 
   await browser.close();
 
-  const indexPath = path.resolve(__dirname, "../../visual-audit/ums-release-audit-2026-05-21/02_SCREENSHOT_INDEX.md");
+  const indexPath = path.resolve(__dirname, "../../visual-audit/ums-release-audit-2026-05-21/ui-polish/00_INDEX.md");
   const header = `# Screenshot Index\n\nGenerated: ${new Date().toISOString()}\nBase URL: ${BASE_URL}\nViewports: desktop-1920x1080, laptop-1366x768, tablet-768x1024, mobile-390x844\n\n`;
   fs.writeFileSync(indexPath, header + results.join("\n") + "\n");
 

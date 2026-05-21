@@ -4,61 +4,23 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   normalizeTelemetry,
-  telemetryKeys,
   type RawTelemetry,
-  type TelemetryKey,
 } from "@/lib/telemetry-types";
 
 export type ApiStatus = "ok" | "degraded" | "unknown";
-export type { RawTelemetry, TelemetryKey } from "@/lib/telemetry-types";
-
-export type ParameterConfig = {
-  label: string;
-  unit: string;
-  scale: number;
-  offset: number;
-  low: number;
-  high: number;
-  enabled: boolean;
-};
-
-export type ModuleConfig = {
-  moduleName: string;
-  topic: string;
-  parameters: Record<TelemetryKey, ParameterConfig>;
-};
-
-export type TelemetryRow = {
-  key: TelemetryKey;
-  raw: number;
-  value: number;
-  parameter: ParameterConfig;
-  status: "normal" | "low" | "high" | "disabled";
-};
-
-export type Alarm = {
-  key: TelemetryKey;
-  label: string;
-  value: number;
-  limit: number;
-  type: "LOW" | "HIGH";
-  unit: string;
-  time: string;
-};
-
-export type HistoryPoint = {
-  time: string;
-} & Record<TelemetryKey, number>;
+export type { RawTelemetry } from "@/lib/telemetry-types";
 
 export type FleetDevice = {
-  alarms: Alarm[];
   id: string;
   inventory?: UpsInventoryItem;
   lastMessageAt: string;
   lastSeenMs: number;
-  rows: TelemetryRow[];
   telemetry: RawTelemetry;
 };
+
+// Scale factor to convert raw volt_dc ADC counts to volts (firmware NVS default = scale 1.0).
+// Apply this in any UI layer that displays or thresholds volt_dc.
+export const VOLT_DC_SCALE = 0.0442;
 
 export type UpsInventoryItem = {
   batteryNominalV: number;
@@ -88,24 +50,6 @@ export type ServerAlarm = {
   lastSeenAt: string;
 };
 
-export const expectedPublishIntervalMs = 5000;
-
-export { telemetryKeys } from "@/lib/telemetry-types";
-
-export const defaultConfig: ModuleConfig = {
-  moduleName: "UPSMON Fleet",
-  topic: "building/site-01/ups/+/telemetry",
-  parameters: {
-    volt_in: { label: "Input Voltage", unit: "V", scale: 1, offset: 0, low: 180, high: 250, enabled: true },
-    volt_out: { label: "Output Voltage", unit: "V", scale: 1, offset: 0, low: 180, high: 250, enabled: true },
-    volt_dc: { label: "Battery DC", unit: "V", scale: 0.0442, offset: 0, low: 20, high: 30, enabled: true },
-    ct_in: { label: "Input Current", unit: "A", scale: 1, offset: 0, low: 0, high: 30, enabled: true },
-    ct_out: { label: "Output Current", unit: "A", scale: 1, offset: 0, low: 0, high: 30, enabled: true },
-  },
-};
-
-export { initialTelemetry } from "@/lib/telemetry-types";
-
 export const defaultInventory: UpsInventoryItem[] = [
   {
     batteryNominalV: 48,
@@ -130,39 +74,10 @@ export function formatNumber(value: number) {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
-export function calibrate(raw: number, config: ParameterConfig) {
-  return raw * config.scale + config.offset;
-}
-
-export function statusFor(value: number, config: ParameterConfig): TelemetryRow["status"] {
-  if (!config.enabled) return "disabled";
-  if (value < config.low) return "low";
-  if (value > config.high) return "high";
-  return "normal";
-}
-
-function readStoredConfig(): ModuleConfig {
-  if (typeof window === "undefined") return defaultConfig;
-  const raw = window.localStorage.getItem("voltagetest-config");
-  if (!raw) return defaultConfig;
-
-  try {
-    const stored = JSON.parse(raw) as ModuleConfig;
-    return {
-      ...defaultConfig,
-      ...stored,
-      parameters: { ...defaultConfig.parameters, ...stored.parameters },
-    };
-  } catch {
-    return defaultConfig;
-  }
-}
-
 function readStoredInventory(): UpsInventoryItem[] {
   if (typeof window === "undefined") return defaultInventory;
   const raw = window.localStorage.getItem("ups-inventory");
   if (!raw) return defaultInventory;
-
   try {
     const stored = JSON.parse(raw) as UpsInventoryItem[];
     return Array.isArray(stored) ? stored : defaultInventory;
@@ -171,31 +86,7 @@ function readStoredInventory(): UpsInventoryItem[] {
   }
 }
 
-function rowsForTelemetry(telemetry: RawTelemetry, config: ModuleConfig): TelemetryRow[] {
-  return telemetryKeys.map((key) => {
-    const parameter = config.parameters[key];
-    const raw = telemetry[key];
-    const value = calibrate(raw, parameter);
-    return { key, raw, value, parameter, status: statusFor(value, parameter) };
-  });
-}
-
-function alarmsForRows(rows: TelemetryRow[], lastMessageAt: string): Alarm[] {
-  return rows
-    .filter((row) => row.status === "low" || row.status === "high")
-    .map((row) => ({
-      key: row.key,
-      label: row.parameter.label,
-      value: row.value,
-      limit: row.status === "low" ? row.parameter.low : row.parameter.high,
-      type: row.status === "low" ? "LOW" : "HIGH",
-      unit: row.parameter.unit,
-      time: lastMessageAt || "--",
-    }));
-}
-
 export function useTelemetry() {
-  const [config, setConfig] = useState<ModuleConfig>(defaultConfig);
   const [inventory, setInventory] = useState<UpsInventoryItem[]>(defaultInventory);
   const [inventoryLoaded, setInventoryLoaded] = useState(false);
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(defaultSystemSettings);
@@ -205,10 +96,7 @@ export function useTelemetry() {
   const [serverAlarms, setServerAlarms] = useState<ServerAlarm[]>([]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setConfig(readStoredConfig());
-      setInventory(readStoredInventory());
-    }, 0);
+    const timer = window.setTimeout(() => setInventory(readStoredInventory()), 0);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -259,10 +147,6 @@ export function useTelemetry() {
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem("voltagetest-config", JSON.stringify(config));
-  }, [config]);
-
-  useEffect(() => {
     let cancelled = false;
 
     async function loadLatestTelemetry() {
@@ -276,20 +160,14 @@ export function useTelemetry() {
         const now = nowDate.toLocaleTimeString();
         setFleet((current) => {
           const nextFleet = { ...current };
-
           Object.entries(payload.latest || {}).forEach(([deviceId, item]) => {
-            const next = normalizeTelemetry(item, item.topic);
-            const deviceRows = rowsForTelemetry(next, config);
             nextFleet[deviceId] = {
-              alarms: alarmsForRows(deviceRows, now),
               id: deviceId,
               lastMessageAt: item.received_at ? new Date(item.received_at).toLocaleTimeString() : now,
               lastSeenMs: item.received_at ? new Date(item.received_at).getTime() : nowDate.getTime(),
-              rows: deviceRows,
-              telemetry: next,
+              telemetry: normalizeTelemetry(item, item.topic),
             };
           });
-
           return nextFleet;
         });
       } catch {
@@ -303,7 +181,7 @@ export function useTelemetry() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [config]);
+  }, []);
 
   useEffect(() => {
     window.localStorage.setItem("ups-inventory", JSON.stringify(inventory));
@@ -408,12 +286,9 @@ export function useTelemetry() {
 
   return {
     apiStatus,
-    config,
     fleetDevices,
     inventory,
     serverAlarms,
-    setConfig,
-    setInventory,
     setSystemSettings,
     systemSettings,
   };
