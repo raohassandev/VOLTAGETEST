@@ -1,20 +1,11 @@
-import { NextResponse, type NextRequest } from "next/server";
+// Deprecated: middleware.ts is no longer used in Next.js 16.
+// Route protection is handled by proxy.ts (the new convention).
+// This file is kept to avoid confusion during migration.
 
-import { verifySessionToken } from "@/lib/auth";
-
-export function middleware(request: NextRequest) {
-  const sessionToken = request.cookies.get("ups_session")?.value;
-
-  if (sessionToken && verifySessionToken(sessionToken)) {
-    return NextResponse.next();
-  }
-
-  const loginUrl = request.nextUrl.clone();
-  loginUrl.pathname = "/login";
-  loginUrl.searchParams.set("next", request.nextUrl.pathname);
-  return NextResponse.redirect(loginUrl);
+export function middleware() {
+  // No-op — all logic moved to proxy.ts
 }
 
 export const config = {
-  matcher: ["/((?!login|api|_next|favicon.ico).*)"],
+  matcher: [],
 };

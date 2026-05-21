@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { authConfig, authCookieName, verifyCredentials } from "@/lib/auth";
+import { authConfig, authCookieName, verifyCredentials, getDevFallbackToken } from "@/lib/auth";
 
 export async function POST(request: Request) {
   const form = await request.formData();
@@ -15,7 +15,8 @@ export async function POST(request: Request) {
     });
   }
 
-  const sessionToken = authConfig().sessionToken;
+  const config = authConfig();
+  const sessionToken = config.sessionToken ?? (config.allowDevAuth && process.env.NODE_ENV !== "production" ? getDevFallbackToken() : null);
   if (!sessionToken) {
     return NextResponse.redirect(new URL("/login?error=notoken", request.url), { status: 303 });
   }
