@@ -253,6 +253,29 @@ kW / kWh / PF shown as "not supported" — see `docs/MEASUREMENT_LIMITATIONS.md`
 | `/save-mqtt` | POST | `handleSaveMqtt` (legacy) | ✅ |
 | `/save-calibration` | POST | `handleSaveCalibration` (legacy) | ✅ |
 
+### K. Firmware v0.5.2 — AP SSID First-Boot Fix + Hardware Verification
+
+| Change | Status |
+|--------|--------|
+| **Bug fixed:** AP SSID was `UMS-SETUP-0000` on first boot — `WiFi.macAddress()` returns zeros before WiFi driver initialises | ✅ Fixed |
+| `getMacLast4()` rewritten — uses `esp_read_mac(mac, ESP_MAC_WIFI_STA)` from `esp_mac.h` (eFuse, no WiFi init needed) | ✅ Done |
+| `#include <esp_mac.h>` added to includes | ✅ Done |
+| **Compile verified** — Arduino CLI 1.5.0, FQBN `esp32:esp32:esp32`, core 3.3.8, 0 errors | ✅ Done |
+| Flash: 1,007,268 bytes (76%) / RAM: 47,760 bytes (14%) | ✅ Confirmed |
+| **Hardware verified on COM11** (ESP32-D0WD-V3, MAC `30:76:F5:A5:AD:54`) | ✅ |
+| USB flash via Arduino CLI — upload completed, hash verified | ✅ |
+| Serial boot confirmed: `v0.5.2`, `AP SSID: UMS-SETUP-AD54`, measurements streaming | ✅ |
+| All four portal routes accessible from AP: `/` `/config` `/data` `/update` | ✅ HTTP 200 |
+| `/data` fields confirmed: firmware=0.5.2, mac, wifi_mode, config_mode, setup_ap_enabled | ✅ |
+| AP fallback confirmed: STA fails → AP starts after 30 s with correct SSID `UMS-SETUP-AD54` | ✅ |
+| Identity config saved via POST `/save-config` and persisted across reboot | ✅ |
+| Static IP config saved (192.168.1.50) and loaded correctly after reboot — no crash | ✅ |
+| **OTA verified end-to-end:** uploaded `0.5.1-OTA-TEST` binary, `/data` confirmed version change | ✅ |
+| Official v0.5.2 restored via second OTA upload, `/data` confirmed `firmware: 0.5.2` | ✅ |
+| **Factory reset confirmed:** NVS cleared, board reboots to `UPSMON-UNASSIGNED` first-boot state | ✅ |
+| After factory reset, AP SSID is `UMS-SETUP-AD54` (fix confirmed on first boot) | ✅ |
+| WiFi STA connectivity test: not fully verified (user WiFi password required) | ⚠️ Requires LAN access |
+
 ---
 
 ## Pending (Future Milestones)

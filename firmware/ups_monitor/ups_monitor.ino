@@ -1,5 +1,5 @@
 /*
- * UPS Monitor Firmware  v0.5.1
+ * UPS Monitor Firmware  v0.5.2
  *
  * Commissioning portal at /config (WiFi, MQTT, board identity, calibration).
  * AP is fallback/setup only by default; stays off when STA is connected unless
@@ -26,6 +26,7 @@
 #include <driver/adc.h>
 #include <esp_adc_cal.h>
 #include <esp_system.h>
+#include <esp_mac.h>
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Preferences.h>
@@ -34,7 +35,7 @@
 /* ================================================================
  *  Firmware identity
  * ================================================================ */
-#define FIRMWARE_VERSION        "0.5.1"
+#define FIRMWARE_VERSION        "0.5.2"
 
 /* ================================================================
  *  Hardware / sampling constants  (DO NOT CHANGE)
@@ -244,12 +245,16 @@ String htmlEscape(const String& in)
     return out;
 }
 
-/* Last 4 hex chars of MAC address, no colons (e.g. "3A4F") */
+/* Last 4 hex chars of MAC address, no colons (e.g. "AD54").
+ * Uses esp_read_mac() so the correct MAC is available before WiFi.macAddress()
+ * is reliable (i.e. on first call inside connectWifi() during setup). */
 String getMacLast4()
 {
-    String mac = WiFi.macAddress();
-    mac.replace(":", "");
-    return mac.substring(mac.length() - 4);
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    char buf[5];
+    snprintf(buf, sizeof(buf), "%02X%02X", mac[4], mac[5]);
+    return String(buf);
 }
 
 /* AP SSID format: UMS-SETUP-<last4MAC> */
