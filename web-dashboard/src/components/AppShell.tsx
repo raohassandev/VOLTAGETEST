@@ -1,6 +1,7 @@
 "use client";
 
-import { Activity, Bell, ChevronDown, LogOut, ShieldCheck } from "lucide-react";
+import { Activity, Bell, ChevronDown, LogOut } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -58,13 +59,19 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
         <div className="mx-auto flex h-12 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
 
           {/* Brand */}
-          <Link href="/" className="flex shrink-0 items-center gap-2 mr-2">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-slate-950 text-white">
-              <ShieldCheck size={14} />
-            </span>
-            <span className="font-bold text-sm text-slate-950 tracking-tight">UMS</span>
-            <span className="hidden text-slate-300 lg:inline text-sm">—</span>
-            <span className="hidden text-sm text-slate-500 font-medium lg:inline">UPS Monitoring</span>
+          <Link href="/" className="flex shrink-0 items-center gap-2.5 mr-2">
+            <Image
+              src="/brand/automatrix-logo.png"
+              alt="Automatrix"
+              width={36}
+              height={36}
+              className="shrink-0 object-contain sm:w-9 sm:h-9 w-7 h-7"
+              priority
+            />
+            <div className="flex flex-col leading-tight">
+              <span className="font-bold text-sm text-slate-950 tracking-tight">UMS — UPS Monitoring</span>
+              <span className="hidden text-xs text-slate-400 font-normal lg:block">Industrial UPS Monitoring System</span>
+            </div>
           </Link>
 
           {/* Desktop nav */}

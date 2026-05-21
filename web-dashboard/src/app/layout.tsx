@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "UPS Monitoring System",
-  description: "Live UPS voltage, current, battery, and alarm monitoring",
+  title: "UMS — UPS Monitoring | Automatrix",
+  description: "Industrial UPS Monitoring System by Automatrix Engineering",
+  icons: {
+    icon: "/brand/favicon.png",
+    apple: "/brand/favicon.png",
+  },
 };
 
 export default function RootLayout({

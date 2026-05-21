@@ -140,6 +140,17 @@ No credentials in output.
 
 ---
 
+### Phase L — Automatrix Branding — PASS (pending commit)
+- Automatrix logo extracted from `user-staging.pvdg.automatrix.pk/brand/` — no logo invented
+- `web-dashboard/public/brand/automatrix-logo.png` (180×180 PNG, the Automatrix orange/blue "A" mark)
+- `web-dashboard/public/brand/automatrix-logo.svg` (SVG with embedded raster — same mark)
+- `web-dashboard/public/brand/favicon.png` (180×180 PNG, same mark)
+- `AppShell.tsx`: logo mark (36px desktop / 28px mobile) + "UMS — UPS Monitoring" + "Industrial UPS Monitoring System" tagline
+- `login/page.tsx`: logo mark (56px) centered above "UMS — UPS Monitoring" + "Industrial UPS Monitoring System by Automatrix"
+- `layout.tsx`: title = "UMS — UPS Monitoring | Automatrix"; description = "Industrial UPS Monitoring System by Automatrix Engineering"; favicon reference
+- No hotlink to staging site — logo loads from local `/brand/` path (works LAN/offline)
+- 40 logo-branded screenshots captured to `visual-audit/ums-release-audit-2026-05-21/ui-polish-logo/`
+
 ### Phase K — UI/UX Polish — PASS (commit `cd75b67`)
 - `AppShell` shared component: sticky nav, health badge, alarm count badge, sign out, mobile dropdown
 - Main dashboard rewritten as card-first layout: 6-stat summary row, filter tabs (All/Online/Offline/Alarm), `UpsCard` grid (responsive 1/2/3 col), `CompactTable` below
@@ -176,6 +187,7 @@ See `SHIP_BLOCKERS.md` for full evidence log.
 
 ## Commit History (this branch)
 ```
+[pending]  Add Automatrix branding logo to UMS dashboard (Phase L)
 cd75b67  Polish demo UI with UPS cards app shell and detail flow (Phase K)
 7a8f221  fix(audit): correct volt_dc test descriptions and add screenshot proof
 1dbc381  fix(P0): volt_dc calibration, fleet IP column, UPS detail portal, alarm rule UPS dropdown, alarm dedup

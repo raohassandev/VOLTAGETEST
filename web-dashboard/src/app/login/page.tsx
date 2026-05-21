@@ -1,4 +1,4 @@
-import { ShieldCheck } from "lucide-react";
+import Image from "next/image";
 
 export default async function Login({
   searchParams,
@@ -11,13 +11,18 @@ export default async function Login({
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#eef3f8] px-4 text-slate-950">
       <section className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-950 text-white">
-            <ShieldCheck size={22} />
-          </div>
+        <div className="mb-6 flex flex-col items-center gap-3 text-center">
+          <Image
+            src="/brand/automatrix-logo.png"
+            alt="Automatrix"
+            width={56}
+            height={56}
+            className="object-contain"
+            priority
+          />
           <div>
-            <h1 className="text-xl font-semibold">UPS Monitoring</h1>
-            <p className="text-sm text-slate-500">Sign in to continue</p>
+            <h1 className="text-xl font-semibold text-slate-950">UMS — UPS Monitoring</h1>
+            <p className="text-sm text-slate-500">Industrial UPS Monitoring System by Automatrix</p>
           </div>
         </div>
 

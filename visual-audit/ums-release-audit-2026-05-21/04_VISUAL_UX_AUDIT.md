@@ -1,7 +1,18 @@
 # 04 — Visual UX Audit
 
 **Audit date:** 2026-05-21
-**Screenshots:** screenshots/ folder (36 images, 4 viewports per screen)
+**Screenshots (original):** screenshots/ folder (36 images)
+**Screenshots (ui-polish):** ui-polish/ folder (40 images, commit cd75b67)
+**Screenshots (logo):** ui-polish-logo/ folder (40 images, commit after branding)
+
+**Post-audit fixes applied:**
+- UX-01, UX-02: Board IP + portal buttons — FIXED (1dbc381)
+- UX-03: Alarm rule UPS dropdown — FIXED (1dbc381)
+- UX-07: Trend chart on UPS detail — FIXED (cd75b67, SVG inline chart)
+- UX-11: Admin navigation — FIXED (cd75b67, AppShell shared nav)
+- UX-13: Mobile header overflow — FIXED (cd75b67, hamburger menu)
+- UX-18: Page titles — PARTIALLY FIXED (cd75b67, layout metadata; per-route dynamic titles P2)
+- **Automatrix logo integrated** — FIXED (local PNG at /brand/automatrix-logo.png, no external dependency, works offline/LAN)
 
 ---
 

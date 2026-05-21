@@ -40,6 +40,21 @@ P0 = must fix before demo | P1 = must fix before field pilot | P2 = must fix bef
 
 ---
 
+## Branding (post-audit, applied after UI polish)
+
+**Automatrix logo integrated locally for LAN/offline dashboard use.**
+
+- Logo asset saved at `web-dashboard/public/brand/automatrix-logo.png` (180×180 PNG, from staging site)
+- SVG version saved at `web-dashboard/public/brand/automatrix-logo.svg`
+- Favicon saved at `web-dashboard/public/brand/favicon.png`
+- AppShell header updated: Automatrix logo mark + "UMS — UPS Monitoring" + "Industrial UPS Monitoring System" tagline
+- Login page updated: Automatrix logo + correct title/tagline
+- layout.tsx metadata updated: title "UMS — UPS Monitoring | Automatrix", description "Industrial UPS Monitoring System by Automatrix Engineering"
+- No runtime dependency on `user-staging.pvdg.automatrix.pk` — logo loads from local `/brand/` path
+- 40 logo-branded screenshots saved to `ui-polish-logo/` folder
+
+---
+
 ## Demo Readiness (P0 items only)
 
 **All 5 P0 blockers are FIXED as of commit 1dbc381 (pushed 2026-05-21).**
