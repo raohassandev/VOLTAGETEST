@@ -140,6 +140,20 @@ No credentials in output.
 
 ---
 
+### Phase K — UI/UX Polish — PASS (commit `cd75b67`)
+- `AppShell` shared component: sticky nav, health badge, alarm count badge, sign out, mobile dropdown
+- Main dashboard rewritten as card-first layout: 6-stat summary row, filter tabs (All/Online/Offline/Alarm), `UpsCard` grid (responsive 1/2/3 col), `CompactTable` below
+- Battery DC calibrated in all UI displays: `volt_dc × VOLT_DC_SCALE (0.0442)` — exported from `telemetry.ts`
+- `UpsCard` shows: In V, Out V, Bat V (calibrated), Load VA, Load %, Out A, RSSI, Board IP with Portal/Config/OTA, "Board IP not available" fallback
+- Alarms page rewritten: filter tabs, summary cards (Critical/Warning/Showing), desktop table + mobile card layout, ack flow preserved
+- UPS detail rewritten as proper meter page: `MetricCard` grid, SVG inline `TrendChart` (no external lib), board access panel, measurement limitations panel, commissioning status, alarm history
+- All admin pages wrapped in `AppShell` (inventory, alarm-rules, settings)
+- Legacy client-side alarm code removed from `telemetry.ts` (alarmsForRows, rowsForTelemetry, calibrate, statusFor, ModuleConfig, ParameterConfig, TelemetryRow, Alarm type)
+- 40 responsive screenshots captured (4 viewports × 10 routes) to `visual-audit/ums-release-audit-2026-05-21/ui-polish/`
+- lint PASS, build PASS, prisma validate PASS
+
+---
+
 ## Build Status
 ```
 npm run lint:    PASS (0 errors)
@@ -162,6 +176,7 @@ See `SHIP_BLOCKERS.md` for full evidence log.
 
 ## Commit History (this branch)
 ```
+cd75b67  Polish demo UI with UPS cards app shell and detail flow (Phase K)
 7a8f221  fix(audit): correct volt_dc test descriptions and add screenshot proof
 1dbc381  fix(P0): volt_dc calibration, fleet IP column, UPS detail portal, alarm rule UPS dropdown, alarm dedup
 9aaadc6  Remove browser MQTT, fix publish interval, add secret guard, update status files

@@ -17,7 +17,8 @@
 | [visual-audit/ums-release-audit-2026-05-21/04_VISUAL_UX_AUDIT.md](visual-audit/ums-release-audit-2026-05-21/04_VISUAL_UX_AUDIT.md) | 18 UX issues; severity; responsive UI summary table |
 | [visual-audit/ums-release-audit-2026-05-21/05_CODE_ARCHITECTURE_AUDIT.md](visual-audit/ums-release-audit-2026-05-21/05_CODE_ARCHITECTURE_AUDIT.md) | Per-file status; dead code; hardcoded secrets; missing error handling |
 | [visual-audit/ums-release-audit-2026-05-21/06_RELEASE_GAP_LIST.md](visual-audit/ums-release-audit-2026-05-21/06_RELEASE_GAP_LIST.md) | Master gap list P0–P3 with effort estimates |
-| [visual-audit/ums-release-audit-2026-05-21/screenshots/](visual-audit/ums-release-audit-2026-05-21/screenshots/) | 36 PNG screenshots |
+| [visual-audit/ums-release-audit-2026-05-21/screenshots/](visual-audit/ums-release-audit-2026-05-21/screenshots/) | 36 PNG screenshots (original audit) |
+| [visual-audit/ums-release-audit-2026-05-21/ui-polish/](visual-audit/ums-release-audit-2026-05-21/ui-polish/) | 40 PNG screenshots after UI polish (cd75b67) |
 
 ---
 
@@ -61,10 +62,24 @@
 
 ---
 
+## UI/UX Polish (commit cd75b67 — 2026-05-21)
+
+| Item | Status |
+|------|--------|
+| AppShell shared nav (all pages) | DONE |
+| Card-first fleet dashboard | DONE |
+| Calibrated Battery V display (volt_dc × 0.0442) | DONE |
+| Alarms page with mobile cards | DONE |
+| UPS detail with SVG trend chart | DONE |
+| Board access panel (Portal/Config/OTA) | DONE |
+| Measurement limitations panel | DONE |
+| 40 responsive screenshots (4 × 10) | DONE |
+| Legacy client alarm code removed | DONE |
+
 ## Production Ship Status
 
 | Gate | Status | Reason |
 |------|--------|--------|
-| Demo | **YES** (all P0 blockers fixed, 1dbc381) | volt_dc alarm fixed, board IP shown, portal buttons added, alarm rule UX fixed, duplicate alarms resolved |
-| Field pilot | NO | Docker not tested; P1 gaps unresolved (trend chart, responsive tables, rule edit) |
+| Demo | **YES** (all P0 blockers fixed + UI polish done) | cd75b67: AppShell, card dashboard, calibrated displays, trend chart, board portal, responsive layout |
+| Field pilot | NO | Docker not tested; P1 gaps: rule edit, delete confirm, ackBy attribution |
 | Production | NO | Docker and Docker MQTT not proven; user management missing; P2 gaps unresolved |
