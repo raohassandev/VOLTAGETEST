@@ -118,7 +118,7 @@ curl http://localhost:3000/api/devices
 
 ## Blocker 4b — Browser MQTT removed from production dashboard
 
-**Status: PASS (pending commit)**
+**Status: PASS (commit `9aaadc6`)**
 
 **Evidence:**
 - **Root cause:** `useTelemetry()` in `src/lib/telemetry.ts` imported `mqtt` and opened a WebSocket connection to `wss://broker.hivemq.com:8884/mqtt`. The header badge showed "MQTT online / Connecting" based on this browser-side connection, not the backend MQTT worker.
@@ -266,7 +266,7 @@ Required files status:
 
 ## Blocker 9 — Production placeholder secret guard
 
-**Status: PASS (pending commit)**
+**Status: PASS (commit `9aaadc6`)**
 
 **Evidence:**
 - `instrumentation.ts` updated with `PLACEHOLDER_SECRETS` list:
@@ -288,9 +288,9 @@ Required files status:
 | 2 — Mosquitto production files | PASS | `9bbc9b7` |
 | 3 — MQTT through Docker | OPEN | depends on Blocker 1 |
 | 4 — Dashboard data consistency | PASS | `9bbc9b7` |
-| 4b — Browser MQTT removed | PASS | pending |
+| 4b — Browser MQTT removed | PASS | `9aaadc6` |
 | 5 — Alarm correctness | PASS | `9bbc9b7` |
 | 6 — Backup and restore | PASS | `9bbc9b7` |
 | 7 — Burn-in 2h | PASS | `9bbc9b7` |
 | 8 — Release readiness | IN PROGRESS | pending Blockers 1+3 |
-| 9 — Production placeholder secret guard | PASS | pending |
+| 9 — Production placeholder secret guard | PASS | `9aaadc6` |

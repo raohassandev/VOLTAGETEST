@@ -136,7 +136,7 @@ See `SHIP_BLOCKERS.md` for full evidence log.
 
 ## Commit History (this branch)
 ```
-pending  Remove browser MQTT, add API health badge, fix publish interval, placeholder secret guard
+9aaadc6  Remove browser MQTT, fix publish interval, add secret guard, update status files
 9bbc9b7  Fix blockers 2/4/5/6/7: alarm engine, fleet page, mosquitto, Dockerfile, burn-in
 4f396f1  chore: add agent status report
 7a5c0ec  Add calibration guide and release package (Phases H + I)
