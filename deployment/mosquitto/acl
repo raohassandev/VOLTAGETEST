@@ -1,0 +1,19 @@
+# UMS MQTT Access Control List — eclipse-mosquitto v2
+#
+# Device users (username = device_id):
+#   Can publish only to their own telemetry topic.
+#   The %u substitution expands to the connecting client's username.
+#   A device with username DEV-COM11-TEST can publish to:
+#     building/+/ups/DEV-COM11-TEST/telemetry
+#     building/+/ups/DEV-COM11-TEST/status
+#
+pattern write building/+/ups/%u/telemetry
+pattern write building/+/ups/%u/status
+
+# Dashboard / MQTT worker user:
+#   Needs read access to all devices across all sites.
+#   Username must match MQTT_USERNAME in the dashboard .env.
+#
+user dashboard
+topic read building/+/ups/+/telemetry
+topic read building/+/ups/+/status

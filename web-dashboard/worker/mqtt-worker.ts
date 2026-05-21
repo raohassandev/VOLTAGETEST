@@ -152,8 +152,10 @@ async function runAlarmEvaluation(deviceId: string, payload: RawPayload): Promis
   const batteryNominalV = device?.upsUnit?.batteryNominalV ?? 48;
   const capacityVa = device?.upsUnit?.capacityVa ?? 0;
 
-  const settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
-  const debounceSeconds = settings?.offlineThresholdSecs ?? 30;
+  // Global fallback debounce/hysteresis — per-rule values from AlarmRule table
+  // take precedence inside evaluateAlarms. These are used only when no rule exists.
+  const FALLBACK_DEBOUNCE_SECS = 30;
+  const FALLBACK_HYSTERESIS_PCT = 2;
 
   await markDeviceOnline(prisma, deviceId);
 
@@ -174,8 +176,8 @@ async function runAlarmEvaluation(deviceId: string, payload: RawPayload): Promis
     },
     batteryNominalV,
     capacityVa,
-    debounceSeconds,
-    2,
+    FALLBACK_DEBOUNCE_SECS,
+    FALLBACK_HYSTERESIS_PCT,
   );
 }
 

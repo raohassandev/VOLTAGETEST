@@ -25,6 +25,8 @@ interface ThresholdCheck {
   lowWarning?: number;
   highWarning?: number;
   highCritical?: number;
+  debounceSeconds: number;
+  hysteresisPercent: number;
 }
 
 interface AlarmCandidate {
@@ -32,6 +34,9 @@ interface AlarmCandidate {
   severity: AlarmSeverity;
   message: string;
 }
+
+const DEFAULT_DEBOUNCE_SECS = 30;
+const DEFAULT_HYSTERESIS_PCT = 2;
 
 const DEFAULT_THRESHOLDS: ThresholdCheck[] = [
   {
@@ -42,6 +47,8 @@ const DEFAULT_THRESHOLDS: ThresholdCheck[] = [
     lowWarning: 200,
     highWarning: 245,
     highCritical: 255,
+    debounceSeconds: DEFAULT_DEBOUNCE_SECS,
+    hysteresisPercent: DEFAULT_HYSTERESIS_PCT,
   },
   {
     metric: "volt_out",
@@ -51,6 +58,8 @@ const DEFAULT_THRESHOLDS: ThresholdCheck[] = [
     lowWarning: 210,
     highWarning: 245,
     highCritical: 255,
+    debounceSeconds: DEFAULT_DEBOUNCE_SECS,
+    hysteresisPercent: DEFAULT_HYSTERESIS_PCT,
   },
   {
     metric: "ct_in",
@@ -58,6 +67,8 @@ const DEFAULT_THRESHOLDS: ThresholdCheck[] = [
     value: 0,
     highWarning: 28,
     highCritical: 32,
+    debounceSeconds: DEFAULT_DEBOUNCE_SECS,
+    hysteresisPercent: DEFAULT_HYSTERESIS_PCT,
   },
   {
     metric: "ct_out",
@@ -65,6 +76,8 @@ const DEFAULT_THRESHOLDS: ThresholdCheck[] = [
     value: 0,
     highWarning: 28,
     highCritical: 32,
+    debounceSeconds: DEFAULT_DEBOUNCE_SECS,
+    hysteresisPercent: DEFAULT_HYSTERESIS_PCT,
   },
 ];
 
@@ -122,6 +135,8 @@ async function resolveThresholds(
         lowWarning: db.lowWarning ?? hard?.lowWarning,
         highWarning: db.highWarning ?? hard?.highWarning,
         highCritical: db.highCritical ?? hard?.highCritical,
+        debounceSeconds: db.debounceSeconds,
+        hysteresisPercent: db.hysteresisPercent,
       });
     } else if (hard) {
       resolved.push({ ...hard });
@@ -136,7 +151,9 @@ async function resolveThresholds(
           lowCritical: dcDb.lowCritical ?? undefined,
           lowWarning: dcDb.lowWarning ?? undefined,
           highWarning: dcDb.highWarning ?? undefined,
-          highCritical: dcDb.highCritical ?? undefined }
+          highCritical: dcDb.highCritical ?? undefined,
+          debounceSeconds: dcDb.debounceSeconds,
+          hysteresisPercent: dcDb.hysteresisPercent }
       : buildBatteryThresholds(batteryNominalV));
   }
 
@@ -147,8 +164,13 @@ async function resolveThresholds(
       resolved.push(loadDb
         ? { metric: "load_percent", label: loadDb.label, value: 0,
             highWarning: loadDb.highWarning ?? 80,
-            highCritical: loadDb.highCritical ?? 95 }
-        : { metric: "load_percent", label: "Output Load", value: 0, highWarning: 80, highCritical: 95 });
+            highCritical: loadDb.highCritical ?? 95,
+            debounceSeconds: loadDb.debounceSeconds,
+            hysteresisPercent: loadDb.hysteresisPercent }
+        : { metric: "load_percent", label: "Output Load", value: 0,
+            highWarning: 80, highCritical: 95,
+            debounceSeconds: DEFAULT_DEBOUNCE_SECS,
+            hysteresisPercent: DEFAULT_HYSTERESIS_PCT });
     }
   }
 
@@ -164,6 +186,8 @@ function buildBatteryThresholds(nominalV: number): ThresholdCheck {
     lowWarning: nominalV * 0.917,
     highWarning: nominalV * 1.125,
     highCritical: nominalV * 1.188,
+    debounceSeconds: DEFAULT_DEBOUNCE_SECS,
+    hysteresisPercent: DEFAULT_HYSTERESIS_PCT,
   };
 }
 
@@ -241,7 +265,8 @@ export async function evaluateAlarms(
 
   for (const [metric, candidate] of candidates) {
     const key = `${snap.deviceId}:${metric}`;
-    const debounceMs = debounceSeconds * 1000;
+    const check = checks.find((c) => c.metric === metric);
+    const debounceMs = (check?.debounceSeconds ?? debounceSeconds) * 1000;
 
     let entry = debounceMap.get(key);
     if (!entry) {
@@ -296,7 +321,7 @@ export async function evaluateAlarms(
       continue;
     }
 
-    if (isNormalWithHysteresis(check, hysteresisPercent)) {
+    if (isNormalWithHysteresis(check, check.hysteresisPercent ?? hysteresisPercent)) {
       await prisma.alarm.update({
         where: { id: alarm.id },
         data: { state: "cleared", clearedAt: new Date() },

@@ -2,10 +2,8 @@
 
 import {
   AlertTriangle,
-  BatteryCharging,
   Bell,
   BellOff,
-  Bolt,
   Cpu,
   Gauge,
   LayoutList,
@@ -19,140 +17,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alarm,
   FleetDevice,
-  TelemetryKey,
-  TelemetryRow,
   SystemSettings,
   formatNumber,
-  telemetryKeys,
   useTelemetry,
 } from "@/lib/telemetry";
 
-const chartKeys: TelemetryKey[] = ["volt_in", "volt_out", "volt_dc"];
-const chartColors: Record<TelemetryKey, string> = {
-  volt_in: "#2563eb",
-  volt_out: "#16a34a",
-  volt_dc: "#f59e0b",
-  ct_in: "#9333ea",
-  ct_out: "#dc2626",
-};
-
-function gaugePercent(row: TelemetryRow) {
-  const { low, high } = row.parameter;
-  const span = Math.max(high - low, 1);
-  return Math.max(0, Math.min(100, ((row.value - low) / span) * 100));
-}
-
-function statusClass(status: TelemetryRow["status"]) {
-  if (status === "normal") return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  if (status === "disabled") return "border-slate-200 bg-slate-100 text-slate-500";
-  return "border-red-200 bg-red-50 text-red-700";
-}
-
-function MiniGauge({ row }: { row: TelemetryRow }) {
-  const percent = gaugePercent(row);
-  const alarm = row.status === "low" || row.status === "high";
-
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-slate-500">{row.parameter.label}</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-950">
-            {formatNumber(row.value)}
-            <span className="ml-1 text-base text-slate-500">{row.parameter.unit}</span>
-          </p>
-        </div>
-        <span className={`rounded-full border px-2.5 py-1 text-xs font-bold capitalize ${statusClass(row.status)}`}>
-          {row.status.toUpperCase()}
-        </span>
-      </div>
-      <div className="mt-6">
-        <div className="h-3 rounded-full bg-slate-100">
-          <div
-            className={`h-3 rounded-full ${alarm ? "bg-red-500" : "bg-emerald-500"}`}
-            style={{ width: `${percent}%` }}
-          />
-        </div>
-        <div className="mt-2 flex justify-between text-xs font-medium text-slate-500">
-          <span>{formatNumber(row.parameter.low)}</span>
-          <span>{formatNumber(row.parameter.high)}</span>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function TrendChart({
-  history,
-  rows,
-}: {
-  history: ReturnType<typeof useTelemetry>["history"];
-  rows: TelemetryRow[];
-}) {
-  const width = 900;
-  const height = 260;
-  const padding = 28;
-  const rowByKey = Object.fromEntries(rows.map((row) => [row.key, row]));
-
-  const points = chartKeys.map((key) => {
-    const row = rowByKey[key] as TelemetryRow;
-    const values = history.map((item) => item[key] * row.parameter.scale + row.parameter.offset);
-    const min = Math.min(row.parameter.low, ...values);
-    const max = Math.max(row.parameter.high, ...values);
-    const span = Math.max(max - min, 1);
-    const path = values
-      .map((value, index) => {
-        const x = padding + (index / Math.max(history.length - 1, 1)) * (width - padding * 2);
-        const y = height - padding - ((value - min) / span) * (height - padding * 2);
-        return `${index === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
-      })
-      .join(" ");
-    return { key, path, label: row.parameter.label };
-  });
-
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-950">Live voltage trend</h2>
-          <p className="text-sm text-slate-500">Live trend from connected UPS modules.</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          {points.map((point) => (
-            <span key={point.key} className="flex items-center gap-2 text-sm font-medium text-slate-600">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: chartColors[point.key] }} />
-              {point.label}
-            </span>
-          ))}
-        </div>
-      </div>
-      <div className="overflow-hidden rounded-md border border-slate-100 bg-white">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-[260px] w-full">
-          {[0, 1, 2, 3].map((line) => (
-            <line key={line} x1={padding} x2={width - padding} y1={padding + line * 64} y2={padding + line * 64} stroke="#e2e8f0" />
-          ))}
-          {history.length < 2 ? (
-            <text x="50%" y="50%" textAnchor="middle" fill="#64748b" fontSize="16">
-              Waiting for live MQTT telemetry
-            </text>
-          ) : (
-            points.map((point) => (
-              <path
-                key={point.key}
-                d={point.path}
-                fill="none"
-                stroke={chartColors[point.key]}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="4"
-              />
-            ))
-          )}
-        </svg>
-      </div>
-    </section>
-  );
-}
 
 function UserAlarmPanel({ alarms }: { alarms: Alarm[] }) {
   const [soundEnabled, setSoundEnabled] = useState(false);
@@ -465,13 +334,12 @@ function ManufacturerSettings({
 }
 
 export default function Home() {
-  const { alarms, config, fleetDevices, history, lastMessageAt, mqttStatus, parseError, rows, setSystemSettings, systemSettings, telemetry } =
+  const { fleetDevices, mqttStatus, parseError, setSystemSettings, systemSettings } =
     useTelemetry();
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const input = rows.find((row) => row.key === "volt_in");
-  const output = rows.find((row) => row.key === "volt_out");
-  const battery = rows.find((row) => row.key === "volt_dc");
-  const currentRows = rows.filter((row) => row.key === "ct_in" || row.key === "ct_out");
+
+  // Fleet-wide alarms derived from all devices — source of truth for alarm display.
+  const fleetAlarms = fleetDevices.flatMap((d) => d.alarms);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 5000);
@@ -490,15 +358,15 @@ export default function Home() {
               <div>
                 <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Live power protection</p>
                 <h1 className="mt-1 text-3xl font-semibold tracking-tight">UPS Monitoring System</h1>
-                <p className="mt-1 text-sm font-medium text-slate-500">{config.moduleName}</p>
+                <p className="mt-1 text-sm font-medium text-slate-500">Fleet management</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 text-sm">
               <span className={`flex items-center gap-2 rounded-md px-3 py-2 font-semibold ${mqttStatus === "connected" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
                 <Wifi size={16} /> {mqttStatus === "connected" ? "MQTT online" : "Connecting…"}
               </span>
-              <span className={`flex items-center gap-2 rounded-md px-3 py-2 font-semibold ${alarms.length ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-700"}`}>
-                <AlertTriangle size={16} /> {alarms.length} alarms
+              <span className={`flex items-center gap-2 rounded-md px-3 py-2 font-semibold ${fleetAlarms.length ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-700"}`}>
+                <AlertTriangle size={16} /> {fleetAlarms.length} alarms
               </span>
               <Link href="/alarms" className="flex items-center gap-2 rounded-md bg-slate-100 px-3 py-2 font-semibold text-slate-700 hover:bg-slate-200">
                 <Bell size={16} /> Alarm log
@@ -527,61 +395,9 @@ export default function Home() {
           </section>
         ) : null}
 
-        <section className="grid gap-4 md:grid-cols-3">
-          {input ? <MiniGauge row={input} /> : null}
-          {output ? <MiniGauge row={output} /> : null}
-          {battery ? <MiniGauge row={battery} /> : null}
-        </section>
+        <UserAlarmPanel alarms={fleetAlarms} />
 
-        <TrendChart history={history} rows={rows} />
-
-        <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-          <UserAlarmPanel alarms={alarms} />
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <Bolt size={20} className="text-slate-500" />
-              <h2 className="text-lg font-semibold">Current transformers</h2>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {currentRows.map((row) => (
-                <div key={row.key} className="rounded-md border border-slate-200 p-4">
-                  <p className="text-sm font-semibold text-slate-500">{row.parameter.label}</p>
-                  <p className="mt-2 text-3xl font-semibold">
-                    {formatNumber(row.value)}
-                    <span className="ml-1 text-base text-slate-500">{row.parameter.unit}</span>
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-          <ManufacturerSettings settings={systemSettings} setSettings={setSystemSettings} />
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <BatteryCharging size={20} className="text-slate-500" />
-              <h2 className="text-lg font-semibold">System status</h2>
-            </div>
-            <div className="grid gap-3 text-sm">
-              {[
-                ["Last update", lastMessageAt || "Waiting for data"],
-                ["Healthy channels", `${rows.filter((r) => r.status === "normal").length}/${telemetryKeys.length}`],
-                ["Firmware", telemetry.firmware || "--"],
-                ["RSSI", telemetry.rssi ? `${telemetry.rssi} dBm` : "--"],
-                ["Input apparent power", `${formatNumber(Number(telemetry.s_in_va ?? 0))} VA`],
-                ["Output apparent power", `${formatNumber(Number(telemetry.s_out_va ?? 0))} VA`],
-                ["Active power (kW)", "Not supported — apparent power only"],
-                ["Energy (kWh)", "Not supported — no waveform sampling"],
-              ].map(([label, value]) => (
-                <div key={label} className="flex justify-between border-b border-slate-100 pb-2">
-                  <span className="text-slate-500">{label}</span>
-                  <span className="font-semibold">{value}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        </section>
+        <ManufacturerSettings settings={systemSettings} setSettings={setSystemSettings} />
       </div>
     </main>
   );

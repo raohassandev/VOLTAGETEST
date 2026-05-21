@@ -11,7 +11,7 @@ web-dashboard/*.tsbuildinfo
 web-dashboard/next-env.d.ts
 
 deployment/mosquitto/passwords
-deployment/mosquitto/acl
+deployment/backups/
 
 .DS_Store
 Thumbs.db
