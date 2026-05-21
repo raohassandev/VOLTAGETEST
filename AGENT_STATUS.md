@@ -140,7 +140,7 @@ No credentials in output.
 
 ---
 
-### Phase L — Automatrix Branding — PASS (pending commit)
+### Phase L — Automatrix Branding — PASS (commit `2f3c4c2`)
 - Automatrix logo extracted from `user-staging.pvdg.automatrix.pk/brand/` — no logo invented
 - `web-dashboard/public/brand/automatrix-logo.png` (180×180 PNG, the Automatrix orange/blue "A" mark)
 - `web-dashboard/public/brand/automatrix-logo.svg` (SVG with embedded raster — same mark)
@@ -187,7 +187,7 @@ See `SHIP_BLOCKERS.md` for full evidence log.
 
 ## Commit History (this branch)
 ```
-[pending]  Add Automatrix branding logo to UMS dashboard (Phase L)
+2f3c4c2  Add Automatrix branding logo to UMS dashboard (Phase L)
 cd75b67  Polish demo UI with UPS cards app shell and detail flow (Phase K)
 7a8f221  fix(audit): correct volt_dc test descriptions and add screenshot proof
 1dbc381  fix(P0): volt_dc calibration, fleet IP column, UPS detail portal, alarm rule UPS dropdown, alarm dedup
