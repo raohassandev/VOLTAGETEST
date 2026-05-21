@@ -322,7 +322,6 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
               {[
                 ["UPS ID", unit.upsId],
                 ["Device ID", device?.deviceId ?? "--"],
-                ["IP Address", device?.ip ?? "--"],
                 ["MAC Address", device?.mac ?? "--"],
                 ["Firmware", device?.firmware ?? "--"],
                 ["Serial", unit.serial || "--"],
@@ -338,6 +337,21 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
                   </span>
                 </div>
               ))}
+              <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                <span className="text-slate-500">IP Address</span>
+                {device?.ip ? (
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="font-semibold font-mono">{device.ip}</span>
+                    <span className="flex gap-1.5 text-xs">
+                      <a href={`http://${device.ip}/`} target="_blank" rel="noreferrer" className="rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-700 hover:bg-slate-200">Open portal</a>
+                      <a href={`http://${device.ip}/config`} target="_blank" rel="noreferrer" className="rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-700 hover:bg-slate-200">Config</a>
+                      <a href={`http://${device.ip}/update`} target="_blank" rel="noreferrer" className="rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-700 hover:bg-slate-200">OTA</a>
+                    </span>
+                  </div>
+                ) : (
+                  <span className="font-semibold text-slate-400">—</span>
+                )}
+              </div>
             </dl>
           </section>
 

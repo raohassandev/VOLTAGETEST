@@ -16,15 +16,15 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Alarm,
   FleetDevice,
+  ServerAlarm,
   SystemSettings,
   formatNumber,
   useTelemetry,
 } from "@/lib/telemetry";
 
 
-function UserAlarmPanel({ alarms }: { alarms: Alarm[] }) {
+function UserAlarmPanel({ alarms }: { alarms: ServerAlarm[] }) {
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -66,21 +66,18 @@ function UserAlarmPanel({ alarms }: { alarms: Alarm[] }) {
 
   useEffect(() => {
     if (!speechEnabled || alarms.length === 0 || !("speechSynthesis" in window)) return;
-    const activeKeys = new Set(alarms.map((alarm) => `${alarm.key}-${alarm.type}`));
+    const activeIds = new Set(alarms.map((a) => a.id));
     spokenAlarmKeysRef.current.forEach((key) => {
-      if (!activeKeys.has(key)) spokenAlarmKeysRef.current.delete(key);
+      if (!activeIds.has(key)) spokenAlarmKeysRef.current.delete(key);
     });
-    const hasNewAlarm = alarms.some((alarm) => !spokenAlarmKeysRef.current.has(`${alarm.key}-${alarm.type}`));
+    const hasNew = alarms.some((a) => !spokenAlarmKeysRef.current.has(a.id));
     const now = Date.now();
-    const shouldRepeat = now - lastSpeechAtRef.current >= 30000;
-    if (!hasNewAlarm && !shouldRepeat) return;
-    const alarmText = alarms
-      .map((alarm) => `${alarm.label} ${alarm.type.toLowerCase()} alarm. Current value ${formatNumber(alarm.value)} ${alarm.unit}. Limit ${formatNumber(alarm.limit)} ${alarm.unit}.`)
-      .join(" ");
-    alarms.forEach((alarm) => spokenAlarmKeysRef.current.add(`${alarm.key}-${alarm.type}`));
+    if (!hasNew && now - lastSpeechAtRef.current < 30000) return;
+    const text = alarms.map((a) => a.message).join(" ");
+    alarms.forEach((a) => spokenAlarmKeysRef.current.add(a.id));
     lastSpeechAtRef.current = now;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(alarmText);
+    const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.92;
     window.speechSynthesis.speak(utterance);
   }, [alarms, speechEnabled]);
@@ -90,7 +87,7 @@ function UserAlarmPanel({ alarms }: { alarms: Alarm[] }) {
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-slate-950">Alarms</h2>
-          <p className="text-sm text-slate-500">Active high and low limit conditions.</p>
+          <p className="text-sm text-slate-500">Active conditions from the alarm engine.</p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
           <button
@@ -126,29 +123,36 @@ function UserAlarmPanel({ alarms }: { alarms: Alarm[] }) {
         </div>
       ) : (
         <div className="grid gap-3">
-          {alarms.map((alarm) => (
-            <div
-              key={alarm.key}
-              className="flex flex-col gap-2 rounded-md border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div>
-                <p className="font-semibold text-red-800">{alarm.label} {alarm.type}</p>
-                <p className="text-sm text-red-700">
-                  {formatNumber(alarm.value)} {alarm.unit} limit {formatNumber(alarm.limit)} {alarm.unit}
-                </p>
+          {alarms.map((alarm) => {
+            const isCrit = alarm.severity === "critical";
+            return (
+              <div
+                key={alarm.id}
+                className={`flex flex-col gap-2 rounded-md border p-4 sm:flex-row sm:items-center sm:justify-between ${isCrit ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}
+              >
+                <div>
+                  <p className={`font-semibold ${isCrit ? "text-red-800" : "text-amber-800"}`}>
+                    {isCrit ? "CRITICAL" : "WARNING"} — {alarm.metric.replace(/_/g, " ")}
+                    {alarm.upsId ? <span className="ml-2 font-normal text-sm">({alarm.upsId})</span> : null}
+                  </p>
+                  <p className={`text-sm ${isCrit ? "text-red-700" : "text-amber-700"}`}>{alarm.message}</p>
+                </div>
+                <span className={`shrink-0 text-sm font-semibold ${isCrit ? "text-red-700" : "text-amber-700"}`}>
+                  {new Date(alarm.firstSeenAt).toLocaleTimeString()}
+                </span>
               </div>
-              <span className="text-sm font-semibold text-red-700">{alarm.time}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
   );
 }
 
-function FleetSummary({ devices, nowMs }: { devices: FleetDevice[]; nowMs: number }) {
+function FleetSummary({ devices, nowMs, serverAlarms }: { devices: FleetDevice[]; nowMs: number; serverAlarms: ServerAlarm[] }) {
   const online = devices.filter((d) => nowMs - d.lastSeenMs < 60_000).length;
-  const alarming = devices.filter((d) => d.alarms.length > 0).length;
+  const alarmingIds = new Set(serverAlarms.map((a) => a.deviceId));
+  const alarming = devices.filter((d) => alarmingIds.has(d.id)).length;
   const offline = devices.length - online;
   const totalVa = devices.reduce((sum, d) => sum + Number(d.telemetry.s_out_va ?? 0), 0);
 
@@ -186,7 +190,7 @@ function FleetSummary({ devices, nowMs }: { devices: FleetDevice[]; nowMs: numbe
   );
 }
 
-function FleetTable({ devices, nowMs }: { devices: FleetDevice[]; nowMs: number }) {
+function FleetTable({ devices, nowMs, serverAlarms }: { devices: FleetDevice[]; nowMs: number; serverAlarms: ServerAlarm[] }) {
   const [search, setSearch] = useState("");
 
   const filtered = devices.filter((d) => {
@@ -199,6 +203,13 @@ function FleetTable({ devices, nowMs }: { devices: FleetDevice[]; nowMs: number 
       (d.inventory?.location ?? "").toLowerCase().includes(q)
     );
   });
+
+  const alarmsByDevice = new Map<string, ServerAlarm[]>();
+  for (const a of serverAlarms) {
+    const list = alarmsByDevice.get(a.deviceId) ?? [];
+    list.push(a);
+    alarmsByDevice.set(a.deviceId, list);
+  }
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -215,7 +226,7 @@ function FleetTable({ devices, nowMs }: { devices: FleetDevice[]; nowMs: number 
         />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[980px] border-collapse text-sm">
+        <table className="w-full min-w-[1080px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
               <th className="py-2 pr-3">UPS</th>
@@ -228,6 +239,7 @@ function FleetTable({ devices, nowMs }: { devices: FleetDevice[]; nowMs: number 
               <th className="py-2 pr-3">Output VA</th>
               <th className="py-2 pr-3">Load %</th>
               <th className="py-2 pr-3">RSSI</th>
+              <th className="py-2 pr-3">Board IP</th>
               <th className="py-2 pr-3">Status</th>
               <th className="py-2 pr-3">Last seen</th>
             </tr>
@@ -235,17 +247,19 @@ function FleetTable({ devices, nowMs }: { devices: FleetDevice[]; nowMs: number 
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td className="py-5 text-slate-500" colSpan={12}>
+                <td className="py-5 text-slate-500" colSpan={13}>
                   {devices.length === 0 ? "Waiting for UPS telemetry." : "No results."}
                 </td>
               </tr>
             ) : (
               filtered.map((device) => {
-                const alarm = device.alarms.length > 0;
+                const deviceAlarms = alarmsByDevice.get(device.id) ?? [];
+                const alarm = deviceAlarms.length > 0;
                 const online = nowMs - device.lastSeenMs < 60_000;
                 const upsId = device.inventory?.upsId || device.telemetry.ups_id || device.id;
                 const capacityVa = device.inventory?.capacityVa ?? 0;
                 const loadPct = capacityVa > 0 ? ((Number(device.telemetry.s_out_va ?? 0) / capacityVa) * 100) : null;
+                const boardIp = device.telemetry.ip || "";
 
                 return (
                   <tr key={device.id} className={`border-b border-slate-100 ${!online ? "opacity-60" : ""}`}>
@@ -272,6 +286,29 @@ function FleetTable({ devices, nowMs }: { devices: FleetDevice[]; nowMs: number 
                     </td>
                     <td className="py-3 pr-3">{device.telemetry.rssi ? `${device.telemetry.rssi} dBm` : "--"}</td>
                     <td className="py-3 pr-3">
+                      {boardIp ? (
+                        <div className="flex flex-col gap-0.5">
+                          <a
+                            href={`http://${boardIp}/`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-mono text-xs text-blue-700 hover:underline"
+                          >
+                            {boardIp}
+                          </a>
+                          <span className="flex gap-1 text-xs">
+                            <a href={`http://${boardIp}/config`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-blue-700">Config</a>
+                            <span className="text-slate-300">·</span>
+                            <a href={`http://${boardIp}/data`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-blue-700">Data</a>
+                            <span className="text-slate-300">·</span>
+                            <a href={`http://${boardIp}/update`} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-blue-700">OTA</a>
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="py-3 pr-3">
                       <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${
                         !online
                           ? "border-slate-200 bg-slate-100 text-slate-500"
@@ -279,7 +316,7 @@ function FleetTable({ devices, nowMs }: { devices: FleetDevice[]; nowMs: number 
                           ? "border-red-200 bg-red-50 text-red-700"
                           : "border-emerald-200 bg-emerald-50 text-emerald-700"
                       }`}>
-                        {!online ? "offline" : alarm ? `${device.alarms.length} alarms` : "normal"}
+                        {!online ? "offline" : alarm ? `${deviceAlarms.length} alarm${deviceAlarms.length !== 1 ? "s" : ""}` : "normal"}
                       </span>
                     </td>
                     <td className="py-3 pr-3">{device.lastMessageAt}</td>
@@ -335,12 +372,9 @@ function ManufacturerSettings({
 }
 
 export default function Home() {
-  const { fleetDevices, apiStatus, setSystemSettings, systemSettings } =
+  const { fleetDevices, apiStatus, setSystemSettings, systemSettings, serverAlarms } =
     useTelemetry();
   const [nowMs, setNowMs] = useState(() => Date.now());
-
-  // Fleet-wide alarms derived from all devices — source of truth for alarm display.
-  const fleetAlarms = fleetDevices.flatMap((d) => d.alarms);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 5000);
@@ -366,8 +400,8 @@ export default function Home() {
               <span className={`flex items-center gap-2 rounded-md px-3 py-2 font-semibold ${apiStatus === "ok" ? "bg-emerald-50 text-emerald-700" : apiStatus === "degraded" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
                 <Activity size={16} /> {apiStatus === "ok" ? "API online" : apiStatus === "degraded" ? "API error" : "API unknown"}
               </span>
-              <span className={`flex items-center gap-2 rounded-md px-3 py-2 font-semibold ${fleetAlarms.length ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-700"}`}>
-                <AlertTriangle size={16} /> {fleetAlarms.length} alarms
+              <span className={`flex items-center gap-2 rounded-md px-3 py-2 font-semibold ${serverAlarms.length ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-700"}`}>
+                <AlertTriangle size={16} /> {serverAlarms.length} alarms
               </span>
               <Link href="/alarms" className="flex items-center gap-2 rounded-md bg-slate-100 px-3 py-2 font-semibold text-slate-700 hover:bg-slate-200">
                 <Bell size={16} /> Alarm log
@@ -387,10 +421,10 @@ export default function Home() {
           </div>
         </header>
 
-        <FleetSummary devices={fleetDevices} nowMs={nowMs} />
-        <FleetTable devices={fleetDevices} nowMs={nowMs} />
+        <FleetSummary devices={fleetDevices} nowMs={nowMs} serverAlarms={serverAlarms} />
+        <FleetTable devices={fleetDevices} nowMs={nowMs} serverAlarms={serverAlarms} />
 
-        <UserAlarmPanel alarms={fleetAlarms} />
+        <UserAlarmPanel alarms={serverAlarms} />
 
         <ManufacturerSettings settings={systemSettings} setSettings={setSystemSettings} />
       </div>

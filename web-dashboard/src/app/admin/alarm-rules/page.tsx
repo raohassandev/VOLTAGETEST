@@ -23,6 +23,12 @@ interface AlarmRule {
 
 type Scope = "global" | "site" | "ups" | "device";
 
+interface UpsListItem {
+  id: string;
+  upsId: string;
+  name: string | null;
+}
+
 const SCOPE_LABELS: Record<Scope, string> = {
   global: "Global (all devices)",
   site: "Site",
@@ -74,10 +80,18 @@ export default function AlarmRulesPage() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [upsList, setUpsList] = useState<UpsListItem[]>([]);
 
   const [refreshTick, setRefreshTick] = useState(0);
 
   const load = () => setRefreshTick((t) => t + 1);
+
+  useEffect(() => {
+    fetch("/api/ups", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data: { units?: UpsListItem[] }) => setUpsList(data.units ?? []))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,8 +215,28 @@ export default function AlarmRulesPage() {
               </label>
               {form.scope !== "global" && (
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-slate-500">{form.scope === "device" ? "Device ID" : form.scope === "ups" ? "UPS Unit ID (DB cuid)" : "Site ID"}</span>
-                  <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.scopeId} onChange={(e) => setForm((f) => ({ ...f, scopeId: e.target.value }))} placeholder="e.g. DEV-COM11-TEST" />
+                  <span className="text-slate-500">{form.scope === "device" ? "Device ID" : form.scope === "ups" ? "UPS unit" : "Site ID"}</span>
+                  {form.scope === "ups" ? (
+                    <select
+                      className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                      value={form.scopeId}
+                      onChange={(e) => setForm((f) => ({ ...f, scopeId: e.target.value }))}
+                    >
+                      <option value="">— select UPS —</option>
+                      {upsList.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.upsId}{u.name ? ` — ${u.name}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                      value={form.scopeId}
+                      onChange={(e) => setForm((f) => ({ ...f, scopeId: e.target.value }))}
+                      placeholder={form.scope === "device" ? "e.g. DEV-COM11-TEST" : "e.g. SITE-A"}
+                    />
+                  )}
                 </label>
               )}
               {["lowCritical", "lowWarning", "highWarning", "highCritical"].map((field) => (

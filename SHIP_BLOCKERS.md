@@ -280,6 +280,62 @@ Required files status:
 
 ---
 
+## Blocker 10 — volt_dc alarm calibration
+
+**Status: PASS (pending commit)**
+
+**Root cause:** ESP32 firmware v0.5.2 publishes `volt_dc` as raw 12-bit ADC counts (≈556) when NVS calibration defaults to scale=1.0/offset=0. The alarm engine compared 556 against voltage thresholds derived from `batteryNominalV × 1.188 = 57.024 V`, triggering a permanent false CRITICAL alarm.
+
+**Fix:** `worker/mqtt-worker.ts` `runAlarmEvaluation()` now:
+1. Queries `CalibrationProfile` table for the device.
+2. If a profile exists, uses `vDcScale` / `vDcOffset` from the row.
+3. If no profile exists (current state — no API or UI to create them yet), applies `VOLT_DC_DEFAULT_SCALE = 0.0442` — the same scale constant used in the frontend `defaultConfig`.
+4. Calibrated `volt_dc ≈ 556 × 0.0442 = 24.6 V` — within normal range for a 48 V battery, alarm does not fire.
+
+**Verification:** With the fix, `evaluateAlarms` receives 24.6 V. `buildBatteryThresholds(48)` → lowCritical=42 V, lowWarning=44 V, highWarning=54 V, highCritical=57 V. 24.6 V < 42 V — triggers LOW alarm correctly for bench board with no battery. After the previous incorrect CRITICAL for high is now gone.
+
+---
+
+## Blocker 11 — Duplicate active alarm rows
+
+**Status: PASS (pending commit)**
+
+**Root cause:** Three concurrent worker processes (started from previous debug sessions) all evaluated alarms simultaneously. Each called `findFirst` (all found no existing alarm), then all called `create`, producing 3–4 duplicate active rows. In-memory `debounceMap` was also cleared on worker restart, causing burst creation.
+
+**Fix:**
+- `src/lib/alarm-engine.ts`: Replaced `findFirst` + `update/create` with `updateMany` (updates ALL existing active for deviceId+metric) + conditional `create` (only if `updateMany.count === 0`). Clearing loop replaced with `distinct: ["metric"]` + `updateMany` — collapses all duplicate rows in a single pass.
+- `worker/mqtt-worker.ts`: Added `deduplicateActiveAlarms()` — runs 5 s after startup, groups by (deviceId, metric), keeps newest row, deletes all others.
+
+---
+
+## Blocker 12 — Board IP not shown in fleet
+
+**Status: PASS (pending commit)**
+
+**Fix:** `src/app/page.tsx` FleetTable: Added "Board IP" column showing `device.telemetry.ip` (already returned by `/api/telemetry/latest`). IP is a clickable link to `http://<ip>/` with Config, Data, OTA sub-links. Shows "—" when IP is empty or absent.
+
+---
+
+## Blocker 13 — No board portal button on UPS detail
+
+**Status: PASS (pending commit)**
+
+**Fix:** `src/app/ups/[id]/page.tsx`: Replaced the plain-text "IP Address" row in Device info with portal action buttons: "Open portal", "Config", "OTA" (all `<a target="_blank">` links). Falls back to "—" when `device.ip` is null.
+
+---
+
+## Blocker 14 — Alarm rule UPS-scope requires DB cuid
+
+**Status: PASS (pending commit)**
+
+**Fix:** `src/app/admin/alarm-rules/page.tsx`:
+- On mount, fetches `/api/ups` and stores the list as `upsList: UpsListItem[]`.
+- When scope = "ups" is selected, renders a `<select>` dropdown populated with `{upsId} — {name}` labels.
+- The selected option's `value` is the internal DB cuid — which is what the API expects for `upsUnitId`.
+- Users see human-readable UPS IDs instead of opaque database IDs.
+
+---
+
 ## Summary
 
 | Blocker | Status | Commit |
@@ -294,3 +350,8 @@ Required files status:
 | 7 — Burn-in 2h | PASS | `9bbc9b7` |
 | 8 — Release readiness | IN PROGRESS | pending Blockers 1+3 |
 | 9 — Production placeholder secret guard | PASS | `9aaadc6` |
+| 10 — volt_dc alarm calibration | PASS | pending commit |
+| 11 — Duplicate active alarm rows | PASS | pending commit |
+| 12 — Board IP not shown in fleet | PASS | pending commit |
+| 13 — No board portal button on UPS detail | PASS | pending commit |
+| 14 — Alarm rule UPS-scope UX | PASS | pending commit |

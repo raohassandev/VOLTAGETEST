@@ -77,6 +77,17 @@ export type SystemSettings = {
   alarmRetentionMonths: number;
 };
 
+export type ServerAlarm = {
+  id: string;
+  deviceId: string;
+  upsId: string | null;
+  metric: string;
+  severity: string;
+  message: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+};
+
 export const expectedPublishIntervalMs = 5000;
 
 export { telemetryKeys } from "@/lib/telemetry-types";
@@ -191,6 +202,7 @@ export function useTelemetry() {
   const [systemSettingsLoaded, setSystemSettingsLoaded] = useState(false);
   const [fleet, setFleet] = useState<Record<string, FleetDevice>>({});
   const [apiStatus, setApiStatus] = useState<ApiStatus>("unknown");
+  const [serverAlarms, setServerAlarms] = useState<ServerAlarm[]>([]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -355,6 +367,28 @@ export function useTelemetry() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function pollServerAlarms() {
+      try {
+        const res = await fetch("/api/alarms?state=active&limit=100", { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { alarms?: ServerAlarm[] };
+        if (!cancelled) setServerAlarms(data.alarms ?? []);
+      } catch {
+        // leave existing state unchanged
+      }
+    }
+
+    pollServerAlarms();
+    const timer = window.setInterval(pollServerAlarms, 15_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
+
   const fleetDevices = useMemo(
     () =>
       Object.values(fleet)
@@ -377,6 +411,7 @@ export function useTelemetry() {
     config,
     fleetDevices,
     inventory,
+    serverAlarms,
     setConfig,
     setInventory,
     setSystemSettings,

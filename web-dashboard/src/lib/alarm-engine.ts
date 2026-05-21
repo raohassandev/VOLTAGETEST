@@ -276,20 +276,16 @@ export async function evaluateAlarms(
 
     if (now - entry.firstAt < debounceMs) continue;
 
-    const existing = await prisma.alarm.findFirst({
+    const updated = await prisma.alarm.updateMany({
       where: { deviceId: snap.deviceId, metric, state: "active" },
+      data: {
+        lastSeenAt: new Date(),
+        severity: candidate.severity,
+        message: candidate.message,
+      },
     });
 
-    if (existing) {
-      await prisma.alarm.update({
-        where: { id: existing.id },
-        data: {
-          lastSeenAt: new Date(),
-          severity: candidate.severity,
-          message: candidate.message,
-        },
-      });
-    } else {
+    if (updated.count === 0) {
       await prisma.alarm.create({
         data: {
           deviceId: snap.deviceId,
@@ -304,29 +300,24 @@ export async function evaluateAlarms(
     }
   }
 
-  const activeAlarms = await prisma.alarm.findMany({
+  // Iterate unique metrics with active alarms and clear those no longer triggering.
+  // Using distinct avoids iterating duplicate rows from a previous multi-worker burst.
+  const activeAlarmMetrics = await prisma.alarm.findMany({
     where: { deviceId: snap.deviceId, state: "active" },
+    select: { metric: true },
+    distinct: ["metric"],
   });
 
-  for (const alarm of activeAlarms) {
-    if (candidates.has(alarm.metric)) continue;
+  for (const { metric: activeMetric } of activeAlarmMetrics) {
+    if (candidates.has(activeMetric)) continue;
 
-    const check = checks.find((c) => c.metric === alarm.metric);
-    if (!check) {
-      await prisma.alarm.update({
-        where: { id: alarm.id },
+    const check = checks.find((c) => c.metric === activeMetric);
+    if (!check || isNormalWithHysteresis(check, check.hysteresisPercent ?? hysteresisPercent)) {
+      await prisma.alarm.updateMany({
+        where: { deviceId: snap.deviceId, metric: activeMetric, state: "active" },
         data: { state: "cleared", clearedAt: new Date() },
       });
-      debounceMap.delete(`${snap.deviceId}:${alarm.metric}`);
-      continue;
-    }
-
-    if (isNormalWithHysteresis(check, check.hysteresisPercent ?? hysteresisPercent)) {
-      await prisma.alarm.update({
-        where: { id: alarm.id },
-        data: { state: "cleared", clearedAt: new Date() },
-      });
-      debounceMap.delete(`${snap.deviceId}:${alarm.metric}`);
+      debounceMap.delete(`${snap.deviceId}:${activeMetric}`);
     }
   }
 }

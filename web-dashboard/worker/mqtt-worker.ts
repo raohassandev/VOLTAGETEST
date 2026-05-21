@@ -143,14 +143,25 @@ async function persistTelemetry(deviceId: string, payload: RawPayload, rawJson: 
   });
 }
 
+// When no CalibrationProfile row exists for a device, apply this scale to convert
+// raw 12-bit ADC counts (≈556 typical) to volts. Matches the frontend defaultConfig.
+const VOLT_DC_DEFAULT_SCALE = 0.0442;
+
 async function runAlarmEvaluation(deviceId: string, payload: RawPayload): Promise<void> {
-  const device = await prisma.device.findUnique({
-    where: { deviceId },
-    include: { upsUnit: true },
-  });
+  const [device, calProfile] = await Promise.all([
+    prisma.device.findUnique({ where: { deviceId }, include: { upsUnit: true } }),
+    prisma.calibrationProfile.findUnique({ where: { deviceId } }),
+  ]);
 
   const batteryNominalV = device?.upsUnit?.batteryNominalV ?? 48;
   const capacityVa = device?.upsUnit?.capacityVa ?? 0;
+
+  // Apply volt_dc calibration. Without a CalibrationProfile the firmware sends raw
+  // ADC counts (≈556) because NVS defaults are scale=1/offset=0. Use the known
+  // hardware scale factor so thresholds (derived from batteryNominalV in volts) compare correctly.
+  const vDcScale = calProfile ? calProfile.vDcScale : VOLT_DC_DEFAULT_SCALE;
+  const vDcOffset = calProfile ? calProfile.vDcOffset : 0;
+  const calibratedVoltDc = num(payload.volt_dc) * vDcScale + vDcOffset;
 
   // Global fallback debounce/hysteresis — per-rule values from AlarmRule table
   // take precedence inside evaluateAlarms. These are used only when no rule exists.
@@ -168,7 +179,7 @@ async function runAlarmEvaluation(deviceId: string, payload: RawPayload): Promis
       siteId: str(payload.site_id),
       voltIn: num(payload.volt_in),
       voltOut: num(payload.volt_out),
-      voltDc: num(payload.volt_dc),
+      voltDc: calibratedVoltDc,
       ctIn: num(payload.ct_in),
       ctOut: num(payload.ct_out),
       sInVa: num(payload.s_in_va),
@@ -202,6 +213,33 @@ async function handleMessage(topic: string, payloadBuffer: Buffer): Promise<void
     await runAlarmEvaluation(deviceId, payload);
   } catch (err) {
     console.error(`[worker] DB error for ${deviceId}:`, err instanceof Error ? err.message : err);
+  }
+}
+
+async function deduplicateActiveAlarms(): Promise<void> {
+  const dupes = await prisma.alarm.groupBy({
+    by: ["deviceId", "metric"],
+    where: { state: "active" },
+    _count: { id: true },
+    having: { id: { _count: { gt: 1 } } },
+  });
+
+  let removed = 0;
+  for (const dupe of dupes) {
+    const rows = await prisma.alarm.findMany({
+      where: { deviceId: dupe.deviceId, metric: dupe.metric, state: "active" },
+      orderBy: { lastSeenAt: "desc" },
+      select: { id: true },
+    });
+    const [, ...toDelete] = rows;
+    if (toDelete.length > 0) {
+      await prisma.alarm.deleteMany({ where: { id: { in: toDelete.map((r) => r.id) } } });
+      removed += toDelete.length;
+    }
+  }
+
+  if (removed > 0) {
+    console.log(`[worker] Startup dedup: removed ${removed} duplicate active alarm row(s)`);
   }
 }
 
@@ -265,6 +303,13 @@ function startWorker(): void {
       console.error("[worker] rollup error:", err instanceof Error ? err.message : err),
     );
   }, ROLLUP_INTERVAL_MS);
+
+  // Deduplicate any active alarm rows left by previous multi-process runs.
+  setTimeout(() => {
+    deduplicateActiveAlarms().catch((err) =>
+      console.error("[worker] dedup error:", err instanceof Error ? err.message : err),
+    );
+  }, 5_000);
 
   // Retention cleanup: run once at startup (after 10s) and then every 24 hours.
   setTimeout(() => {
