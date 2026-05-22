@@ -6,6 +6,7 @@ import { getTelemetryStore } from "@/lib/mqtt-ingestion";
 import type { RawTelemetry } from "@/lib/telemetry-types";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+const VOLT_DC_DEFAULT_SCALE = 0.0442;
 
 export async function GET(request: Request) {
   const auth = requireApiAuth(request);
@@ -29,6 +30,13 @@ export async function GET(request: Request) {
   const toDate = to ? new Date(to) : new Date();
   const rangeMs = toDate.getTime() - fromDate.getTime();
 
+  // Look up calibration profile once for the requested device
+  const calProfile = deviceId
+    ? await prisma.calibrationProfile.findUnique({ where: { deviceId } })
+    : null;
+  const vDcScale  = calProfile ? calProfile.vDcScale  : VOLT_DC_DEFAULT_SCALE;
+  const vDcOffset = calProfile ? calProfile.vDcOffset : 0;
+
   if (rangeMs <= SIX_HOURS_MS) {
     // Short range: use high-resolution raw telemetry
     const rows = await prisma.telemetryRaw.findMany({
@@ -43,7 +51,7 @@ export async function GET(request: Request) {
     const history: RawTelemetry[] = rows.map((row) => ({
       volt_in: row.voltIn,
       volt_out: row.voltOut,
-      volt_dc: row.voltDc,
+      volt_dc: row.voltDc * vDcScale + vDcOffset, // calibrated
       ct_in: row.ctIn,
       ct_out: row.ctOut,
       s_in_va: row.sInVa,
@@ -77,7 +85,7 @@ export async function GET(request: Request) {
     sampleCount: row.sampleCount,
     voltIn: { avg: row.voltInAvg, min: row.voltInMin, max: row.voltInMax },
     voltOut: { avg: row.voltOutAvg, min: row.voltOutMin, max: row.voltOutMax },
-    voltDc: { avg: row.voltDcAvg, min: row.voltDcMin, max: row.voltDcMax },
+    voltDc: { avg: row.voltDcAvg * vDcScale + vDcOffset, min: row.voltDcMin * vDcScale + vDcOffset, max: row.voltDcMax * vDcScale + vDcOffset },
     ctIn: { avg: row.ctInAvg, max: row.ctInMax },
     ctOut: { avg: row.ctOutAvg, max: row.ctOutMax },
     sInVa: { avg: row.sInVaAvg, max: row.sInVaMax },

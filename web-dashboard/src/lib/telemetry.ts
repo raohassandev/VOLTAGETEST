@@ -18,9 +18,9 @@ export type FleetDevice = {
   telemetry: RawTelemetry;
 };
 
-// Scale factor to convert raw volt_dc ADC counts to volts (firmware NVS default = scale 1.0).
-// Apply this in any UI layer that displays or thresholds volt_dc.
-export const VOLT_DC_SCALE = 0.0442;
+// VOLT_DC_SCALE is intentionally removed. Calibration is now applied server-side in
+// /api/telemetry/latest and /api/ups/[id] before the data reaches the UI.
+// The default scale (0.0442) lives in VOLT_DC_DEFAULT_SCALE in those route files.
 
 export type UpsInventoryItem = {
   batteryNominalV: number;

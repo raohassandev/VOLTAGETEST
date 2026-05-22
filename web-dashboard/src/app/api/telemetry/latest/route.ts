@@ -5,6 +5,10 @@ import { prisma, isDbEnabled } from "@/lib/db";
 import { getTelemetryStore, recordTelemetry } from "@/lib/mqtt-ingestion";
 import { normalizeTelemetry, type RawTelemetry } from "@/lib/telemetry-types";
 
+// Default scale applied when no CalibrationProfile exists for a device.
+// Converts raw ADC battery measurement counts to volts (matches worker constant).
+const VOLT_DC_DEFAULT_SCALE = 0.0442;
+
 export async function GET(request: Request) {
   const auth = requireApiAuth(request);
   if (!auth.ok) return auth.response;
@@ -13,12 +17,24 @@ export async function GET(request: Request) {
     const rows = await prisma.telemetryLatest.findMany({
       include: { device: { include: { upsUnit: true } } },
     });
+
+    // Fetch all calibration profiles in one query
+    const deviceIds = rows.map((r) => r.deviceId);
+    const calProfiles = deviceIds.length
+      ? await prisma.calibrationProfile.findMany({ where: { deviceId: { in: deviceIds } } })
+      : [];
+    const calMap = new Map(calProfiles.map((p) => [p.deviceId, p]));
+
     const latest: Record<string, RawTelemetry> = {};
     for (const row of rows) {
+      const cal = calMap.get(row.deviceId);
+      const vDcScale  = cal ? cal.vDcScale  : VOLT_DC_DEFAULT_SCALE;
+      const vDcOffset = cal ? cal.vDcOffset : 0;
+
       latest[row.deviceId] = {
         volt_in: row.voltIn,
         volt_out: row.voltOut,
-        volt_dc: row.voltDc,
+        volt_dc: row.voltDc * vDcScale + vDcOffset, // calibrated before sending to clients
         ct_in: row.ctIn,
         ct_out: row.ctOut,
         s_in_va: row.sInVa,

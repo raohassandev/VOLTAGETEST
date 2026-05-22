@@ -16,7 +16,6 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
-import { VOLT_DC_SCALE } from "@/lib/telemetry";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -201,7 +200,7 @@ function TrendChart({ deviceId }: { deviceId: string }) {
 
   const voltInSeries  = points.map((p) => p.volt_in ?? 0);
   const voltOutSeries = points.map((p) => p.volt_out ?? 0);
-  const voltDcSeries  = points.map((p) => (p.volt_dc ?? 0) * VOLT_DC_SCALE);
+  const voltDcSeries  = points.map((p) => p.volt_dc ?? 0); // already calibrated by API
 
   const allVolts = [...voltInSeries, ...voltOutSeries, ...voltDcSeries].filter(Number.isFinite);
   const minV = Math.min(...allVolts) * 0.95;
@@ -358,7 +357,7 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
   const { unit, device, telemetry, commissioning, activeAlarms, alarmHistory } = detail;
   const online = device?.online ?? false;
   const loadPct = telemetry?.loadPct;
-  const voltDcCalibrated = telemetry ? telemetry.voltDc * VOLT_DC_SCALE : null;
+  const voltDcCalibrated = telemetry ? telemetry.voltDc : null; // calibrated by API
 
   return (
     <AppShell>

@@ -46,11 +46,15 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ```bash
 cd deployment/mosquitto
-# Create password file
-docker run --rm eclipse-mosquitto:2 \
-  mosquitto_passwd -c -b /tmp/passwords dashboard your-mqtt-password
-# Copy the generated file
-cp /tmp/passwords ./passwords
+
+# Option A — if mosquitto_passwd is installed locally:
+mosquitto_passwd -c -b passwords dashboard your-mqtt-password
+
+# Option B — using Docker (write directly into the deployment directory):
+docker run --rm \
+  -v "$(pwd):/mnt" \
+  eclipse-mosquitto:2 \
+  mosquitto_passwd -c -b /mnt/passwords dashboard your-mqtt-password
 
 # Update acl file with the correct username if needed
 ```
@@ -104,6 +108,7 @@ docker compose logs -f mqtt-worker
 | `MQTT_PASSWORD` | No | MQTT broker password |
 | `MQTT_TOPIC` | No | MQTT topic filter (default: `building/+/ups/+/telemetry`) |
 | `OFFLINE_THRESHOLD_SECS` | No | Seconds before a device is marked offline (default: `60`) |
+| `ENABLE_EMBEDDED_BROKER` | No | Set `false` in Docker (uses Mosquitto instead of built-in Aedes broker) |
 | `POSTGRES_PASSWORD` | Yes | PostgreSQL password (Docker Compose only) |
 
 ---
@@ -132,11 +137,13 @@ npm run db:seed
 npm run db:reset:local
 ```
 
-The initial migration `prisma/migrations/20260520000000_init/migration.sql`
-creates all production tables:
-`User`, `Site`, `UpsUnit`, `Device`, `CalibrationProfile`, `AlarmRule`,
-`TelemetryRaw`, `TelemetryLatest`, `Telemetry1m`, `Alarm`, `AlarmEvent`,
-`SystemSettings`, `AuditLog`.
+Migrations run in order by timestamp:
+- `20260520000000_init` — creates all base tables
+- `20260523000001_v2_fields` — adds v2 telemetry columns (`qInVar`, `qOutVar`,
+  `freqIn`, `freqOut`, `freqInAvg`, `freqOutAvg`) and the `DeviceDiscovered` table
+
+Both migrations must be applied for a complete production schema.
+`prisma migrate deploy` applies them automatically in order.
 
 ---
 

@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
-import { authConfig, authCookieName, verifyCredentials, getDevFallbackToken } from "@/lib/auth";
+import { authConfig, authCookieName, verifyCredentials, verifySessionToken, getDevFallbackToken } from "@/lib/auth";
 import { USER_COOKIE } from "@/lib/api-auth";
 import type { UserRole } from "@/lib/auth";
 
 const VALID_ROLES: UserRole[] = ["viewer", "technician", "admin", "manufacturer"];
 const PASSWORD_ROLES = new Set<UserRole>(["admin", "manufacturer"]);
+
+function parseCookie(header: string, name: string): string | null {
+  const match = header.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
 export async function POST(request: Request) {
   const body = (await request.json()) as { role?: string; password?: string };
@@ -12,6 +17,15 @@ export async function POST(request: Request) {
 
   if (!role || !VALID_ROLES.includes(role)) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+  }
+
+  // All role switches require an existing authenticated session.
+  // The session is established by /api/login — role-select is only for switching
+  // within an already-authenticated context, not for bypassing login.
+  const cookieHeader = request.headers.get("cookie") ?? "";
+  const sessionToken = parseCookie(cookieHeader, authCookieName);
+  if (!sessionToken || !verifySessionToken(sessionToken)) {
+    return NextResponse.json({ error: "Login required before switching roles" }, { status: 401 });
   }
 
   const cookieOpts = {
@@ -25,7 +39,7 @@ export async function POST(request: Request) {
   const userPayload = btoa(JSON.stringify({ username: role === "viewer" ? "operator" : role, role }));
 
   if (!PASSWORD_ROLES.has(role)) {
-    // Viewer / Technician — no password needed, just set role cookie
+    // Viewer / Technician — session already verified above; just update the role cookie
     const res = NextResponse.json({ ok: true, role });
     res.cookies.set(USER_COOKIE, userPayload, { ...cookieOpts, httpOnly: false });
     return res;

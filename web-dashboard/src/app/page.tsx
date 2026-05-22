@@ -20,7 +20,6 @@ import {
   ServerAlarm,
   formatNumber,
   useTelemetry,
-  VOLT_DC_SCALE,
 } from "@/lib/telemetry";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -115,7 +114,7 @@ function UpsCard({
     : null;
 
   const voltDcDisplay = device.telemetry.volt_dc != null
-    ? formatNumber(Number(device.telemetry.volt_dc) * VOLT_DC_SCALE)
+    ? formatNumber(Number(device.telemetry.volt_dc ?? 0))
     : "--";
 
   const borderColor =
@@ -277,7 +276,7 @@ function CompactTable({
                 : null;
               const boardIp = device.telemetry.ip || "";
               const voltDcDisplay = device.telemetry.volt_dc != null
-                ? formatNumber(Number(device.telemetry.volt_dc) * VOLT_DC_SCALE)
+                ? formatNumber(Number(device.telemetry.volt_dc ?? 0))
                 : "--";
 
               return (

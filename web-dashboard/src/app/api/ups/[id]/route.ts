@@ -3,6 +3,8 @@ import { requireApiAuth } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 
+const VOLT_DC_DEFAULT_SCALE = 0.0442;
+
 export async function GET(request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -38,6 +40,15 @@ export async function GET(request: Request,
 
   const device = unit.devices[0];
   const tl = device?.telemetryLatest;
+
+  // Apply per-device battery calibration before sending to UI
+  let voltDcCalibrated = tl?.voltDc ?? 0;
+  if (tl && device) {
+    const cal = await prisma.calibrationProfile.findUnique({ where: { deviceId: device.deviceId } });
+    const vDcScale  = cal ? cal.vDcScale  : VOLT_DC_DEFAULT_SCALE;
+    const vDcOffset = cal ? cal.vDcOffset : 0;
+    voltDcCalibrated = tl.voltDc * vDcScale + vDcOffset;
+  }
 
   const rj = tl?.rawJson as Record<string, unknown> | undefined;
   const commissioning = rj
@@ -84,7 +95,7 @@ export async function GET(request: Request,
       ? {
           voltIn: tl.voltIn,
           voltOut: tl.voltOut,
-          voltDc: tl.voltDc,
+          voltDc: voltDcCalibrated,
           ctIn: tl.ctIn,
           ctOut: tl.ctOut,
           sInVa: tl.sInVa,
