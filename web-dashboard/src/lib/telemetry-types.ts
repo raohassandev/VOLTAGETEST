@@ -12,6 +12,15 @@ export type RawTelemetry = Record<TelemetryKey, number> & {
   topic?: string;
   uptime_ms?: number;
   ups_id?: string;
+  /** Raw ADC battery reading as received from the board (before any server-side calibration). */
+  volt_dc_raw?: number;
+  /**
+   * Source of the volt_dc calibration applied by the server:
+   *  - "server_profile"  — CalibrationProfile row found for this device
+   *  - "server_default"  — no profile; default scale (0.0442) applied
+   *  - "passthrough"     — no calibration applied (non-DB path)
+   */
+  volt_dc_calibration_source?: "server_profile" | "server_default" | "passthrough";
 };
 
 export type TelemetryStore = {

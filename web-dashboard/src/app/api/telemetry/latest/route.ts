@@ -30,11 +30,14 @@ export async function GET(request: Request) {
       const cal = calMap.get(row.deviceId);
       const vDcScale  = cal ? cal.vDcScale  : VOLT_DC_DEFAULT_SCALE;
       const vDcOffset = cal ? cal.vDcOffset : 0;
+      const calibrationSource = cal ? "server_profile" : "server_default";
 
       latest[row.deviceId] = {
         volt_in: row.voltIn,
         volt_out: row.voltOut,
-        volt_dc: row.voltDc * vDcScale + vDcOffset, // calibrated before sending to clients
+        volt_dc: row.voltDc * vDcScale + vDcOffset, // server-calibrated value
+        volt_dc_raw: row.voltDc,                     // raw ADC count from board
+        volt_dc_calibration_source: calibrationSource,
         ct_in: row.ctIn,
         ct_out: row.ctOut,
         s_in_va: row.sInVa,

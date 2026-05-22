@@ -19,15 +19,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
   }
 
-  // All role switches require an existing authenticated session.
-  // The session is established by /api/login — role-select is only for switching
-  // within an already-authenticated context, not for bypassing login.
-  const cookieHeader = request.headers.get("cookie") ?? "";
-  const sessionToken = parseCookie(cookieHeader, authCookieName);
-  if (!sessionToken || !verifySessionToken(sessionToken)) {
-    return NextResponse.json({ error: "Login required before switching roles" }, { status: 401 });
-  }
-
   const cookieOpts = {
     httpOnly: true,
     maxAge: 60 * 60 * 24,
@@ -39,23 +30,33 @@ export async function POST(request: Request) {
   const userPayload = signUserCookie({ username: role === "viewer" ? "operator" : role, role });
 
   if (!PASSWORD_ROLES.has(role)) {
-    // Viewer / Technician — session already verified above; just update the role cookie
+    // Viewer / Technician — no password, but requires an already-authenticated session.
+    // These roles are available as a step-down switch after Admin login, not as
+    // a standalone entry point for unauthenticated browsers.
+    const cookieHeader = request.headers.get("cookie") ?? "";
+    const sessionToken = parseCookie(cookieHeader, authCookieName);
+    if (!sessionToken || !verifySessionToken(sessionToken)) {
+      return NextResponse.json(
+        { error: "Login as Admin first, then switch to this role" },
+        { status: 401 },
+      );
+    }
+    // Session verified — just update the role cookie
     const res = NextResponse.json({ ok: true, role });
     res.cookies.set(USER_COOKIE, userPayload, { ...cookieOpts, httpOnly: false });
     return res;
   }
 
-  // Admin / Manufacturer — verify password
+  // Admin / Manufacturer — verify password.
+  // These roles establish a new session from scratch; no prior session required.
   const password = body.password ?? "";
   if (!password) {
     return NextResponse.json({ error: "Password required" }, { status: 400 });
   }
 
-  // The admin username for env-var auth is always "admin"; manufacturer uses same credential
   const username = role === "manufacturer" ? (process.env.UMS_MANUFACTURER_USERNAME ?? "manufacturer") : "admin";
   const result = await verifyCredentials(username, password);
-
-  // Also try "admin" credentials for manufacturer if no separate manufacturer user exists
+  // Also accept "admin" credentials for manufacturer when no separate manufacturer user exists
   const verified =
     result.ok ||
     (role === "manufacturer" && (await verifyCredentials("admin", password)).ok);

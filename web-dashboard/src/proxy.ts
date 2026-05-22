@@ -41,5 +41,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!welcome|api|_next|favicon.ico|brand).*)"],
+  // Exclude /welcome (role-select landing), /login (direct login form),
+  // /api (own auth), static assets and brand images.
+  matcher: ["/((?!welcome|login|api|_next|favicon.ico|brand).*)"],
 };

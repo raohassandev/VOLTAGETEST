@@ -53,11 +53,13 @@ function SummaryRow({
   serverAlarms: ServerAlarm[];
   offlineThresholdMs: number;
 }) {
-  const online = devices.filter((d) => nowMs - d.lastSeenMs < offlineThresholdMs).length;
+  const onlineDevices = devices.filter((d) => nowMs - d.lastSeenMs < offlineThresholdMs);
+  const online = onlineDevices.length;
   const offline = devices.length - online;
   const critCount = serverAlarms.filter((a) => a.severity === "critical").length;
   const warnCount = serverAlarms.filter((a) => a.severity === "warning").length;
-  const totalVa = devices.reduce((s, d) => s + Number(d.telemetry.s_out_va ?? 0), 0);
+  // Sum VA from online devices only — offline telemetry is stale and should not appear as live load
+  const totalVa = onlineDevices.reduce((s, d) => s + Number(d.telemetry.s_out_va ?? 0), 0);
 
   const stats = [
     { label: "Total UPS",      value: devices.length,        icon: Cpu,          color: "text-slate-700",   bg: "bg-slate-100",  href: null },

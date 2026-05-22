@@ -62,14 +62,16 @@ function CommandBtn({ deviceId }: { deviceId: string }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
       <button onClick={() => send("reboot")} disabled={busy}
+        title="Requires firmware with MQTT command subscription support"
         className="rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50">
         Reboot
       </button>
       <button onClick={() => send("reset-energy")} disabled={busy}
+        title="Requires firmware with MQTT command subscription support"
         className="rounded bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200 disabled:opacity-50">
         Reset kWh
       </button>
-      {msg && <span className="text-xs text-emerald-600 font-semibold">{msg}</span>}
+      {msg && <span className={`text-xs font-semibold ${msg.startsWith("✓") ? "text-emerald-600" : "text-red-600"}`}>{msg}</span>}
     </div>
   );
 }
@@ -184,6 +186,12 @@ export default function BoardsPage() {
             </div>
           </div>
         )}
+
+        {/* Command support notice */}
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800 flex items-center gap-2">
+          <span className="font-bold">Note:</span>
+          Reboot / Reset kWh buttons publish MQTT commands to the board. Command delivery requires firmware that subscribes to <code className="font-mono bg-amber-100 px-1 rounded">ums/devices/&#123;id&#125;/command</code>. Current firmware does not yet handle this topic — buttons will publish but the board will not respond until firmware support is added.
+        </div>
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-slate-200">

@@ -11,9 +11,11 @@ pattern write building/+/ups/%u/telemetry
 pattern write building/+/ups/%u/status
 
 # Dashboard / MQTT worker user:
-#   Needs read access to all devices across all sites.
+#   Needs read access to all devices across all sites, and write access
+#   to the command topic so the dashboard can send reboot/reset/OTA commands.
 #   Username must match MQTT_USERNAME in the dashboard .env.
 #
 user dashboard
 topic read building/+/ups/+/telemetry
 topic read building/+/ups/+/status
+topic write ums/devices/+/command

@@ -23,15 +23,29 @@ export async function POST(
   }
 
   const comment = typeof body.comment === "string" ? body.comment.trim().slice(0, 500) || null : null;
+  const now = new Date();
 
-  const updated = await prisma.alarm.update({
-    where: { id },
-    data: {
-      acknowledgedAt: new Date(),
-      acknowledgedBy: auth.user.username,
-      comment,
-    },
-  });
+  const [updated] = await prisma.$transaction([
+    prisma.alarm.update({
+      where: { id },
+      data: {
+        acknowledgedAt: now,
+        acknowledgedBy: auth.user.username,
+        comment,
+      },
+    }),
+    prisma.alarmEvent.create({
+      data: {
+        alarmId: id,
+        event: "acknowledged",
+        message: comment
+          ? `Acknowledged by ${auth.user.username}: "${comment}"`
+          : `Acknowledged by ${auth.user.username}`,
+        userId: auth.user.username,
+        createdAt: now,
+      },
+    }),
+  ]);
 
   return NextResponse.json({ alarm: updated });
 }

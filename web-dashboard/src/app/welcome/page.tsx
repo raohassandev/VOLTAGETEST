@@ -121,20 +121,27 @@ export default function WelcomePage() {
       {/* Role cards */}
       <div className="w-full max-w-2xl">
         <p className="mb-3 text-center text-sm font-semibold text-slate-500 uppercase tracking-wider">
-          Select your access role
+          Login to access the system
         </p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {ROLES.map((r) => {
             const Icon = r.icon;
             const isActive = selected === r.role;
+            // Viewer / Technician are step-down roles only available after Admin login.
+            // Show them greyed out so the UI isn't confusing to fresh users.
+            const isStepDown = !r.needsPassword;
             return (
               <button
                 key={r.role}
-                onClick={() => selectRole(r.role)}
-                className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all cursor-pointer ${
-                  isActive
-                    ? `${r.border} ${r.bg} shadow-md scale-[1.03]`
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                onClick={() => !isStepDown && selectRole(r.role)}
+                disabled={isStepDown}
+                title={isStepDown ? "Login as Admin first, then switch role from the dashboard" : undefined}
+                className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all ${
+                  isStepDown
+                    ? "border-slate-100 bg-slate-50 opacity-40 cursor-not-allowed"
+                    : isActive
+                    ? `${r.border} ${r.bg} shadow-md scale-[1.03] cursor-pointer`
+                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm cursor-pointer"
                 }`}
               >
                 <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isActive ? r.bg : "bg-slate-100"}`}>
@@ -142,10 +149,12 @@ export default function WelcomePage() {
                 </div>
                 <div>
                   <p className={`text-sm font-bold ${isActive ? r.color : "text-slate-700"}`}>{r.label}</p>
-                  {r.needsPassword && (
+                  {r.needsPassword ? (
                     <span className="inline-flex items-center gap-0.5 mt-0.5 text-xs text-slate-400">
                       <KeyRound size={10} /> Password
                     </span>
+                  ) : (
+                    <span className="mt-0.5 text-xs text-slate-400">After login</span>
                   )}
                 </div>
               </button>
