@@ -1,11 +1,3 @@
-// Deprecated: middleware.ts is no longer used in Next.js 16.
-// Route protection is handled by proxy.ts (the new convention).
-// This file is kept to avoid confusion during migration.
-
-export function middleware() {
-  // No-op — all logic moved to proxy.ts
-}
-
-export const config = {
-  matcher: [],
-};
+// Next.js requires middleware to live in middleware.ts.
+// Logic lives in proxy.ts (edge-runtime compatible, no bcrypt/prisma).
+export { proxy as middleware, config } from "./proxy";
