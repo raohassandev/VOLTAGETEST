@@ -24,6 +24,16 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+function formatAgo(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 function alarmTone(alarms: ServerAlarm[]) {
   if (alarms.some((a) => a.severity === "critical")) return "critical";
   if (alarms.length > 0) return "warning";
@@ -162,8 +172,8 @@ function UpsCard({
         </div>
       </div>
 
-      {/* Metrics grid */}
-      <div className="grid grid-cols-4 divide-x divide-slate-100 border-t border-slate-100 text-center">
+      {/* Metrics grid — greyed out when offline to signal stale data */}
+      <div className={`grid grid-cols-4 divide-x divide-slate-100 border-t border-slate-100 text-center ${!online ? "opacity-40" : ""}`}>
         {[
           { label: "In V",    value: formatNumber(Number(device.telemetry.volt_in ?? 0)) },
           { label: "Out V",   value: formatNumber(Number(device.telemetry.volt_out ?? 0)) },
@@ -177,7 +187,7 @@ function UpsCard({
         ))}
       </div>
 
-      <div className="grid grid-cols-4 divide-x divide-slate-100 border-t border-slate-100 text-center">
+      <div className={`grid grid-cols-4 divide-x divide-slate-100 border-t border-slate-100 text-center ${!online ? "opacity-40" : ""}`}>
         {[
           { label: "Out A",   value: formatNumber(Number(device.telemetry.ct_out ?? 0)) },
           { label: "Out VA",  value: formatNumber(Number(device.telemetry.s_out_va ?? 0)) },
@@ -212,7 +222,7 @@ function UpsCard({
       {/* Footer actions */}
       <div className="mt-auto flex items-center justify-between border-t border-slate-100 bg-slate-50 px-4 py-2.5">
         <span className="text-xs text-slate-400">
-          {device.lastMessageAt}
+          {online ? device.lastMessageAt : `Last seen ${formatAgo(nowMs - device.lastSeenMs)}`}
         </span>
         <Link
           href={`/ups/${upsId}`}
