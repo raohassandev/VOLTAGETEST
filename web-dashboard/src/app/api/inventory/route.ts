@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireApiAuth } from "@/lib/api-auth";
+import { requireApiAuth, requireRole } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 import { defaultInventory, type UpsInventoryItem } from "@/lib/telemetry";
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const auth = requireApiAuth(request);
+  const auth = requireRole(request, "admin");
   if (!auth.ok) return auth.response;
 
   const body = (await request.json()) as { inventory?: UpsInventoryItem[] };
@@ -107,7 +107,7 @@ export async function PUT(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = requireApiAuth(request);
+  const auth = requireRole(request, "admin");
   if (!auth.ok) return auth.response;
 
   const body = (await request.json()) as Partial<UpsInventoryItem>;
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const auth = requireApiAuth(request);
+  const auth = requireRole(request, "admin");
   if (!auth.ok) return auth.response;
 
   const { searchParams } = new URL(request.url);

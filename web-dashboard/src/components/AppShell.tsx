@@ -44,7 +44,7 @@ interface NavLink {
 const NAV_LINKS: NavLink[] = [
   { key: "dashboard",   label: "Dashboard",    href: "/",                    minRole: "viewer" },
   { key: "alarms",      label: "Alarms",        href: "/alarms",              minRole: "viewer" },
-  { key: "inventory",   label: "Inventory",     href: "/admin/inventory",     minRole: "viewer" },
+  { key: "inventory",   label: "Inventory",     href: "/admin/inventory",     minRole: "admin" },
   { key: "alarm-rules", label: "Alarm Rules",   href: "/admin/alarm-rules",   minRole: "admin" },
   { key: "boards",      label: "Boards",        href: "/admin/boards",        minRole: "admin" },
   { key: "settings",    label: "Settings",      href: "/admin/settings",      minRole: "admin" },
