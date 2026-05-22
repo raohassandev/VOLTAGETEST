@@ -345,24 +345,12 @@ type FilterTab = "all" | "online" | "offline" | "alarm";
 type ViewMode  = "cards" | "list";
 
 export default function Home() {
-  const { fleetDevices, serverAlarms } = useTelemetry();
+  const { fleetDevices, serverAlarms, offlineThresholdMs } = useTelemetry();
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [search, setSearch] = useState("");
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [page, setPage] = useState(1);
-  const [offlineThresholdMs, setOfflineThresholdMs] = useState(60_000);
-
-  useEffect(() => {
-    fetch("/api/settings", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d: { offlineThresholdSecs?: number }) => {
-        if (typeof d.offlineThresholdSecs === "number") {
-          setOfflineThresholdMs(d.offlineThresholdSecs * 1_000);
-        }
-      })
-      .catch(() => undefined);
-  }, []);
 
   useEffect(() => {
     const t = window.setInterval(() => setNowMs(Date.now()), 5_000);

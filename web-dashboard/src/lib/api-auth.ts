@@ -9,9 +9,6 @@ export interface SessionUser {
   role: UserRole;
 }
 
-// Roles that require a verified password session
-const PASSWORD_ROLES = new Set<UserRole>(["admin", "manufacturer"]);
-
 // Rank used for minimum-role checks
 const ROLE_RANK: Record<UserRole, number> = {
   viewer: 0,
@@ -22,20 +19,26 @@ const ROLE_RANK: Record<UserRole, number> = {
 
 export function getSessionUser(request: Request): SessionUser | null {
   const cookieHeader = request.headers.get("cookie") ?? "";
+
+  // Always verify ups_session FIRST. ups_user is not httpOnly and can be forged.
+  // A valid session is required for any API access, regardless of role.
+  const sessionToken = parseCookie(cookieHeader, authCookieName);
+  if (!sessionToken || !verifySessionToken(sessionToken)) {
+    return null;
+  }
+
+  // Session is valid — read role from ups_user cookie (set by login/role-select)
   const userCookie = parseCookie(cookieHeader, USER_COOKIE);
   if (userCookie) {
     try {
       return JSON.parse(atob(userCookie)) as SessionUser;
     } catch {
-      // malformed cookie — fall through
+      // malformed ups_user — fall through to admin default
     }
   }
-  // Legacy: valid ups_session with no ups_user cookie → treat as admin
-  const sessionToken = parseCookie(cookieHeader, authCookieName);
-  if (sessionToken && verifySessionToken(sessionToken)) {
-    return { username: "admin", role: "admin" };
-  }
-  return null;
+
+  // Valid session but no ups_user cookie → legacy admin session
+  return { username: "admin", role: "admin" };
 }
 
 export function requireApiAuth(
@@ -45,16 +48,6 @@ export function requireApiAuth(
   if (!user) {
     return { ok: false, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
-
-  // Password roles require a valid ups_session token as well
-  if (PASSWORD_ROLES.has(user.role)) {
-    const cookieHeader = request.headers.get("cookie") ?? "";
-    const sessionToken = parseCookie(cookieHeader, authCookieName);
-    if (!sessionToken || !verifySessionToken(sessionToken)) {
-      return { ok: false, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-    }
-  }
-
   return { ok: true, user };
 }
 

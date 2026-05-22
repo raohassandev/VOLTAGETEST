@@ -27,12 +27,13 @@ export async function GET(request: Request) {
       rawRetentionDays: row.rawRetentionDays,
       rollupRetentionMonths: row.rollupRetentionMonths,
       alarmRetentionMonths: row.alarmRetentionMonths,
+      offlineThresholdSecs: row.offlineThresholdSecs,
     };
     return NextResponse.json({ settings, offlineThresholdSecs: row.offlineThresholdSecs });
   }
 
   const settings = await readJsonFile<SystemSettings>(settingsFile, defaultSystemSettings);
-  return NextResponse.json({ settings });
+  return NextResponse.json({ settings, offlineThresholdSecs: settings.offlineThresholdSecs ?? 60 });
 }
 
 export async function PUT(request: Request) {
@@ -41,24 +42,25 @@ export async function PUT(request: Request) {
 
   const body = (await request.json()) as { settings?: Partial<SystemSettings>; offlineThresholdSecs?: number };
   const source = body.settings || {};
+  const offlineThresholdSecs = clampNumber(body.offlineThresholdSecs ?? source.offlineThresholdSecs, 10, 3600, defaultSystemSettings.offlineThresholdSecs);
   const settings: SystemSettings = {
     alarmRetentionMonths: clampNumber(source.alarmRetentionMonths, 1, 120, defaultSystemSettings.alarmRetentionMonths),
     rawRetentionDays: clampNumber(source.rawRetentionDays, 1, 365, defaultSystemSettings.rawRetentionDays),
     rollupRetentionMonths: clampNumber(source.rollupRetentionMonths, 1, 120, defaultSystemSettings.rollupRetentionMonths),
+    offlineThresholdSecs,
   };
-  const offlineThresholdSecs = clampNumber(body.offlineThresholdSecs, 10, 3600, 60);
 
   if (isDbEnabled()) {
     await prisma.systemSettings.upsert({
       where: { id: "default" },
-      create: { id: "default", ...settings, offlineThresholdSecs },
-      update: { ...settings, offlineThresholdSecs },
+      create: { id: "default", rawRetentionDays: settings.rawRetentionDays, rollupRetentionMonths: settings.rollupRetentionMonths, alarmRetentionMonths: settings.alarmRetentionMonths, offlineThresholdSecs },
+      update: { rawRetentionDays: settings.rawRetentionDays, rollupRetentionMonths: settings.rollupRetentionMonths, alarmRetentionMonths: settings.alarmRetentionMonths, offlineThresholdSecs },
     });
     return NextResponse.json({ settings, offlineThresholdSecs });
   }
 
   await writeJsonFile(settingsFile, settings);
-  return NextResponse.json({ settings });
+  return NextResponse.json({ settings, offlineThresholdSecs });
 }
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number) {

@@ -37,6 +37,7 @@ export type SystemSettings = {
   rawRetentionDays: number;
   rollupRetentionMonths: number;
   alarmRetentionMonths: number;
+  offlineThresholdSecs: number;
 };
 
 export type ServerAlarm = {
@@ -67,6 +68,7 @@ export const defaultSystemSettings: SystemSettings = {
   alarmRetentionMonths: 24,
   rawRetentionDays: 30,
   rollupRetentionMonths: 12,
+  offlineThresholdSecs: 60,
 };
 
 export function formatNumber(value: number) {
@@ -107,9 +109,12 @@ export function useTelemetry() {
       try {
         const response = await fetch("/api/settings", { cache: "no-store" });
         if (!response.ok) return;
-        const payload = (await response.json()) as { settings?: SystemSettings };
+        const payload = (await response.json()) as { settings?: Omit<SystemSettings, "offlineThresholdSecs">; offlineThresholdSecs?: number };
         if (!cancelled && payload.settings) {
-          setSystemSettings(payload.settings);
+          setSystemSettings({
+            ...payload.settings,
+            offlineThresholdSecs: payload.offlineThresholdSecs ?? 60,
+          });
           setSystemSettingsLoaded(true);
         }
       } catch {
@@ -208,8 +213,9 @@ export function useTelemetry() {
 
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
+      const { offlineThresholdSecs, ...rest } = systemSettings;
       fetch("/api/settings", {
-        body: JSON.stringify({ settings: systemSettings }),
+        body: JSON.stringify({ settings: rest, offlineThresholdSecs }),
         headers: { "Content-Type": "application/json" },
         method: "PUT",
         signal: controller.signal,
@@ -288,6 +294,7 @@ export function useTelemetry() {
     apiStatus,
     fleetDevices,
     inventory,
+    offlineThresholdMs: systemSettings.offlineThresholdSecs * 1_000,
     serverAlarms,
     setSystemSettings,
     systemSettings,
