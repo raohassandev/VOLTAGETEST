@@ -4,7 +4,24 @@
       "Bash(Start-Process cmd.exe -ArgumentList '/k \"cd /d \"\"D:\\\\Working\\\\Hadi Engineering\\\\UPS Management System\\\\web-dashboard\"\" && npm run dev\"' -PassThru)",
       "Bash(Select-Object Id)",
       "Bash(curl *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(npx ts-node -e ' *)",
+      "Bash(npx prisma *)",
+      "Bash(ipconfig)",
+      "Bash(ip addr *)",
+      "Bash(C:/Program Files/PostgreSQL/16/bin/psql.exe *)",
+      "Bash(PGPASSWORD=ums_password C:/Program Files/PostgreSQL/16/bin/psql.exe *)",
+      "Bash(PGPASSWORD=ums_password \"C:/Program Files/PostgreSQL/16/bin/psql.exe\" -U ums_user -d ums_local -h localhost -c '\\\\d \"TelemetryRaw\"')",
+      "Bash(tasklist)",
+      "Bash(netstat -ano)",
+      "Bash(wmic process *)",
+      "Bash(PGPASSWORD=ums_password npx prisma migrate dev --name \"add_telemetry_fields_and_device_discovered\")",
+      "Bash(PGPASSWORD=ums_password \"C:/Program Files/PostgreSQL/16/bin/psql.exe\" -U ums_user -d ums_local -h localhost -c \"ALTER USER ums_user CREATEDB;\")",
+      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/16/bin/psql.exe\" -U postgres -h localhost -c \"ALTER USER ums_user CREATEDB;\")",
+      "Bash(PGPASSWORD=ums_password npx prisma db push)",
+      "Bash(npm install *)",
+      "Bash(mkdir -p \"D:/Working/Hadi Engineering/UPS Management System/web-dashboard/src/app/api/devices/[deviceId]/config\")",
+      "Bash(mkdir -p \"D:/Working/Hadi Engineering/UPS Management System/web-dashboard/src/app/api/devices/[deviceId]/command\")"
     ]
   }
 }

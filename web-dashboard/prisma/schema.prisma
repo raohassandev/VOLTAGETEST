@@ -129,8 +129,12 @@ model TelemetryRaw {
   pOutW      Float?
   pfIn       Float?
   pfOut      Float?
+  qInVar     Float?
+  qOutVar    Float?
   eInKwh     Float?
   eOutKwh    Float?
+  freqIn     Float?
+  freqOut    Float?
   rssi       Int?
   ip         String?
   firmware   String?
@@ -158,8 +162,12 @@ model TelemetryLatest {
   pOutW      Float?
   pfIn       Float?
   pfOut      Float?
+  qInVar     Float?
+  qOutVar    Float?
   eInKwh     Float?
   eOutKwh    Float?
+  freqIn     Float?
+  freqOut    Float?
   rssi       Int?
   ip         String?
   firmware   String?
@@ -235,12 +243,31 @@ model Telemetry1m {
   sOutVaAvg   Float
   sOutVaMax   Float
   rssiAvg     Float?
+  freqInAvg   Float?
+  freqOutAvg  Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@unique([deviceId, bucketStart])
   @@index([deviceId, bucketStart])
   @@index([bucketStart])
+}
+
+// Devices found on LAN by the scanner (may not have connected via MQTT yet)
+model DeviceDiscovered {
+  id             String   @id @default(cuid())
+  ip             String   @unique
+  mac            String?
+  hostname       String?
+  boardConfirmed Boolean  @default(false) // responded to GET /api/info
+  deviceId       String?  // linked to Device if MAC matched
+  firmware       String?
+  firstSeenAt    DateTime @default(now())
+  lastSeenAt     DateTime @default(now())
+  rawInfo        Json?    // full response from board /api/info
+
+  @@index([mac])
+  @@index([lastSeenAt])
 }
 
 model AuditLog {

@@ -18,7 +18,9 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "aedes": "^1.0.2",
     "bcryptjs": "^2.4.3",
+    "bonjour-service": "^1.4.0",
     "lucide-react": "^1.14.0",
     "mqtt": "^5.15.1",
     "next": "16.2.6",

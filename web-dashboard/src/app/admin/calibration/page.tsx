@@ -41,7 +41,7 @@ function profileToForm(p: Partial<CalibProfile>): Record<string, string> {
 }
 
 function formToProfile(f: Record<string, string>): CalibProfile {
-  return Object.fromEntries(Object.entries(f).map(([k, v]) => [k, parseFloat(v) || 0])) as CalibProfile;
+  return Object.fromEntries(Object.entries(f).map(([k, v]) => [k, parseFloat(v) || 0])) as unknown as CalibProfile;
 }
 
 export default function CalibrationPage() {
