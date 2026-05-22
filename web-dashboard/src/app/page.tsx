@@ -357,9 +357,6 @@ export default function Home() {
     return () => window.clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, filterTab]);
 
   const alarmsByDevice = new Map<string, ServerAlarm[]>();
   for (const a of serverAlarms) {
@@ -410,7 +407,7 @@ export default function Home() {
             {filterTabs.map(({ key, label }) => (
               <button
                 key={key}
-                onClick={() => setFilterTab(key)}
+                onClick={() => { setFilterTab(key); setPage(1); }}
                 type="button"
                 className={`rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
                   filterTab === key
@@ -427,7 +424,7 @@ export default function Home() {
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm placeholder:text-slate-400 sm:w-52"
               placeholder="Search UPS, device, location…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
             {/* View toggle */}
             <div className="flex rounded-md border border-slate-300 bg-white overflow-hidden shrink-0">

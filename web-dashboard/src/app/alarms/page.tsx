@@ -163,9 +163,7 @@ export default function AlarmsPage() {
   const [loading, setLoading] = useState(true);
   const [ackComment, setAckComment] = useState("");
   const [ackingId, setAckingId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<UserRole>("viewer");
-
-  useEffect(() => { setUserRole(readRole()); }, []);
+  const [userRole] = useState<UserRole>(readRole);
   const canAck = userRole !== "viewer";
 
   const load = useCallback(async () => {

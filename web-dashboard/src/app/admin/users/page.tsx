@@ -53,7 +53,7 @@ export default function UsersPage() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { reload(); }, []); // eslint-disable-line react-hooks/set-state-in-effect
 
   async function createUser() {
     setSaving(true);

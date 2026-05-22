@@ -1,6 +1,6 @@
 "use client";
 
-import { FlaskConical, History, Settings2, ToggleLeft, ToggleRight } from "lucide-react";
+import { FlaskConical, History, Settings2, ToggleRight } from "lucide-react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 

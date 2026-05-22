@@ -59,7 +59,7 @@ export async function startBroker(): Promise<Aedes> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     aedes.handle(ws as any, req);
   });
-  await new Promise<void>((resolve, reject) => {
+  await new Promise<void>((resolve) => {
     httpServer.listen(MQTT_WS_PORT, "0.0.0.0", () => resolve());
     httpServer.on("error", (err) => {
       // WS port failure is non-fatal — log and continue

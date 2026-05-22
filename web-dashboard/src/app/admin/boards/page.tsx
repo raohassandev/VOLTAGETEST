@@ -41,20 +41,6 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function RssiBar({ rssi }: { rssi?: number }) {
-  if (!rssi) return <span className="text-slate-400 text-xs">—</span>;
-  const pct = Math.max(0, Math.min(100, ((rssi + 100) / 70) * 100));
-  const color = pct > 60 ? "bg-emerald-500" : pct > 30 ? "bg-amber-500" : "bg-red-500";
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className="w-12 h-1.5 rounded-full bg-slate-200 overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
-      </div>
-      <span className="text-xs text-slate-500">{rssi} dBm</span>
-    </div>
-  );
-}
-
 // ── Command button ─────────────────────────────────────────────────────────────
 
 function CommandBtn({ deviceId }: { deviceId: string }) {
@@ -122,7 +108,7 @@ export default function BoardsPage() {
 
   // SSE — live device-online / device-offline / scan-result
   useEffect(() => {
-    loadAll();
+    loadAll(); // eslint-disable-line react-hooks/set-state-in-effect
     const es = new EventSource("/api/events");
     esRef.current = es;
     es.addEventListener("device-online",  () => loadAll());
