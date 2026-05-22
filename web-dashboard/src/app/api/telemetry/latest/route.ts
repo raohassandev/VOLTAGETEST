@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireApiAuth } from "@/lib/api-auth";
+import { requireApiAuth, requireRole } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 import { getTelemetryStore, recordTelemetry } from "@/lib/mqtt-ingestion";
@@ -60,7 +60,17 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = requireApiAuth(request);
+  // Manual telemetry injection is disabled by default.
+  // Enable with ENABLE_MANUAL_TELEMETRY_POST=true; even then, only admin/manufacturer may inject.
+  if (process.env.ENABLE_MANUAL_TELEMETRY_POST !== "true") {
+    return NextResponse.json(
+      { error: "Manual telemetry injection is disabled. Set ENABLE_MANUAL_TELEMETRY_POST=true to enable." },
+      { status: 403 },
+    );
+  }
+
+  // Require admin or manufacturer — viewer and technician must never inject telemetry.
+  const auth = requireRole(request, "admin");
   if (!auth.ok) return auth.response;
 
   const payload = (await request.json()) as Partial<RawTelemetry>;

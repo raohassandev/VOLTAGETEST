@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireApiAuth, requireRole } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
+import { logAudit, requestIp } from "@/lib/audit";
 
 const VOLT_DC_DEFAULT_SCALE = 0.0442;
 
@@ -140,12 +141,22 @@ export async function PATCH(
     return NextResponse.json({ error: "UPS not found." }, { status: 404 });
   }
 
+  const changedFields: Record<string, unknown> = {};
+  if (body.notes !== undefined) changedFields.notes = body.notes;
+  if (body.name !== undefined) changedFields.name = body.name;
+
   const updated = await prisma.upsUnit.update({
     where: { id: unit.id },
-    data: {
-      ...(body.notes !== undefined ? { notes: body.notes } : {}),
-      ...(body.name !== undefined ? { name: body.name } : {}),
-    },
+    data: changedFields,
+  });
+
+  await logAudit({
+    userId: auth.user.username,
+    action: "ups.update",
+    entity: "UpsUnit",
+    entityId: unit.id,
+    data: changedFields,
+    ip: requestIp(request),
   });
 
   return NextResponse.json({ unit: updated });

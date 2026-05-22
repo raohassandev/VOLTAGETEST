@@ -49,14 +49,13 @@ function timeAgo(iso: string | null): string {
 // To re-enable: set ENABLE_DEVICE_COMMANDS=true and update firmware to subscribe
 // to ums/devices/+/command and handle { cmd: "reboot" | "reset-energy" }.
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function CommandBtn({ deviceId }: { deviceId: string }) {
   return (
     <span
       className="inline-flex items-center rounded bg-slate-100 px-2 py-1 text-xs text-slate-400"
-      title="Device commands require a firmware update — not yet available"
+      title={`Commands are disabled until firmware subscribes to ums/devices/${deviceId}/command.`}
     >
-      Commands pending firmware
+      Commands are disabled until firmware subscribes to ums/devices/{deviceId}/command.
     </span>
   );
 }

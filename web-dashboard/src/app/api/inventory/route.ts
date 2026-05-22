@@ -14,6 +14,7 @@ export async function GET(request: Request) {
 
   if (isDbEnabled()) {
     const units = await prisma.upsUnit.findMany({
+      where: { active: true },
       orderBy: { upsId: "asc" },
       include: { devices: { take: 1, orderBy: { updatedAt: "desc" } } },
     });
@@ -67,6 +68,7 @@ export async function PUT(request: Request) {
           location: item.location,
           capacityVa: item.capacityVa,
           batteryNominalV: item.batteryNominalV,
+          active: true,
         },
         update: {
           serial: item.serial,
@@ -74,6 +76,7 @@ export async function PUT(request: Request) {
           location: item.location,
           capacityVa: item.capacityVa,
           batteryNominalV: item.batteryNominalV,
+          active: true,
         },
       });
 
@@ -87,6 +90,7 @@ export async function PUT(request: Request) {
     }
 
     const units = await prisma.upsUnit.findMany({
+      where: { active: true },
       orderBy: { upsId: "asc" },
       include: { devices: { take: 1, orderBy: { updatedAt: "desc" } } },
     });
@@ -128,6 +132,7 @@ export async function POST(request: Request) {
         location: body.location ?? "",
         capacityVa: Number(body.capacityVa ?? 0),
         batteryNominalV: Number(body.batteryNominalV ?? 48),
+        active: true,
       },
       update: {
         serial: body.serial ?? "",
@@ -135,6 +140,7 @@ export async function POST(request: Request) {
         location: body.location ?? "",
         capacityVa: Number(body.capacityVa ?? 0),
         batteryNominalV: Number(body.batteryNominalV ?? 48),
+        active: true,
       },
     });
 

@@ -90,9 +90,7 @@ function readStoredInventory(): UpsInventoryItem[] {
 
 export function useTelemetry() {
   const [inventory, setInventory] = useState<UpsInventoryItem[]>(defaultInventory);
-  const [inventoryLoaded, setInventoryLoaded] = useState(false);
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(defaultSystemSettings);
-  const [systemSettingsLoaded, setSystemSettingsLoaded] = useState(false);
   const [fleet, setFleet] = useState<Record<string, FleetDevice>>({});
   const [apiStatus, setApiStatus] = useState<ApiStatus>("unknown");
   const [serverAlarms, setServerAlarms] = useState<ServerAlarm[]>([]);
@@ -115,10 +113,9 @@ export function useTelemetry() {
             ...payload.settings,
             offlineThresholdSecs: payload.offlineThresholdSecs ?? 60,
           });
-          setSystemSettingsLoaded(true);
         }
       } catch {
-        if (!cancelled) setSystemSettingsLoaded(true);
+        // non-critical: keep defaults
       }
     }
 
@@ -138,10 +135,9 @@ export function useTelemetry() {
         const payload = (await response.json()) as { inventory?: UpsInventoryItem[] };
         if (!cancelled && Array.isArray(payload.inventory)) {
           setInventory(payload.inventory);
-          setInventoryLoaded(true);
         }
       } catch {
-        if (!cancelled) setInventoryLoaded(true);
+        // non-critical: keep localStorage fallback
       }
     }
 
@@ -190,43 +186,7 @@ export function useTelemetry() {
 
   useEffect(() => {
     window.localStorage.setItem("ups-inventory", JSON.stringify(inventory));
-    if (!inventoryLoaded) return;
-
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => {
-      fetch("/api/inventory", {
-        body: JSON.stringify({ inventory }),
-        headers: { "Content-Type": "application/json" },
-        method: "PUT",
-        signal: controller.signal,
-      }).catch(() => undefined);
-    }, 350);
-
-    return () => {
-      controller.abort();
-      window.clearTimeout(timer);
-    };
-  }, [inventory, inventoryLoaded]);
-
-  useEffect(() => {
-    if (!systemSettingsLoaded) return;
-
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => {
-      const { offlineThresholdSecs, ...rest } = systemSettings;
-      fetch("/api/settings", {
-        body: JSON.stringify({ settings: rest, offlineThresholdSecs }),
-        headers: { "Content-Type": "application/json" },
-        method: "PUT",
-        signal: controller.signal,
-      }).catch(() => undefined);
-    }, 350);
-
-    return () => {
-      controller.abort();
-      window.clearTimeout(timer);
-    };
-  }, [systemSettings, systemSettingsLoaded]);
+  }, [inventory]);
 
   useEffect(() => {
     let cancelled = false;
