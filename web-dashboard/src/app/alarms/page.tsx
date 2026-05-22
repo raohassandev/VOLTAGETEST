@@ -2,7 +2,7 @@
 
 import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import type { UserRole } from "@/lib/auth";
 
@@ -167,9 +167,8 @@ export default function AlarmsPage() {
                   </thead>
                   <tbody>
                     {alarms.map((alarm) => (
-                      <>
+                      <React.Fragment key={alarm.id}>
                         <tr
-                          key={alarm.id}
                           className={`border-b border-slate-100 ${
                             alarm.severity === "critical" && alarm.state === "active"
                               ? "bg-red-50/40"
@@ -259,7 +258,7 @@ export default function AlarmsPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>

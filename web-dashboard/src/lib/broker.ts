@@ -41,11 +41,12 @@ export async function startBroker(): Promise<Aedes> {
   if (brokerInstance) return brokerInstance;
 
   const bus = getEventBus();
-  const aedes = new Aedes();
+  // Use createBroker() to wait for the 'ready' event before accepting connections
+  const aedes = await Aedes.createBroker();
   brokerInstance = aedes;
 
   // ── TCP server (boards connect here) ─────────────────────────────────────
-  const tcpServer = createServer(aedes.handle);
+  const tcpServer = createServer(aedes.handle.bind(aedes));
   await new Promise<void>((resolve, reject) => {
     tcpServer.listen(MQTT_PORT, "0.0.0.0", () => resolve());
     tcpServer.on("error", reject);

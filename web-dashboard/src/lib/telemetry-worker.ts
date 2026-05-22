@@ -8,7 +8,6 @@
  *   v1 (legacy):        volt_in, volt_out, volt_dc, ct_in, ct_out, s_out_va, …
  */
 
-import mqtt from "mqtt";
 import { PrismaClient } from "@prisma/client";
 import { evaluateAlarms, markDeviceOffline, markDeviceOnline } from "./alarm-engine";
 import { getEventBus } from "./event-bus";
@@ -300,34 +299,16 @@ export async function startTelemetryWorker(): Promise<void> {
 
   const prisma = new PrismaClient({ log: ["warn", "error"] });
 
-  // Connect to the embedded broker via loopback — no external broker needed
-  const brokerUrl = process.env.MQTT_BROKER_URL ?? "mqtt://127.0.0.1:1883";
-
-  const topics = [
-    "ums/devices/+/telemetry",     // v2 topic — new firmware
-    "building/+/ups/+/telemetry",  // v1 topic — legacy firmware (HACK: keep until all boards updated)
-  ];
-
-  const client = mqtt.connect(brokerUrl, {
-    clientId: `ums-worker-${Math.random().toString(16).slice(2, 10)}`,
-    clean: true,
-    reconnectPeriod: 3_000,
-    connectTimeout:  10_000,
-  });
-
-  client.on("connect", () => {
-    console.log(`[worker] Connected to broker — subscribing to ${topics.join(", ")}`);
-    topics.forEach((t) => client.subscribe(t, { qos: 1 }));
-  });
-
-  client.on("reconnect", () => console.log("[worker] Reconnecting to broker…"));
-  client.on("error",     (err) => console.error("[worker] MQTT error:", err.message));
-
-  client.on("message", (topic, payload) => {
+  // Subscribe to the in-process EventBus instead of opening a TCP MQTT connection.
+  // The broker emits "mqtt-message" for every publish from a real client, so we
+  // get all telemetry without a loopback TCP round-trip.
+  const bus = getEventBus();
+  bus.on("mqtt-message", ({ topic, payload }: { topic: string; payload: Buffer }) => {
     handleMessage(prisma, topic, payload).catch((err) =>
       console.error("[worker] handleMessage error:", err instanceof Error ? err.message : err),
     );
   });
+  console.log("[worker] Subscribed to in-process EventBus for telemetry.");
 
   // Periodic jobs
   setInterval(() => checkOfflineDevices(prisma).catch(console.error), OFFLINE_CHECK_MS);
@@ -360,8 +341,8 @@ export async function startTelemetryWorker(): Promise<void> {
     }, CLEANUP_MS);
   }, 10_000);
 
-  process.once("SIGINT",  async () => { client.end(); await prisma.$disconnect(); });
-  process.once("SIGTERM", async () => { client.end(); await prisma.$disconnect(); });
+  process.once("SIGINT",  async () => { await prisma.$disconnect(); });
+  process.once("SIGTERM", async () => { await prisma.$disconnect(); });
 
   console.log("[worker] Telemetry worker started.");
 }
