@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireApiAuth } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 import { defaultSystemSettings, type SystemSettings } from "@/lib/telemetry";
@@ -6,7 +7,10 @@ import { readJsonFile, writeJsonFile } from "@/lib/server-store";
 
 const settingsFile = "settings.json";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   if (isDbEnabled()) {
     const row = await prisma.systemSettings.upsert({
       where: { id: "default" },
@@ -32,6 +36,9 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   const body = (await request.json()) as { settings?: Partial<SystemSettings>; offlineThresholdSecs?: number };
   const source = body.settings || {};
   const settings: SystemSettings = {

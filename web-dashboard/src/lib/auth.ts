@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs";
+import { prisma, isDbEnabled } from "@/lib/db";
 
 export const authCookieName = "ups_session";
+export type UserRole = "admin" | "technician" | "viewer" | "manufacturer";
 
 // Token used when ALLOW_DEV_AUTH=true and no UPS_AUTH_TOKEN is configured.
 // This value is intentionally public — it only works when the env var explicitly opts in.
@@ -27,35 +29,58 @@ export function isProductionSafe(): boolean {
   return Boolean(passwordHash && sessionToken);
 }
 
-export async function verifyCredentials(username: string, password: string): Promise<boolean> {
+export interface VerifyResult {
+  ok: boolean;
+  username: string;
+  role: UserRole;
+}
+
+export async function verifyCredentials(username: string, password: string): Promise<VerifyResult> {
+  const fail: VerifyResult = { ok: false, username, role: "viewer" };
+
+  // Check DB users first (multi-user support)
+  if (isDbEnabled()) {
+    try {
+      const user = await prisma.user.findUnique({ where: { username } });
+      if (user && user.active) {
+        const match = await bcrypt.compare(password, user.passwordHash);
+        if (match) return { ok: true, username: user.username, role: (user.role as UserRole) ?? "viewer" };
+        return fail;
+      }
+    } catch {
+      // DB unavailable — fall through to env-var auth
+    }
+  }
+
+  // Env-var auth fallback (single admin account)
   const config = authConfig();
   const isProduction = process.env.NODE_ENV === "production";
 
   if (isProduction && !isAuthConfigured()) {
     console.error("[auth] Production login blocked: UPS_AUTH_TOKEN and a password/hash must be set.");
-    return false;
+    return fail;
   }
 
-  if (!safeEqual(username, config.username)) return false;
+  if (!safeEqual(username, config.username)) return fail;
 
   if (config.passwordHash) {
-    return bcrypt.compare(password, config.passwordHash);
+    const ok = await bcrypt.compare(password, config.passwordHash);
+    return { ok, username: config.username, role: "admin" };
   }
 
   if (config.password) {
     if (isProduction) {
       console.error("[auth] Production: plain-text UPS_AUTH_PASSWORD is set — use UPS_AUTH_PASSWORD_HASH instead.");
     }
-    return safeEqual(password, config.password);
+    return { ok: safeEqual(password, config.password), username: config.username, role: "admin" };
   }
 
-  // Dev-only fallback: accept any credentials when ALLOW_DEV_AUTH=true
   if (!isProduction && config.allowDevAuth) {
     console.warn("[auth] ALLOW_DEV_AUTH=true — accepting any credentials. Do not use in production.");
-    return true;
+    return { ok: true, username: "admin", role: "admin" };
   }
 
-  return false;
+  return fail;
 }
 
 export function verifySessionToken(token: string): boolean {

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Start-Process cmd.exe -ArgumentList '/k \"cd /d \"\"D:\\\\Working\\\\Hadi Engineering\\\\UPS Management System\\\\web-dashboard\"\" && npm run dev\"' -PassThru)",
+      "Bash(Select-Object Id)",
+      "Bash(curl *)",
+      "Bash(git add *)"
+    ]
+  }
+}

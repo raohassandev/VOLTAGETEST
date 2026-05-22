@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { authConfig, authCookieName, verifyCredentials, getDevFallbackToken } from "@/lib/auth";
+import { USER_COOKIE } from "@/lib/api-auth";
 
 export async function POST(request: Request) {
   const form = await request.formData();
@@ -8,8 +9,8 @@ export async function POST(request: Request) {
   const password = String(form.get("password") || "");
   const next = String(form.get("next") || "/");
 
-  const ok = await verifyCredentials(username, password);
-  if (!ok) {
+  const result = await verifyCredentials(username, password);
+  if (!result.ok) {
     return NextResponse.redirect(new URL(`/login?error=1&next=${encodeURIComponent(next)}`, request.url), {
       status: 303,
     });
@@ -24,11 +25,19 @@ export async function POST(request: Request) {
   const response = NextResponse.redirect(new URL(next.startsWith("/") ? next : "/", request.url), {
     status: 303,
   });
-  response.cookies.set(authCookieName, sessionToken, {
+
+  const cookieOpts = {
     httpOnly: true,
     maxAge: 60 * 60 * 12,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
+  };
+
+  response.cookies.set(authCookieName, sessionToken, cookieOpts);
+  response.cookies.set(USER_COOKIE, btoa(JSON.stringify({ username: result.username, role: result.role })), {
+    ...cookieOpts,
+    httpOnly: false, // readable by client JS for display
   });
+
   return response;
 }

@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
+import { requireApiAuth } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 import { getTelemetryStore, recordTelemetry } from "@/lib/mqtt-ingestion";
 import { normalizeTelemetry, type RawTelemetry } from "@/lib/telemetry-types";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   if (isDbEnabled()) {
     const rows = await prisma.telemetryLatest.findMany({
       include: { device: { include: { upsUnit: true } } },
@@ -37,6 +41,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   const payload = (await request.json()) as Partial<RawTelemetry>;
   const telemetry = normalizeTelemetry(payload, "api/manual");
   await recordTelemetry(telemetry);

@@ -220,21 +220,21 @@ function CompactTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[900px] border-collapse text-sm">
+      <table className="w-full min-w-[820px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-slate-200 text-left text-xs text-slate-500 uppercase tracking-wide">
-            <th className="py-2 pr-3">UPS</th>
-            <th className="py-2 pr-3">Location</th>
-            <th className="py-2 pr-3">In V</th>
-            <th className="py-2 pr-3">Out V</th>
-            <th className="py-2 pr-3">Bat V</th>
-            <th className="py-2 pr-3">Out A</th>
-            <th className="py-2 pr-3">Out VA</th>
-            <th className="py-2 pr-3">Load %</th>
-            <th className="py-2 pr-3">RSSI</th>
-            <th className="py-2 pr-3">Board IP</th>
-            <th className="py-2 pr-3">Status</th>
-            <th className="py-2">Last seen</th>
+            <th className="py-2 pr-3 w-28">UPS</th>
+            <th className="py-2 pr-3 w-28">Location</th>
+            <th className="py-2 pr-3 w-14">In V</th>
+            <th className="py-2 pr-3 w-14">Out V</th>
+            <th className="py-2 pr-3 w-14">Bat V</th>
+            <th className="py-2 pr-3 w-14">Out A</th>
+            <th className="py-2 pr-3 w-16">Out VA</th>
+            <th className="py-2 pr-3 w-14">Load %</th>
+            <th className="py-2 pr-3 w-16">RSSI</th>
+            <th className="py-2 pr-3 w-28">Board IP</th>
+            <th className="py-2 pr-3 w-20">Status</th>
+            <th className="py-2 w-24">Last seen</th>
           </tr>
         </thead>
         <tbody>
@@ -319,6 +319,8 @@ function CompactTable({
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 20;
+
 type FilterTab = "all" | "online" | "offline" | "alarm";
 
 export default function Home() {
@@ -326,11 +328,16 @@ export default function Home() {
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [search, setSearch] = useState("");
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const t = window.setInterval(() => setNowMs(Date.now()), 5_000);
     return () => window.clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterTab]);
 
   const alarmsByDevice = new Map<string, ServerAlarm[]>();
   for (const a of serverAlarms) {
@@ -364,6 +371,10 @@ export default function Home() {
     { key: "offline", label: `Offline (${fleetDevices.filter((d) => nowMs - d.lastSeenMs >= 60_000).length})` },
     { key: "alarm",   label: `Alarm (${new Set(serverAlarms.map((a) => a.deviceId)).size})` },
   ];
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <AppShell activeNav="dashboard">
@@ -422,16 +433,48 @@ export default function Home() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-            {filtered.map((device) => (
-              <UpsCard
-                key={device.id}
-                device={device}
-                nowMs={nowMs}
-                deviceAlarms={alarmsByDevice.get(device.id) ?? []}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+              {paginated.map((device) => (
+                <UpsCard
+                  key={device.id}
+                  device={device}
+                  nowMs={nowMs}
+                  deviceAlarms={alarmsByDevice.get(device.id) ?? []}
+                />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-sm text-slate-500">
+                  Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage === 1}
+                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-600 disabled:opacity-40 hover:bg-slate-50"
+                    type="button"
+                  >
+                    Prev
+                  </button>
+                  <span className="text-sm font-semibold text-slate-700">
+                    {safePage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages}
+                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-600 disabled:opacity-40 hover:bg-slate-50"
+                    type="button"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Compact detail table */}
@@ -440,7 +483,7 @@ export default function Home() {
             <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">
               Detailed list ({filtered.length})
             </h2>
-            <CompactTable devices={filtered} nowMs={nowMs} alarmsByDevice={alarmsByDevice} />
+            <CompactTable devices={paginated} nowMs={nowMs} alarmsByDevice={alarmsByDevice} />
           </section>
         )}
       </div>

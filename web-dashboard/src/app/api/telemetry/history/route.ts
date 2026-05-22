@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireApiAuth } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 import { getTelemetryStore } from "@/lib/mqtt-ingestion";
@@ -7,6 +8,9 @@ import type { RawTelemetry } from "@/lib/telemetry-types";
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 
 export async function GET(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   const { searchParams } = new URL(request.url);
   const deviceId = searchParams.get("deviceId") ?? searchParams.get("device_id");
   const from = searchParams.get("from");

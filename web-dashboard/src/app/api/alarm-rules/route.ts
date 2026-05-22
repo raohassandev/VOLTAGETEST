@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
+import { requireApiAuth } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 
 export async function GET(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   if (!isDbEnabled()) return NextResponse.json({ error: "Database not configured." }, { status: 503 });
 
   const { searchParams } = new URL(request.url);
@@ -23,6 +27,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   if (!isDbEnabled()) return NextResponse.json({ error: "Database not configured." }, { status: 503 });
 
   const body = (await request.json()) as {

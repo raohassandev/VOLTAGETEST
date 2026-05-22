@@ -4,8 +4,16 @@ import { Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
-
 import type { UpsInventoryItem } from "@/lib/telemetry";
+import type { UserRole } from "@/lib/auth";
+
+function readRole(): UserRole {
+  if (typeof document === "undefined") return "viewer";
+  const m = document.cookie.match(/(?:^|;\s*)ups_user=([^;]*)/);
+  if (!m) return "viewer";
+  try { return (JSON.parse(atob(decodeURIComponent(m[1]))) as { role?: UserRole }).role ?? "viewer"; }
+  catch { return "viewer"; }
+}
 
 const empty: UpsInventoryItem = {
   batteryNominalV: 48,
@@ -23,6 +31,10 @@ export default function InventoryAdminPage() {
   const [form, setForm] = useState<UpsInventoryItem>(empty);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [userRole, setUserRole] = useState<UserRole>("viewer");
+
+  useEffect(() => { setUserRole(readRole()); }, []);
+  const canEdit = userRole === "admin" || userRole === "manufacturer";
 
   useEffect(() => {
     fetch("/api/inventory", { cache: "no-store" })
@@ -71,6 +83,7 @@ export default function InventoryAdminPage() {
   }
 
   async function remove(upsId: string) {
+    if (!confirm(`Delete UPS "${upsId}"? This cannot be undone.`)) return;
     await fetch(`/api/inventory?upsId=${encodeURIComponent(upsId)}`, { method: "DELETE" });
     setInventory((prev) => prev.filter((i) => i.upsId !== upsId));
   }
@@ -83,7 +96,7 @@ export default function InventoryAdminPage() {
           <p className="text-sm text-slate-500">Manage UPS units, device associations, and site data.</p>
         </div>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        {canEdit && <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold">Add / update UPS</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="UPS ID *" value={form.upsId} onChange={(e) => field("upsId", e.target.value)} />
@@ -106,7 +119,7 @@ export default function InventoryAdminPage() {
             </button>
             {msg && <span className="text-sm font-semibold text-emerald-700">{msg}</span>}
           </div>
-        </section>
+        </section>}
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold">Registered UPS units ({inventory.length})</h2>
@@ -137,22 +150,26 @@ export default function InventoryAdminPage() {
                     <td className="py-2.5 pr-3">{item.capacityVa.toLocaleString()} VA</td>
                     <td className="py-2.5 pr-3">{item.batteryNominalV} V</td>
                     <td className="py-2.5 pr-3">
-                      <div className="flex gap-2">
-                        <button
-                          className="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold"
-                          onClick={() => setForm({ ...item })}
-                          type="button"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="inline-flex items-center rounded-md border border-red-200 px-2 py-1 text-red-700"
-                          onClick={() => remove(item.upsId)}
-                          type="button"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
+                      {canEdit ? (
+                        <div className="flex gap-2">
+                          <button
+                            className="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold"
+                            onClick={() => setForm({ ...item })}
+                            type="button"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="inline-flex items-center rounded-md border border-red-200 px-2 py-1 text-red-700"
+                            onClick={() => remove(item.upsId)}
+                            type="button"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}

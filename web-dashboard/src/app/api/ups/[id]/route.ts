@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
+import { requireApiAuth } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 
-export async function GET(
-  _request: Request,
+export async function GET(request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   if (!isDbEnabled()) {
     return NextResponse.json({ error: "Database not configured." }, { status: 503 });
   }

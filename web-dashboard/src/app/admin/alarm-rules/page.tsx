@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2, Settings } from "lucide-react";
+import { Plus, Trash2, Settings, Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 
@@ -81,6 +81,7 @@ export default function AlarmRulesPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [upsList, setUpsList] = useState<UpsListItem[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [refreshTick, setRefreshTick] = useState(0);
 
@@ -116,35 +117,79 @@ export default function AlarmRulesPage() {
     setForm((f) => ({ ...f, metric: value, label }));
   }
 
-  async function createRule() {
+  function openEdit(rule: AlarmRule) {
+    setEditingId(rule.id);
+    setForm({
+      metric: rule.metric,
+      label: rule.label,
+      scope: scopeOf(rule),
+      scopeId: rule.deviceId ?? rule.upsUnitId ?? rule.siteId ?? "",
+      lowCritical: rule.lowCritical !== null ? String(rule.lowCritical) : "",
+      lowWarning: rule.lowWarning !== null ? String(rule.lowWarning) : "",
+      highWarning: rule.highWarning !== null ? String(rule.highWarning) : "",
+      highCritical: rule.highCritical !== null ? String(rule.highCritical) : "",
+      debounceSeconds: String(rule.debounceSeconds),
+      hysteresisPercent: String(rule.hysteresisPercent),
+      enabled: rule.enabled,
+    });
+    setFormError("");
+    setShowForm(true);
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setFormError("");
+    setForm(emptyForm);
+  }
+
+  async function saveRule() {
     setSaving(true);
     setFormError("");
-    const body: Record<string, unknown> = {
-      metric: form.metric,
-      label: form.label,
-      enabled: form.enabled,
-      debounceSeconds: Number(form.debounceSeconds) || 30,
-      hysteresisPercent: Number(form.hysteresisPercent) || 2,
-      deviceId: form.scope === "device" ? form.scopeId || null : null,
-      upsUnitId: form.scope === "ups" ? form.scopeId || null : null,
-      siteId: form.scope === "site" ? form.scopeId || null : null,
+    const thresholds = {
       lowCritical: form.lowCritical !== "" ? Number(form.lowCritical) : null,
       lowWarning: form.lowWarning !== "" ? Number(form.lowWarning) : null,
       highWarning: form.highWarning !== "" ? Number(form.highWarning) : null,
       highCritical: form.highCritical !== "" ? Number(form.highCritical) : null,
     };
-    const res = await fetch("/api/alarm-rules", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+
+    let res: Response;
+    if (editingId) {
+      res = await fetch(`/api/alarm-rules/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          label: form.label,
+          enabled: form.enabled,
+          debounceSeconds: Number(form.debounceSeconds) || 30,
+          hysteresisPercent: Number(form.hysteresisPercent) || 2,
+          ...thresholds,
+        }),
+      });
+    } else {
+      res = await fetch("/api/alarm-rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          metric: form.metric,
+          label: form.label,
+          enabled: form.enabled,
+          debounceSeconds: Number(form.debounceSeconds) || 30,
+          hysteresisPercent: Number(form.hysteresisPercent) || 2,
+          deviceId: form.scope === "device" ? form.scopeId || null : null,
+          upsUnitId: form.scope === "ups" ? form.scopeId || null : null,
+          siteId: form.scope === "site" ? form.scopeId || null : null,
+          ...thresholds,
+        }),
+      });
+    }
+
     const data = (await res.json()) as { error?: string };
     if (!res.ok) {
       setFormError(data.error ?? "Failed to save.");
     } else {
-      setShowForm(false);
-      setForm(emptyForm);
-      await load();
+      closeForm();
+      load();
     }
     setSaving(false);
   }
@@ -184,7 +229,7 @@ export default function AlarmRulesPage() {
           </div>
           <button
             className="flex items-center gap-2 rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-            onClick={() => setShowForm((v) => !v)}
+            onClick={() => { setEditingId(null); setForm(emptyForm); setFormError(""); setShowForm((v) => !v); }}
             type="button"
           >
             <Plus size={15} />
@@ -196,51 +241,49 @@ export default function AlarmRulesPage() {
 
         {showForm && (
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 text-sm font-semibold">New alarm rule</h2>
+            <h2 className="mb-4 text-sm font-semibold">{editingId ? "Edit alarm rule" : "New alarm rule"}</h2>
+            {editingId && (
+              <p className="mb-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                Editing: <span className="font-semibold text-slate-700">{metricLabel(form.metric)}</span> — scope: <span className="font-semibold text-slate-700">{SCOPE_LABELS[form.scope]}{form.scopeId ? ` (${form.scopeId})` : ""}</span>. Metric and scope cannot be changed; delete and recreate to change them.
+              </p>
+            )}
             {formError && <p className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-700">{formError}</p>}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-slate-500">Metric</span>
-                <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.metric} onChange={(e) => setMetric(e.target.value)}>
-                  {METRIC_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </label>
+              {!editingId && (
+                <>
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="text-slate-500">Metric</span>
+                    <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.metric} onChange={(e) => setMetric(e.target.value)}>
+                      {METRIC_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="text-slate-500">Scope</span>
+                    <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.scope} onChange={(e) => setForm((f) => ({ ...f, scope: e.target.value as Scope, scopeId: "" }))}>
+                      {(Object.keys(SCOPE_LABELS) as Scope[]).map((s) => <option key={s} value={s}>{SCOPE_LABELS[s]}</option>)}
+                    </select>
+                  </label>
+                  {form.scope !== "global" && (
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="text-slate-500">{form.scope === "device" ? "Device ID" : form.scope === "ups" ? "UPS unit" : "Site ID"}</span>
+                      {form.scope === "ups" ? (
+                        <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.scopeId} onChange={(e) => setForm((f) => ({ ...f, scopeId: e.target.value }))}>
+                          <option value="">— select UPS —</option>
+                          {upsList.map((u) => (
+                            <option key={u.id} value={u.id}>{u.upsId}{u.name ? ` — ${u.name}` : ""}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.scopeId} onChange={(e) => setForm((f) => ({ ...f, scopeId: e.target.value }))} placeholder={form.scope === "device" ? "e.g. DEV-COM11-TEST" : "e.g. SITE-A"} />
+                      )}
+                    </label>
+                  )}
+                </>
+              )}
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-slate-500">Label</span>
                 <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-slate-500">Scope</span>
-                <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.scope} onChange={(e) => setForm((f) => ({ ...f, scope: e.target.value as Scope, scopeId: "" }))}>
-                  {(Object.keys(SCOPE_LABELS) as Scope[]).map((s) => <option key={s} value={s}>{SCOPE_LABELS[s]}</option>)}
-                </select>
-              </label>
-              {form.scope !== "global" && (
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-slate-500">{form.scope === "device" ? "Device ID" : form.scope === "ups" ? "UPS unit" : "Site ID"}</span>
-                  {form.scope === "ups" ? (
-                    <select
-                      className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-                      value={form.scopeId}
-                      onChange={(e) => setForm((f) => ({ ...f, scopeId: e.target.value }))}
-                    >
-                      <option value="">— select UPS —</option>
-                      {upsList.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.upsId}{u.name ? ` — ${u.name}` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-                      value={form.scopeId}
-                      onChange={(e) => setForm((f) => ({ ...f, scopeId: e.target.value }))}
-                      placeholder={form.scope === "device" ? "e.g. DEV-COM11-TEST" : "e.g. SITE-A"}
-                    />
-                  )}
-                </label>
-              )}
               {["lowCritical", "lowWarning", "highWarning", "highCritical"].map((field) => (
                 <label key={field} className="flex flex-col gap-1 text-sm">
                   <span className="text-slate-500">{field.replace(/([A-Z])/g, " $1").trim()}</span>
@@ -261,10 +304,10 @@ export default function AlarmRulesPage() {
               </label>
             </div>
             <div className="mt-4 flex gap-2">
-              <button className="rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" onClick={createRule} disabled={saving} type="button">
-                {saving ? "Saving…" : "Save rule"}
+              <button className="rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" onClick={saveRule} disabled={saving} type="button">
+                {saving ? "Saving…" : editingId ? "Update rule" : "Save rule"}
               </button>
-              <button className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => { setShowForm(false); setFormError(""); setForm(emptyForm); }} type="button">
+              <button className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={closeForm} type="button">
                 Cancel
               </button>
             </div>
@@ -316,9 +359,14 @@ export default function AlarmRulesPage() {
                         </button>
                       </td>
                       <td className="px-4 py-3">
-                        <button className="text-red-500 hover:text-red-700" onClick={() => deleteRule(rule.id)} type="button" title="Delete">
-                          <Trash2 size={15} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button className="text-slate-400 hover:text-slate-700" onClick={() => openEdit(rule)} type="button" title="Edit">
+                            <Pencil size={14} />
+                          </button>
+                          <button className="text-red-500 hover:text-red-700" onClick={() => deleteRule(rule.id)} type="button" title="Delete">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireApiAuth } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 import { defaultInventory, type UpsInventoryItem } from "@/lib/telemetry";
@@ -6,7 +7,10 @@ import { readJsonFile, writeJsonFile } from "@/lib/server-store";
 
 const inventoryFile = "inventory.json";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   if (isDbEnabled()) {
     const units = await prisma.upsUnit.findMany({
       orderBy: { upsId: "asc" },
@@ -30,6 +34,9 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   const body = (await request.json()) as { inventory?: UpsInventoryItem[] };
   if (!Array.isArray(body.inventory)) {
     return NextResponse.json({ error: "Inventory must be an array." }, { status: 400 });
@@ -100,6 +107,9 @@ export async function PUT(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   const body = (await request.json()) as Partial<UpsInventoryItem>;
   if (!body.upsId) {
     return NextResponse.json({ error: "upsId is required." }, { status: 400 });
@@ -159,6 +169,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   const { searchParams } = new URL(request.url);
   const upsId = searchParams.get("upsId");
   if (!upsId) return NextResponse.json({ error: "upsId required" }, { status: 400 });

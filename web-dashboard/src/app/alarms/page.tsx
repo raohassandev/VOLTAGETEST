@@ -4,6 +4,15 @@ import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import type { UserRole } from "@/lib/auth";
+
+function readRole(): UserRole {
+  if (typeof document === "undefined") return "viewer";
+  const m = document.cookie.match(/(?:^|;\s*)ups_user=([^;]*)/);
+  if (!m) return "viewer";
+  try { return (JSON.parse(atob(decodeURIComponent(m[1]))) as { role?: UserRole }).role ?? "viewer"; }
+  catch { return "viewer"; }
+}
 
 interface AlarmRecord {
   id: string;
@@ -32,6 +41,10 @@ export default function AlarmsPage() {
   const [loading, setLoading] = useState(true);
   const [ackComment, setAckComment] = useState("");
   const [ackingId, setAckingId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRole>("viewer");
+
+  useEffect(() => { setUserRole(readRole()); }, []);
+  const canAck = userRole !== "viewer";
 
   const load = useCallback(async () => {
     try {
@@ -205,7 +218,7 @@ export default function AlarmsPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            {alarm.state === "active" && !alarm.acknowledgedAt ? (
+                            {alarm.state === "active" && !alarm.acknowledgedAt && canAck ? (
                               <button
                                 className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                                 onClick={() => setAckingId(alarm.id === ackingId ? null : alarm.id)}
@@ -287,7 +300,7 @@ export default function AlarmsPage() {
                       </Link>
                     )}
                     <p className="mt-1 text-xs text-slate-400">{new Date(alarm.firstSeenAt).toLocaleString()}</p>
-                    {alarm.state === "active" && !alarm.acknowledgedAt && (
+                    {alarm.state === "active" && !alarm.acknowledgedAt && canAck && (
                       <div className="mt-2">
                         {ackingId === alarm.id ? (
                           <div className="flex gap-2">

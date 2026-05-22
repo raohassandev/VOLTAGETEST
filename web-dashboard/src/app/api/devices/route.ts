@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
+import { requireApiAuth } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   if (!isDbEnabled()) {
     return NextResponse.json({ devices: [] });
   }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireApiAuth } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 
@@ -6,6 +7,9 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   if (!isDbEnabled()) return NextResponse.json({ error: "Database not configured." }, { status: 503 });
 
   const { id } = await params;
@@ -43,10 +47,12 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  _request: Request,
+export async function DELETE(request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   if (!isDbEnabled()) return NextResponse.json({ error: "Database not configured." }, { status: 503 });
 
   const { id } = await params;
