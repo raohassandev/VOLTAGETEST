@@ -7,7 +7,7 @@
  * without a second TCP hop.
  */
 
-import Aedes, { type Client, type AedesPublishPacket } from "aedes";
+import { Aedes, type Client, type AedesPublishPacket } from "aedes";
 import { createServer } from "net";
 import { createServer as createHttpServer } from "http";
 import { WebSocketServer } from "ws";
