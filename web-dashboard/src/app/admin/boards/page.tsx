@@ -202,7 +202,7 @@ export default function BoardsPage() {
         {/* Tabs */}
         <div className="flex gap-1 border-b border-slate-200">
           {([
-            { key: "mqtt",       label: `MQTT Boards (${boards.length})` },
+            { key: "mqtt",       label: `MQTT Boards (${mqttOnline} online${mqttOffline ? ` / ${boards.length} total` : ""})` },
             { key: "discovered", label: `LAN Discovered (${discovered.filter(d=>d.boardConfirmed).length})` },
             { key: "all",        label: "All" },
           ] as { key: Tab; label: string }[]).map((t) => (

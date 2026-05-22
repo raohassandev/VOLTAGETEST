@@ -50,7 +50,7 @@ function SummaryRow({
 
   const stats = [
     { label: "Total UPS",      value: devices.length,        icon: Cpu,          color: "text-slate-700",   bg: "bg-slate-100",  href: null },
-    { label: "Online",         value: online,                icon: Wifi,         color: "text-emerald-700", bg: "bg-emerald-50", href: null },
+    { label: "Online",         value: online,                icon: Wifi,         color: online ? "text-emerald-700" : "text-slate-400", bg: online ? "bg-emerald-50" : "bg-slate-100", href: null },
     { label: "Offline",        value: offline,               icon: WifiOff,      color: offline ? "text-red-700" : "text-slate-500", bg: offline ? "bg-red-50" : "bg-slate-100", href: null },
     { label: "Critical alarms",value: critCount,             icon: AlertTriangle,color: critCount ? "text-red-700" : "text-slate-500", bg: critCount ? "bg-red-50" : "bg-slate-100", href: "/alarms" },
     { label: "Warnings",       value: warnCount,             icon: AlertTriangle,color: warnCount ? "text-amber-700" : "text-slate-500", bg: warnCount ? "bg-amber-50" : "bg-slate-100", href: "/alarms" },

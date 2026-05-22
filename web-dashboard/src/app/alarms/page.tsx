@@ -87,9 +87,11 @@ function AlarmCard({
             }`}>
               {alarm.state}
             </span>
-            <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-              {alarm.metric}
-            </span>
+            {alarm.metric && alarm.metric !== "offline" && (
+              <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                {alarm.metric}
+              </span>
+            )}
           </div>
           {alarm.state === "active" && !alarm.acknowledgedAt && canAck && ackingId !== alarm.id && (
             <button
