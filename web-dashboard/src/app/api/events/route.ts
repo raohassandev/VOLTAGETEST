@@ -24,7 +24,28 @@ export async function GET(request: Request) {
 
   const bus = getEventBus();
 
+  // If the client closes the connection before the stream is fully set up,
+  // we can detect that via the request AbortSignal and skip listener setup.
+  request.signal.addEventListener("abort", () => cleanup(), { once: true });
+
   const encoder = new TextEncoder();
+
+  // Capture cleanup refs so both start() and cancel() can call the same teardown.
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
+  let onTelemetry: ((d: unknown) => void) | undefined;
+  let onOnline:    ((d: unknown) => void) | undefined;
+  let onOffline:   ((d: unknown) => void) | undefined;
+  let onScan:      ((d: unknown) => void) | undefined;
+  let onAlarm:     ((d: unknown) => void) | undefined;
+
+  function cleanup() {
+    if (heartbeat !== undefined) { clearInterval(heartbeat); heartbeat = undefined; }
+    if (onTelemetry) { bus.off("telemetry",     onTelemetry); onTelemetry = undefined; }
+    if (onOnline)    { bus.off("device-online",  onOnline);   onOnline    = undefined; }
+    if (onOffline)   { bus.off("device-offline", onOffline);  onOffline   = undefined; }
+    if (onScan)      { bus.off("scan-result",    onScan);     onScan      = undefined; }
+    if (onAlarm)     { bus.off("alarm",          onAlarm);    onAlarm     = undefined; }
+  }
 
   const stream = new ReadableStream({
     start(controller) {
@@ -34,7 +55,7 @@ export async function GET(request: Request) {
             encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
           );
         } catch {
-          // Client disconnected — cleanup below
+          // Client disconnected — cancel() will clean up
         }
       }
 
@@ -42,30 +63,23 @@ export async function GET(request: Request) {
       send("connected", { ts: Date.now() });
 
       // Heartbeat every 30s to prevent proxy timeouts
-      // TODO: clear this interval on client disconnect
-      const heartbeat = setInterval(() => send("heartbeat", { ts: Date.now() }), 30_000);
+      heartbeat = setInterval(() => send("heartbeat", { ts: Date.now() }), 30_000);
 
-      const onTelemetry     = (d: unknown) => send("telemetry",      d);
-      const onOnline        = (d: unknown) => send("device-online",  d);
-      const onOffline       = (d: unknown) => send("device-offline", d);
-      const onScan          = (d: unknown) => send("scan-result",    d);
-      const onAlarm         = (d: unknown) => send("alarm",          d);
+      onTelemetry = (d: unknown) => send("telemetry",      d);
+      onOnline    = (d: unknown) => send("device-online",  d);
+      onOffline   = (d: unknown) => send("device-offline", d);
+      onScan      = (d: unknown) => send("scan-result",    d);
+      onAlarm     = (d: unknown) => send("alarm",          d);
 
       bus.on("telemetry",      onTelemetry);
       bus.on("device-online",  onOnline);
       bus.on("device-offline", onOffline);
       bus.on("scan-result",    onScan);
       bus.on("alarm",          onAlarm);
-
-      // Cleanup when client disconnects
-      return () => {
-        clearInterval(heartbeat);
-        bus.off("telemetry",      onTelemetry);
-        bus.off("device-online",  onOnline);
-        bus.off("device-offline", onOffline);
-        bus.off("scan-result",    onScan);
-        bus.off("alarm",          onAlarm);
-      };
+    },
+    // cancel() is called when the client disconnects or the response is aborted.
+    cancel() {
+      cleanup();
     },
   });
 
