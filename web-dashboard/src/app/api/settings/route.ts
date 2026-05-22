@@ -4,6 +4,7 @@ import { requireApiAuth, requireRole } from "@/lib/api-auth";
 import { prisma, isDbEnabled } from "@/lib/db";
 import { defaultSystemSettings, type SystemSettings } from "@/lib/telemetry";
 import { readJsonFile, writeJsonFile } from "@/lib/server-store";
+import { logAudit, requestIp } from "@/lib/audit";
 
 const settingsFile = "settings.json";
 
@@ -56,6 +57,7 @@ export async function PUT(request: Request) {
       create: { id: "default", rawRetentionDays: settings.rawRetentionDays, rollupRetentionMonths: settings.rollupRetentionMonths, alarmRetentionMonths: settings.alarmRetentionMonths, offlineThresholdSecs },
       update: { rawRetentionDays: settings.rawRetentionDays, rollupRetentionMonths: settings.rollupRetentionMonths, alarmRetentionMonths: settings.alarmRetentionMonths, offlineThresholdSecs },
     });
+    await logAudit({ userId: auth.user.username, action: "settings.update", entity: "SystemSettings", entityId: "default", data: settings, ip: requestIp(request) });
     return NextResponse.json({ settings, offlineThresholdSecs });
   }
 

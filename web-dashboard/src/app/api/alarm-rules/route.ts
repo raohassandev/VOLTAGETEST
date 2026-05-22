@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireApiAuth, requireRole } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
+import { logAudit, requestIp } from "@/lib/audit";
 
 export async function GET(request: Request) {
   const auth = requireApiAuth(request);
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
     },
   });
 
+  await logAudit({ userId: auth.user.username, action: "alarm_rule.create", entity: "AlarmRule", entityId: rule.id, data: body, ip: requestIp(request) });
   return NextResponse.json({ rule }, { status: 201 });
 }
 

@@ -190,6 +190,10 @@ function RoleSwitcher({ currentRole, onClose }: { currentRole: UserRole; onClose
               </div>
             ) : (
               <>
+                <p className="text-xs text-slate-500 mb-2">
+                  Operator-mode switch — no re-authentication required.
+                  Your admin session remains active; only the permission view changes.
+                </p>
                 {error && <p className="text-xs text-red-600 font-semibold mb-2">{error}</p>}
                 <button
                   onClick={switchRole}

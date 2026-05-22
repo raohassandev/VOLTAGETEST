@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
+import { logAudit, requestIp } from "@/lib/audit";
 
 export async function PUT(
   request: Request,
@@ -41,6 +42,7 @@ export async function PUT(
         ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
       },
     });
+    await logAudit({ userId: auth.user.username, action: "alarm_rule.update", entity: "AlarmRule", entityId: id, data: body, ip: requestIp(request) });
     return NextResponse.json({ rule });
   } catch {
     return NextResponse.json({ error: "Rule not found." }, { status: 404 });
@@ -58,6 +60,7 @@ export async function DELETE(request: Request,
   const { id } = await params;
   try {
     await prisma.alarmRule.delete({ where: { id } });
+    await logAudit({ userId: auth.user.username, action: "alarm_rule.delete", entity: "AlarmRule", entityId: id, ip: requestIp(request) });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Rule not found." }, { status: 404 });

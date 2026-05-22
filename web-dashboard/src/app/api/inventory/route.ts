@@ -4,6 +4,7 @@ import { requireApiAuth, requireRole } from "@/lib/api-auth";
 import { prisma, isDbEnabled } from "@/lib/db";
 import { defaultInventory, type UpsInventoryItem } from "@/lib/telemetry";
 import { readJsonFile, writeJsonFile } from "@/lib/server-store";
+import { logAudit, requestIp } from "@/lib/audit";
 
 const inventoryFile = "inventory.json";
 
@@ -99,6 +100,7 @@ export async function PUT(request: Request) {
       capacityVa: u.capacityVa,
       batteryNominalV: u.batteryNominalV,
     }));
+    await logAudit({ userId: auth.user.username, action: "inventory.bulk_update", entity: "UpsUnit", data: { count: normalized.length }, ip: requestIp(request) });
     return NextResponse.json({ inventory });
   }
 
@@ -144,6 +146,7 @@ export async function POST(request: Request) {
       });
     }
 
+    await logAudit({ userId: auth.user.username, action: "inventory.upsert", entity: "UpsUnit", entityId: unit.id, data: { upsId: body.upsId }, ip: requestIp(request) });
     return NextResponse.json({ item: { ...body, id: unit.id } });
   }
 
@@ -177,10 +180,11 @@ export async function DELETE(request: Request) {
   if (!upsId) return NextResponse.json({ error: "upsId required" }, { status: 400 });
 
   if (isDbEnabled()) {
-    await prisma.upsUnit.update({
+    const unit = await prisma.upsUnit.update({
       where: { upsId },
       data: { active: false },
     });
+    await logAudit({ userId: auth.user.username, action: "inventory.delete", entity: "UpsUnit", entityId: unit.id, data: { upsId }, ip: requestIp(request) });
     return NextResponse.json({ ok: true });
   }
 

@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 import { requireRole } from "@/lib/api-auth";
+import { logAudit, requestIp } from "@/lib/audit";
 
 export async function GET(request: Request) {
   const auth = requireRole(request, "admin");
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
       data: { username, passwordHash, role },
       select: { id: true, username: true, role: true, active: true, createdAt: true },
     });
+    await logAudit({ userId: auth.user.username, action: "user.create", entity: "User", entityId: user.id, data: { username, role }, ip: requestIp(request) });
     return NextResponse.json({ user }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Username already exists" }, { status: 409 });

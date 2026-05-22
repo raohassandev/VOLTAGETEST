@@ -41,38 +41,23 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-// ── Command button ─────────────────────────────────────────────────────────────
+// ── Command placeholder ────────────────────────────────────────────────────────
+// Device commands (reboot, reset-energy) require firmware-side MQTT command
+// subscription support which is not yet deployed. Buttons are hidden until
+// firmware supports the ums/devices/{id}/command topic.
+//
+// To re-enable: set ENABLE_DEVICE_COMMANDS=true and update firmware to subscribe
+// to ums/devices/+/command and handle { cmd: "reboot" | "reset-energy" }.
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function CommandBtn({ deviceId }: { deviceId: string }) {
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg]   = useState("");
-
-  async function send(cmd: string) {
-    setBusy(true); setMsg("");
-    const res = await fetch(`/api/devices/${deviceId}/command`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cmd }),
-    });
-    setBusy(false);
-    setMsg(res.ok ? `✓ ${cmd} sent` : "Failed");
-    setTimeout(() => setMsg(""), 3000);
-  }
-
   return (
-    <div className="flex items-center gap-1 flex-wrap">
-      <button onClick={() => send("reboot")} disabled={busy}
-        title="Requires firmware with MQTT command subscription support"
-        className="rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50">
-        Reboot
-      </button>
-      <button onClick={() => send("reset-energy")} disabled={busy}
-        title="Requires firmware with MQTT command subscription support"
-        className="rounded bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200 disabled:opacity-50">
-        Reset kWh
-      </button>
-      {msg && <span className={`text-xs font-semibold ${msg.startsWith("✓") ? "text-emerald-600" : "text-red-600"}`}>{msg}</span>}
-    </div>
+    <span
+      className="inline-flex items-center rounded bg-slate-100 px-2 py-1 text-xs text-slate-400"
+      title="Device commands require a firmware update — not yet available"
+    >
+      Commands pending firmware
+    </span>
   );
 }
 

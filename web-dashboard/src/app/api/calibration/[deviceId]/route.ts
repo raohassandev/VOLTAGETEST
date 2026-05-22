@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 import { requireApiAuth, requireRole } from "@/lib/api-auth";
+import { logAudit, requestIp } from "@/lib/audit";
 
 export async function GET(
   request: Request,
@@ -46,6 +47,7 @@ export async function PUT(
     create: { deviceId, ...data },
     update: data,
   });
+  await logAudit({ userId: auth.user.username, action: "calibration.update", entity: "CalibrationProfile", entityId: deviceId, data, ip: requestIp(request) });
   return NextResponse.json({ profile });
 }
 
@@ -60,6 +62,7 @@ export async function DELETE(
   const { deviceId } = await params;
   try {
     await prisma.calibrationProfile.delete({ where: { deviceId } });
+    await logAudit({ userId: auth.user.username, action: "calibration.delete", entity: "CalibrationProfile", entityId: deviceId, ip: requestIp(request) });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Profile not found." }, { status: 404 });
