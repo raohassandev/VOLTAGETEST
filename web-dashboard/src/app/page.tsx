@@ -49,25 +49,38 @@ function SummaryRow({
   const totalVa = devices.reduce((s, d) => s + Number(d.telemetry.s_out_va ?? 0), 0);
 
   const stats = [
-    { label: "Total UPS",      value: devices.length,          icon: Cpu,           color: "text-slate-700",   bg: "bg-slate-100" },
-    { label: "Online",         value: online,                  icon: Wifi,           color: "text-emerald-700", bg: "bg-emerald-50" },
-    { label: "Offline",        value: offline,                 icon: WifiOff,        color: offline ? "text-red-700" : "text-slate-500", bg: offline ? "bg-red-50" : "bg-slate-100" },
-    { label: "Critical alarms",value: critCount,               icon: AlertTriangle,  color: critCount ? "text-red-700" : "text-slate-500", bg: critCount ? "bg-red-50" : "bg-slate-100" },
-    { label: "Warnings",       value: warnCount,               icon: AlertTriangle,  color: warnCount ? "text-amber-700" : "text-slate-500", bg: warnCount ? "bg-amber-50" : "bg-slate-100" },
-    { label: "Total output VA",value: formatNumber(totalVa),   icon: Gauge,          color: "text-blue-700",    bg: "bg-blue-50" },
+    { label: "Total UPS",      value: devices.length,        icon: Cpu,          color: "text-slate-700",   bg: "bg-slate-100",  href: null },
+    { label: "Online",         value: online,                icon: Wifi,         color: "text-emerald-700", bg: "bg-emerald-50", href: null },
+    { label: "Offline",        value: offline,               icon: WifiOff,      color: offline ? "text-red-700" : "text-slate-500", bg: offline ? "bg-red-50" : "bg-slate-100", href: null },
+    { label: "Critical alarms",value: critCount,             icon: AlertTriangle,color: critCount ? "text-red-700" : "text-slate-500", bg: critCount ? "bg-red-50" : "bg-slate-100", href: "/alarms" },
+    { label: "Warnings",       value: warnCount,             icon: AlertTriangle,color: warnCount ? "text-amber-700" : "text-slate-500", bg: warnCount ? "bg-amber-50" : "bg-slate-100", href: "/alarms" },
+    { label: "Total output VA",value: formatNumber(totalVa), icon: Gauge,        color: "text-blue-700",    bg: "bg-blue-50",    href: null },
   ];
 
   return (
     <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
       {stats.map((s) => {
         const Icon = s.icon;
-        return (
-          <div key={s.label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        const inner = (
+          <>
             <div className={`mb-2 inline-flex h-8 w-8 items-center justify-center rounded-md ${s.bg}`}>
               <Icon size={16} className={s.color} />
             </div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{s.label}</p>
             <p className={`mt-0.5 text-xl font-bold ${s.color}`}>{s.value}</p>
+          </>
+        );
+        return s.href ? (
+          <Link
+            key={s.label}
+            href={s.href}
+            className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-300 hover:shadow-md transition-shadow"
+          >
+            {inner}
+          </Link>
+        ) : (
+          <div key={s.label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            {inner}
           </div>
         );
       })}
@@ -385,22 +398,6 @@ export default function Home() {
       <div className="flex flex-col gap-5">
         {/* Summary stats */}
         <SummaryRow devices={fleetDevices} nowMs={nowMs} serverAlarms={serverAlarms} />
-
-        {/* Alarm banner */}
-        {serverAlarms.some((a) => a.severity === "critical") && (
-          <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 shadow-sm">
-            <p className="flex items-center gap-2 text-sm font-bold text-red-800">
-              <AlertTriangle size={16} />
-              {serverAlarms.filter((a) => a.severity === "critical").length} critical alarm(s) active
-            </p>
-            <Link
-              href="/alarms"
-              className="rounded-md bg-red-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-800"
-            >
-              View alarms
-            </Link>
-          </div>
-        )}
 
         {/* Filter + search + view toggle */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
