@@ -6,6 +6,8 @@ import {
   Cpu,
   ExternalLink,
   Gauge,
+  LayoutGrid,
+  List,
   Server,
   Wifi,
   WifiOff,
@@ -322,12 +324,14 @@ function CompactTable({
 const PAGE_SIZE = 20;
 
 type FilterTab = "all" | "online" | "offline" | "alarm";
+type ViewMode  = "cards" | "list";
 
 export default function Home() {
   const { fleetDevices, serverAlarms } = useTelemetry();
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [search, setSearch] = useState("");
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -398,7 +402,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Search + filter */}
+        {/* Filter + search + view toggle */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-1">
             {filterTabs.map(({ key, label }) => (
@@ -416,15 +420,36 @@ export default function Home() {
               </button>
             ))}
           </div>
-          <input
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm placeholder:text-slate-400 sm:w-60"
-            placeholder="Search UPS, device, location…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="flex items-center gap-2">
+            <input
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm placeholder:text-slate-400 sm:w-52"
+              placeholder="Search UPS, device, location…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {/* View toggle */}
+            <div className="flex rounded-md border border-slate-300 bg-white overflow-hidden shrink-0">
+              <button
+                type="button"
+                title="Card view"
+                onClick={() => setViewMode("cards")}
+                className={`px-2.5 py-1.5 ${viewMode === "cards" ? "bg-slate-950 text-white" : "text-slate-500 hover:bg-slate-50"}`}
+              >
+                <LayoutGrid size={16} />
+              </button>
+              <button
+                type="button"
+                title="List view"
+                onClick={() => setViewMode("list")}
+                className={`px-2.5 py-1.5 border-l border-slate-300 ${viewMode === "list" ? "bg-slate-950 text-white" : "text-slate-500 hover:bg-slate-50"}`}
+              >
+                <List size={16} />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* UPS card grid */}
+        {/* Devices — cards or list */}
         {filtered.length === 0 ? (
           <div className="rounded-lg border border-slate-200 bg-white p-10 text-center shadow-sm">
             <Server size={32} className="mx-auto mb-3 text-slate-300" />
@@ -434,16 +459,22 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-              {paginated.map((device) => (
-                <UpsCard
-                  key={device.id}
-                  device={device}
-                  nowMs={nowMs}
-                  deviceAlarms={alarmsByDevice.get(device.id) ?? []}
-                />
-              ))}
-            </div>
+            {viewMode === "cards" ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {paginated.map((device) => (
+                  <UpsCard
+                    key={device.id}
+                    device={device}
+                    nowMs={nowMs}
+                    deviceAlarms={alarmsByDevice.get(device.id) ?? []}
+                  />
+                ))}
+              </div>
+            ) : (
+              <section className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <CompactTable devices={paginated} nowMs={nowMs} alarmsByDevice={alarmsByDevice} />
+              </section>
+            )}
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -460,9 +491,7 @@ export default function Home() {
                   >
                     Prev
                   </button>
-                  <span className="text-sm font-semibold text-slate-700">
-                    {safePage} / {totalPages}
-                  </span>
+                  <span className="text-sm font-semibold text-slate-700">{safePage} / {totalPages}</span>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={safePage === totalPages}
@@ -475,16 +504,6 @@ export default function Home() {
               </div>
             )}
           </>
-        )}
-
-        {/* Compact detail table */}
-        {filtered.length > 0 && (
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">
-              Detailed list ({filtered.length})
-            </h2>
-            <CompactTable devices={paginated} nowMs={nowMs} alarmsByDevice={alarmsByDevice} />
-          </section>
         )}
       </div>
     </AppShell>
