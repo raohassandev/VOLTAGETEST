@@ -54,13 +54,19 @@ export async function register() {
     return;
   }
 
+  const embeddedBrokerEnabled = process.env.ENABLE_EMBEDDED_BROKER !== "false";
+
   // ── Phase 2: Start embedded MQTT broker ────────────────────────────────────
-  try {
-    const { startBroker } = await import("./src/lib/broker");
-    await startBroker();
-  } catch (err) {
-    console.error("[startup] Failed to start MQTT broker:", err instanceof Error ? err.message : err);
-    // NOTE: broker failure is non-fatal in dev but boards won't connect
+  // Disabled when ENABLE_EMBEDDED_BROKER=false (e.g. Docker, where Mosquitto runs separately)
+  if (embeddedBrokerEnabled) {
+    try {
+      const { startBroker } = await import("./src/lib/broker");
+      await startBroker();
+    } catch (err) {
+      console.error("[startup] Failed to start MQTT broker:", err instanceof Error ? err.message : err);
+    }
+  } else {
+    console.log("[startup] Embedded MQTT broker disabled (ENABLE_EMBEDDED_BROKER=false).");
   }
 
   // ── Phase 4: Start mDNS advertisement ──────────────────────────────────────
@@ -71,16 +77,20 @@ export async function register() {
     console.warn("[startup] mDNS advertisement failed (non-fatal):", err instanceof Error ? err.message : err);
   }
 
-  // ── Phase 3: Start telemetry worker ────────────────────────────────────────
-  // Small delay so broker TCP server is fully bound before worker connects
-  setTimeout(async () => {
-    try {
-      const { startTelemetryWorker } = await import("./src/lib/telemetry-worker");
-      await startTelemetryWorker();
-    } catch (err) {
-      console.error("[startup] Failed to start telemetry worker:", err instanceof Error ? err.message : err);
-    }
-  }, 500);
+  // ── Phase 3: Start in-process telemetry worker ─────────────────────────────
+  // Disabled when ENABLE_EMBEDDED_BROKER=false (Docker uses external mqtt-worker service instead)
+  if (embeddedBrokerEnabled) {
+    setTimeout(async () => {
+      try {
+        const { startTelemetryWorker } = await import("./src/lib/telemetry-worker");
+        await startTelemetryWorker();
+      } catch (err) {
+        console.error("[startup] Failed to start telemetry worker:", err instanceof Error ? err.message : err);
+      }
+    }, 500);
+  } else {
+    console.log("[startup] In-process telemetry worker disabled (ENABLE_EMBEDDED_BROKER=false).");
+  }
 
   // ── Phase 5: Start LAN scanner ─────────────────────────────────────────────
   setTimeout(async () => {

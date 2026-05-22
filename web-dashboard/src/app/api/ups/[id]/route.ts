@@ -111,6 +111,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   if (!isDbEnabled()) {
     return NextResponse.json({ error: "Database not configured." }, { status: 503 });
   }

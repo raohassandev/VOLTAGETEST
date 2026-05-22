@@ -304,7 +304,7 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
               }`}
             >
               <Activity size={11} />
-              {apiStatus === "ok" ? "Online" : apiStatus === "degraded" ? "Error" : "—"}
+              {apiStatus === "ok" ? "API Online" : apiStatus === "degraded" ? "API Error" : "—"}
             </span>
 
             <Link

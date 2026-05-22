@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireApiAuth } from "@/lib/api-auth";
+import { requireApiAuth, requireRole } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 import { defaultSystemSettings, type SystemSettings } from "@/lib/telemetry";
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const auth = requireApiAuth(request);
+  const auth = requireRole(request, "admin");
   if (!auth.ok) return auth.response;
 
   const body = (await request.json()) as { settings?: Partial<SystemSettings>; offlineThresholdSecs?: number };

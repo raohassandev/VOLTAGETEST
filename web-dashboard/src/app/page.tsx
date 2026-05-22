@@ -37,12 +37,14 @@ function SummaryRow({
   devices,
   nowMs,
   serverAlarms,
+  offlineThresholdMs,
 }: {
   devices: FleetDevice[];
   nowMs: number;
   serverAlarms: ServerAlarm[];
+  offlineThresholdMs: number;
 }) {
-  const online = devices.filter((d) => nowMs - d.lastSeenMs < 60_000).length;
+  const online = devices.filter((d) => nowMs - d.lastSeenMs < offlineThresholdMs).length;
   const offline = devices.length - online;
   const critCount = serverAlarms.filter((a) => a.severity === "critical").length;
   const warnCount = serverAlarms.filter((a) => a.severity === "warning").length;
@@ -94,12 +96,14 @@ function UpsCard({
   device,
   nowMs,
   deviceAlarms,
+  offlineThresholdMs,
 }: {
   device: FleetDevice;
   nowMs: number;
   deviceAlarms: ServerAlarm[];
+  offlineThresholdMs: number;
 }) {
-  const online = nowMs - device.lastSeenMs < 60_000;
+  const online = nowMs - device.lastSeenMs < offlineThresholdMs;
   const tone = alarmTone(deviceAlarms);
   const upsId = device.inventory?.upsId || device.telemetry.ups_id || device.id;
   const location = [device.inventory?.floor, device.inventory?.location].filter(Boolean).join(" / ") || null;
@@ -228,10 +232,12 @@ function CompactTable({
   devices,
   nowMs,
   alarmsByDevice,
+  offlineThresholdMs,
 }: {
   devices: FleetDevice[];
   nowMs: number;
   alarmsByDevice: Map<string, ServerAlarm[]>;
+  offlineThresholdMs: number;
 }) {
   return (
     <div className="overflow-x-auto">
@@ -262,7 +268,7 @@ function CompactTable({
           ) : (
             devices.map((device) => {
               const alarms = alarmsByDevice.get(device.id) ?? [];
-              const online = nowMs - device.lastSeenMs < 60_000;
+              const online = nowMs - device.lastSeenMs < offlineThresholdMs;
               const tone = alarmTone(alarms);
               const upsId = device.inventory?.upsId || device.telemetry.ups_id || device.id;
               const capacityVa = device.inventory?.capacityVa ?? 0;
@@ -346,6 +352,18 @@ export default function Home() {
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [page, setPage] = useState(1);
+  const [offlineThresholdMs, setOfflineThresholdMs] = useState(60_000);
+
+  useEffect(() => {
+    fetch("/api/settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { offlineThresholdSecs?: number }) => {
+        if (typeof d.offlineThresholdSecs === "number") {
+          setOfflineThresholdMs(d.offlineThresholdSecs * 1_000);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const t = window.setInterval(() => setNowMs(Date.now()), 5_000);
@@ -365,7 +383,7 @@ export default function Home() {
 
   const filtered = fleetDevices.filter((d) => {
     const upsId = d.inventory?.upsId || d.telemetry.ups_id || d.id;
-    const online = nowMs - d.lastSeenMs < 60_000;
+    const online = nowMs - d.lastSeenMs < offlineThresholdMs;
     const hasAlarm = (alarmsByDevice.get(d.id) ?? []).length > 0;
 
     if (filterTab === "online" && !online) return false;
@@ -384,8 +402,8 @@ export default function Home() {
 
   const filterTabs: { key: FilterTab; label: string }[] = [
     { key: "all",     label: `All (${fleetDevices.length})` },
-    { key: "online",  label: `Online (${fleetDevices.filter((d) => nowMs - d.lastSeenMs < 60_000).length})` },
-    { key: "offline", label: `Offline (${fleetDevices.filter((d) => nowMs - d.lastSeenMs >= 60_000).length})` },
+    { key: "online",  label: `Online (${fleetDevices.filter((d) => nowMs - d.lastSeenMs < offlineThresholdMs).length})` },
+    { key: "offline", label: `Offline (${fleetDevices.filter((d) => nowMs - d.lastSeenMs >= offlineThresholdMs).length})` },
     { key: "alarm",   label: `Alarm (${new Set(serverAlarms.map((a) => a.deviceId)).size})` },
   ];
 
@@ -397,7 +415,7 @@ export default function Home() {
     <AppShell activeNav="dashboard">
       <div className="flex flex-col gap-5">
         {/* Summary stats */}
-        <SummaryRow devices={fleetDevices} nowMs={nowMs} serverAlarms={serverAlarms} />
+        <SummaryRow devices={fleetDevices} nowMs={nowMs} serverAlarms={serverAlarms} offlineThresholdMs={offlineThresholdMs} />
 
         {/* Filter + search + view toggle */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -464,12 +482,13 @@ export default function Home() {
                     device={device}
                     nowMs={nowMs}
                     deviceAlarms={alarmsByDevice.get(device.id) ?? []}
+                    offlineThresholdMs={offlineThresholdMs}
                   />
                 ))}
               </div>
             ) : (
               <section className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <CompactTable devices={paginated} nowMs={nowMs} alarmsByDevice={alarmsByDevice} />
+                <CompactTable devices={paginated} nowMs={nowMs} alarmsByDevice={alarmsByDevice} offlineThresholdMs={offlineThresholdMs} />
               </section>
             )}
 

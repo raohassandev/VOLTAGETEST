@@ -46,6 +46,7 @@ services:
       MQTT_PASSWORD: ${MQTT_PASSWORD:-change-this-mqtt-password}
       MQTT_TOPIC: ${MQTT_TOPIC:-building/+/ups/+/telemetry}
       NODE_ENV: production
+      ENABLE_EMBEDDED_BROKER: "false"
     ports:
       - "3000:3000"
     volumes:

@@ -230,7 +230,7 @@ export default function BoardsPage() {
           <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 px-4 py-3 flex items-center gap-2">
               <Zap size={14} className="text-emerald-600" />
-              <p className="text-sm font-semibold text-slate-700">MQTT Connected Boards</p>
+              <p className="text-sm font-semibold text-slate-700">Registered MQTT Boards</p>
             </div>
             {loading ? (
               <p className="p-8 text-center text-sm text-slate-400">Loading…</p>
