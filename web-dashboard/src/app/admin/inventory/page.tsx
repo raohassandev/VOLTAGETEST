@@ -34,7 +34,11 @@ export default function InventoryAdminPage() {
   const [form, setForm] = useState<UpsInventoryItem>(empty);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
-  const [userRole] = useState<UserRole>(readRole);
+  const [userRole, setUserRole] = useState<UserRole>("viewer");
+
+  useEffect(() => {
+    setUserRole(readRole()); // eslint-disable-line react-hooks/set-state-in-effect
+  }, []);
   const canEdit = userRole === "admin" || userRole === "manufacturer";
 
   useEffect(() => {

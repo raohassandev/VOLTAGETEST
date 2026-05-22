@@ -214,7 +214,11 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
   const [apiStatus, setApiStatus] = useState<"ok" | "degraded" | "unknown">("unknown");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showSwitcher, setShowSwitcher] = useState(false);
-  const [userRole, setUserRole] = useState<UserRole>(readRoleCookie);
+  const [userRole, setUserRole] = useState<UserRole>("viewer");
+
+  useEffect(() => {
+    setUserRole(readRoleCookie()); // eslint-disable-line react-hooks/set-state-in-effect
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

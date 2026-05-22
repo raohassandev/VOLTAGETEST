@@ -166,7 +166,11 @@ export default function AlarmsPage() {
   const [loading, setLoading] = useState(true);
   const [ackComment, setAckComment] = useState("");
   const [ackingId, setAckingId] = useState<string | null>(null);
-  const [userRole] = useState<UserRole>(readRole);
+  const [userRole, setUserRole] = useState<UserRole>("viewer");
+
+  useEffect(() => {
+    setUserRole(readRole()); // eslint-disable-line react-hooks/set-state-in-effect
+  }, []);
   const canAck = userRole !== "viewer";
 
   const load = useCallback(async () => {
