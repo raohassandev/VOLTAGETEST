@@ -15,19 +15,21 @@ export async function POST(
   }
 
   const { id } = await params;
-  const body = (await request.json()) as { comment?: string; acknowledgedBy?: string };
+  const body = (await request.json()) as { comment?: string };
 
   const alarm = await prisma.alarm.findUnique({ where: { id } });
   if (!alarm) {
     return NextResponse.json({ error: "Alarm not found." }, { status: 404 });
   }
 
+  const comment = typeof body.comment === "string" ? body.comment.trim().slice(0, 500) || null : null;
+
   const updated = await prisma.alarm.update({
     where: { id },
     data: {
       acknowledgedAt: new Date(),
-      acknowledgedBy: body.acknowledgedBy ?? "operator",
-      comment: body.comment ?? null,
+      acknowledgedBy: auth.user.username,
+      comment,
     },
   });
 

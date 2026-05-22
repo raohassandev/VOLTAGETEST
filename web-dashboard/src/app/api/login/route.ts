@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { authConfig, authCookieName, verifyCredentials, getDevFallbackToken } from "@/lib/auth";
+import { authConfig, authCookieName, verifyCredentials, getDevFallbackToken, signUserCookie } from "@/lib/auth";
 import { USER_COOKIE } from "@/lib/api-auth";
 
 export async function POST(request: Request) {
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   };
 
   response.cookies.set(authCookieName, sessionToken, cookieOpts);
-  response.cookies.set(USER_COOKIE, btoa(JSON.stringify({ username: result.username, role: result.role })), {
+  response.cookies.set(USER_COOKIE, signUserCookie({ username: result.username, role: result.role }), {
     ...cookieOpts,
     httpOnly: false, // readable by client JS for display
   });

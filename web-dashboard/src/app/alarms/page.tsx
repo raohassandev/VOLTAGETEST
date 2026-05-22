@@ -10,8 +10,11 @@ function readRole(): UserRole {
   if (typeof document === "undefined") return "viewer";
   const m = document.cookie.match(/(?:^|;\s*)ups_user=([^;]*)/);
   if (!m) return "viewer";
-  try { return (JSON.parse(atob(decodeURIComponent(m[1]))) as { role?: UserRole }).role ?? "viewer"; }
-  catch { return "viewer"; }
+  try {
+    const value = decodeURIComponent(m[1]);
+    const payload = value.includes(".") ? value.slice(0, value.lastIndexOf(".")) : value;
+    return (JSON.parse(atob(payload)) as { role?: UserRole }).role ?? "viewer";
+  } catch { return "viewer"; }
 }
 
 interface AlarmRecord {
@@ -187,7 +190,7 @@ export default function AlarmsPage() {
     await fetch(`/api/alarms/${id}/ack`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comment: ackComment, acknowledgedBy: userRole }),
+      body: JSON.stringify({ comment: ackComment }),
     });
     setAckingId(null);
     setAckComment("");

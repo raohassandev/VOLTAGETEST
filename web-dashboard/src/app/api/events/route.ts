@@ -9,16 +9,19 @@
  *   alarm          { alarm }
  *   heartbeat      {} (every 30s to keep connection alive)
  *
- * FIXME: SSE is per-process. Must not run Next.js in cluster/multi-process mode.
- * TODO: add auth check — only authenticated sessions should receive SSE.
+ * NOTE: SSE is per-process. Must not run Next.js in cluster/multi-process mode.
  */
 
+import { requireApiAuth } from "@/lib/api-auth";
 import { getEventBus } from "@/lib/event-bus";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = requireApiAuth(request);
+  if (!auth.ok) return auth.response;
+
   const bus = getEventBus();
 
   const encoder = new TextEncoder();

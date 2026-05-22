@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { authConfig, authCookieName, verifyCredentials, verifySessionToken, getDevFallbackToken } from "@/lib/auth";
+import { authConfig, authCookieName, verifyCredentials, verifySessionToken, getDevFallbackToken, signUserCookie } from "@/lib/auth";
 import { USER_COOKIE } from "@/lib/api-auth";
 import type { UserRole } from "@/lib/auth";
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     secure: process.env.NODE_ENV === "production",
   };
 
-  const userPayload = btoa(JSON.stringify({ username: role === "viewer" ? "operator" : role, role }));
+  const userPayload = signUserCookie({ username: role === "viewer" ? "operator" : role, role });
 
   if (!PASSWORD_ROLES.has(role)) {
     // Viewer / Technician — session already verified above; just update the role cookie
@@ -64,17 +64,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
   }
 
-  const config = authConfig();
-  const sessionToken =
-    config.sessionToken ??
-    (config.allowDevAuth && process.env.NODE_ENV !== "production" ? getDevFallbackToken() : null);
+  const authCfg = authConfig();
+  const newSessionToken =
+    authCfg.sessionToken ??
+    (authCfg.allowDevAuth && process.env.NODE_ENV !== "production" ? getDevFallbackToken() : null);
 
-  if (!sessionToken) {
+  if (!newSessionToken) {
     return NextResponse.json({ error: "Auth not configured" }, { status: 503 });
   }
 
   const res = NextResponse.json({ ok: true, role });
-  res.cookies.set(authCookieName, sessionToken, cookieOpts);
+  res.cookies.set(authCookieName, newSessionToken, cookieOpts);
   res.cookies.set(USER_COOKIE, userPayload, { ...cookieOpts, httpOnly: false });
   return res;
 }

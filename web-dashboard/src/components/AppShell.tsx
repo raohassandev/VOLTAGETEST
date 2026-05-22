@@ -73,7 +73,10 @@ function readRoleCookie(): UserRole {
   const match = document.cookie.match(/(?:^|;\s*)ups_user=([^;]*)/);
   if (!match) return "viewer";
   try {
-    const parsed = JSON.parse(atob(decodeURIComponent(match[1]))) as { role?: UserRole };
+    const value = decodeURIComponent(match[1]);
+    // Format is "base64payload.hmac" — only the payload part is needed client-side
+    const payload = value.includes(".") ? value.slice(0, value.lastIndexOf(".")) : value;
+    const parsed = JSON.parse(atob(payload)) as { role?: UserRole };
     return parsed.role ?? "viewer";
   } catch {
     return "viewer";

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { authCookieName, verifySessionToken } from "@/lib/auth";
+import { authCookieName, verifySessionToken, verifyUserCookie } from "@/lib/auth";
 import type { UserRole } from "@/lib/auth";
 
 export const USER_COOKIE = "ups_user";
@@ -27,18 +27,19 @@ export function getSessionUser(request: Request): SessionUser | null {
     return null;
   }
 
-  // Session is valid — read role from ups_user cookie (set by login/role-select)
+  // Session is valid — verify HMAC-signed ups_user cookie for role.
+  // ups_user is not httpOnly (browser reads it for display) but its HMAC
+  // prevents role forgery by a lower-privilege authenticated user.
   const userCookie = parseCookie(cookieHeader, USER_COOKIE);
   if (userCookie) {
-    try {
-      return JSON.parse(atob(userCookie)) as SessionUser;
-    } catch {
-      // malformed ups_user — fall through to admin default
-    }
+    const verified = verifyUserCookie(userCookie);
+    if (verified) return verified;
+    // Cookie present but HMAC invalid — deny rather than fall through
+    return null;
   }
 
-  // Valid session but no ups_user cookie → legacy admin session
-  return { username: "admin", role: "admin" };
+  // Valid session but no ups_user → treat as viewer (safest default)
+  return { username: "unknown", role: "viewer" };
 }
 
 export function requireApiAuth(

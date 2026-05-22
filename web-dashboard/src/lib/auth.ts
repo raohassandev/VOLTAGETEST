@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { createHmac } from "crypto";
 import { prisma, isDbEnabled } from "@/lib/db";
 
 export const authCookieName = "ups_session";
@@ -101,6 +102,34 @@ export function verifySessionToken(token: string): boolean {
 
 export function getDevFallbackToken(): string {
   return DEV_FALLBACK_TOKEN;
+}
+
+// ── Signed ups_user cookie ────────────────────────────────────────────────────
+// Format: base64(json).hmac  — client can decode base64 for display but cannot
+// forge the HMAC without knowing UPS_AUTH_TOKEN.
+
+function userCookieKey(): string {
+  return process.env.UPS_AUTH_TOKEN ?? "dev-ups-cookie-hmac-not-for-production";
+}
+
+export function signUserCookie(payload: { username: string; role: UserRole }): string {
+  const data = Buffer.from(JSON.stringify(payload)).toString("base64");
+  const sig = createHmac("sha256", userCookieKey()).update(data).digest("base64url");
+  return `${data}.${sig}`;
+}
+
+export function verifyUserCookie(cookie: string): { username: string; role: UserRole } | null {
+  const dot = cookie.lastIndexOf(".");
+  if (dot === -1) return null;
+  const data = cookie.slice(0, dot);
+  const sig = cookie.slice(dot + 1);
+  const expected = createHmac("sha256", userCookieKey()).update(data).digest("base64url");
+  if (!safeEqual(sig, expected)) return null;
+  try {
+    return JSON.parse(Buffer.from(data, "base64").toString()) as { username: string; role: UserRole };
+  } catch {
+    return null;
+  }
 }
 
 function safeEqual(a: string, b: string): boolean {

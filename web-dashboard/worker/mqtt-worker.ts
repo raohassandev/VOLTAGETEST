@@ -14,7 +14,8 @@ import { runRollup, runRetentionCleanup } from "./rollup";
 
 const BROKER_URL = process.env.MQTT_BROKER_URL;
 const TOPIC = process.env.MQTT_TOPIC || "building/+/ups/+/telemetry";
-const OFFLINE_THRESHOLD_MS = Number(process.env.OFFLINE_THRESHOLD_SECS || "60") * 1000;
+// Initialised from env; overridden by DB SystemSettings.offlineThresholdSecs when available
+let OFFLINE_THRESHOLD_MS = Number(process.env.OFFLINE_THRESHOLD_SECS || "60") * 1000;
 const OFFLINE_CHECK_INTERVAL_MS = 30_000;
 const ROLLUP_INTERVAL_MS = 60_000;
 const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -243,7 +244,19 @@ async function deduplicateActiveAlarms(): Promise<void> {
   }
 }
 
+async function refreshOfflineThreshold(): Promise<void> {
+  try {
+    const settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
+    if (settings?.offlineThresholdSecs) {
+      OFFLINE_THRESHOLD_MS = settings.offlineThresholdSecs * 1_000;
+    }
+  } catch {
+    // Keep current value on DB error
+  }
+}
+
 async function checkOfflineDevices(): Promise<void> {
+  await refreshOfflineThreshold();
   const cutoff = new Date(Date.now() - OFFLINE_THRESHOLD_MS);
   const stale = await prisma.device.findMany({
     where: {
