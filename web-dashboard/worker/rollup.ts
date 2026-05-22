@@ -22,6 +22,8 @@ interface RollupRow {
   sOutVaAvg: number;
   sOutVaMax: number;
   rssiAvg: number | null;
+  freqInAvg: number | null;
+  freqOutAvg: number | null;
 }
 
 /**
@@ -44,7 +46,9 @@ export async function runRollup(prisma: PrismaClient): Promise<void> {
         AVG("ctOut")    AS "ctOutAvg",                                     MAX("ctOut")    AS "ctOutMax",
         AVG("sInVa")    AS "sInVaAvg",                                     MAX("sInVa")    AS "sInVaMax",
         AVG("sOutVa")   AS "sOutVaAvg",                                    MAX("sOutVa")   AS "sOutVaMax",
-        AVG("rssi")     AS "rssiAvg"
+        AVG("rssi")     AS "rssiAvg",
+        AVG("freqIn")   AS "freqInAvg",
+        AVG("freqOut")  AS "freqOutAvg"
       FROM "TelemetryRaw"
       WHERE "receivedAt" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '2 hours'
         AND date_trunc('minute', "receivedAt") < date_trunc('minute', NOW() AT TIME ZONE 'UTC')
@@ -79,7 +83,9 @@ export async function runRollup(prisma: PrismaClient): Promise<void> {
           ctOutAvg: row.ctOutAvg, ctOutMax: row.ctOutMax,
           sInVaAvg: row.sInVaAvg,   sInVaMax: row.sInVaMax,
           sOutVaAvg: row.sOutVaAvg, sOutVaMax: row.sOutVaMax,
-          rssiAvg: row.rssiAvg ?? null,
+          rssiAvg:   row.rssiAvg   ?? null,
+          freqInAvg: row.freqInAvg ?? null,
+          freqOutAvg: row.freqOutAvg ?? null,
         },
         update: {
           sampleCount: Number(row.sampleCount),
@@ -90,7 +96,9 @@ export async function runRollup(prisma: PrismaClient): Promise<void> {
           ctOutAvg: row.ctOutAvg, ctOutMax: row.ctOutMax,
           sInVaAvg: row.sInVaAvg,   sInVaMax: row.sInVaMax,
           sOutVaAvg: row.sOutVaAvg, sOutVaMax: row.sOutVaMax,
-          rssiAvg: row.rssiAvg ?? null,
+          rssiAvg:   row.rssiAvg   ?? null,
+          freqInAvg: row.freqInAvg ?? null,
+          freqOutAvg: row.freqOutAvg ?? null,
         },
       });
     } catch (err) {
@@ -151,5 +159,19 @@ export async function runRetentionCleanup(prisma: PrismaClient): Promise<void> {
     console.log(`[cleanup] alarms: ${alarmDeleted.count} rows deleted (older than ${alarmMonths}mo)`);
   } catch (err) {
     console.error("[cleanup] alarm delete failed:", err);
+  }
+
+  // Delete AlarmEvent rows whose parent Alarm has already been deleted.
+  // AlarmEvent has no FK cascade, so orphaned rows must be purged manually.
+  try {
+    const eventDeleted = await prisma.$executeRaw`
+      DELETE FROM "AlarmEvent"
+      WHERE "alarmId" NOT IN (SELECT "id" FROM "Alarm")
+    `;
+    if (eventDeleted > 0) {
+      console.log(`[cleanup] alarm_events: ${eventDeleted} orphaned row(s) deleted`);
+    }
+  } catch (err) {
+    console.error("[cleanup] alarm_event delete failed:", err);
   }
 }

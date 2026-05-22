@@ -56,7 +56,8 @@ export async function GET() {
       status.lastTelemetryAt = "error";
     }
 
-    // Worker heartbeat via SystemSettings
+    // When settings were last changed by an admin (NOT a worker heartbeat —
+    // SystemSettings.updatedAt does not reflect worker activity).
     try {
       const settings = await prisma.systemSettings.findUnique({
         where: { id: "default" },

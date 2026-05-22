@@ -59,6 +59,10 @@ interface RawPayload {
   free_heap?: number;
   mac?: string;
   reset_reason?: string;
+  freq_in?: number;
+  freq_out?: number;
+  q_in_var?: number;
+  q_out_var?: number;
 }
 
 function num(v: unknown, fallback = 0): number {
@@ -129,6 +133,10 @@ async function persistTelemetry(deviceId: string, payload: RawPayload, rawJson: 
     pfOut: payload.pf_out !== undefined ? num(payload.pf_out) : null,
     eInKwh: payload.e_in_kwh !== undefined ? num(payload.e_in_kwh) : null,
     eOutKwh: payload.e_out_kwh !== undefined ? num(payload.e_out_kwh) : null,
+    freqIn:  payload.freq_in  !== undefined ? num(payload.freq_in)  : null,
+    freqOut: payload.freq_out !== undefined ? num(payload.freq_out) : null,
+    qInVar:  payload.q_in_var  !== undefined ? num(payload.q_in_var)  : null,
+    qOutVar: payload.q_out_var !== undefined ? num(payload.q_out_var) : null,
     rssi: payload.rssi !== undefined ? Math.round(num(payload.rssi)) : null,
     ip: str(payload.ip),
     firmware: str(payload.firmware),
