@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --port 3303",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 3303",
+    "start:prod": "node .next/standalone/server.js",
     "lint": "eslint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
@@ -14,7 +15,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:reset:local": "prisma migrate reset --force && tsx scripts/seed.ts -- --demo",
     "worker:dev": "tsx --watch worker/mqtt-worker.ts",
-    "worker:start": "tsx worker/mqtt-worker.ts"
+    "worker:start": "tsx worker/mqtt-worker.ts",
+    "package:build": "next build && node scripts/package.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

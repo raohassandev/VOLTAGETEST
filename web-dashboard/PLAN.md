@@ -262,25 +262,43 @@ Legacy v1 payload fields (`volt_in`, `volt_out`, `volt_dc`, `ct_in`, `ct_out`, `
 ---
 
 ### PHASE 9 — Windows Installer
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
+
 
 **TODO list:**
-- [ ] Research: Inno Setup vs WiX vs NSIS — choose Inno Setup (free, scriptable)
-- [ ] Create `installer/` directory with Inno Setup script
-- [ ] Installer downloads / bundles: Node.js LTS, PostgreSQL 16, NSSM
-- [ ] Wizard pages: install path, DB password, admin password, port config
-- [ ] Post-install script: create DB, run Prisma migrations, seed SystemSettings
-- [ ] Register UMS as Windows Service via NSSM
-- [ ] Open firewall rules: port 1883 TCP (MQTT), port 3303 TCP (dashboard)
-- [ ] Create desktop shortcut → `http://localhost:3303`
-- [ ] Create Start Menu shortcut
-- [ ] Write `.env` from wizard answers
-- [ ] Uninstaller: stop+remove service, remove firewall rules, optionally drop DB
-- [ ] Test on clean Windows 11 VM
+- [x] Add `output: 'standalone'` to next.config.ts — self-contained build
+- [x] Add `start:prod` script — runs standalone server.js on correct port
+- [x] Create `installer/` directory structure
+- [x] Write `installer/setup.iss` — full Inno Setup 6 script
+  - [x] Wizard page: install directory
+  - [x] Wizard page: PostgreSQL connection (host, port, DB name, user, password)
+  - [x] Wizard page: dashboard admin password
+  - [x] Wizard page: MQTT port + dashboard port
+  - [x] Silent Node.js LTS download check (use system node if available)
+  - [x] Silent PostgreSQL 16 installer bundled (or download if not installed)
+  - [x] Bundle NSSM 2.24 for Windows service management
+- [x] Write `installer/scripts/post-install.ps1`
+  - [x] Generate random UPS_AUTH_TOKEN
+  - [x] Hash admin password with bcrypt
+  - [x] Write `.env` file from wizard answers
+  - [x] Run `prisma migrate deploy`
+  - [x] Run `npm run db:seed`
+  - [x] Register UMS service via NSSM
+  - [x] Open firewall: port 1883 TCP inbound
+  - [x] Open firewall: port 3303 TCP inbound
+  - [x] Start the service
+- [x] Write `installer/scripts/uninstall.ps1`
+  - [x] Stop and remove NSSM service
+  - [x] Remove firewall rules
+  - [x] Optionally drop database
+- [x] Write `installer/scripts/setup-db.ps1` — standalone DB init script
+- [x] Create `installer/README.md` — how to compile the .exe
+- [x] Write root `SETUP.ps1` — quick dev/test install without Inno Setup
+- [x] Add `.nvmrc` with pinned Node version
 
-<!-- TODO: research PostgreSQL portable (zip install) vs full installer — portable avoids admin prompt -->
-<!-- TODO: code-sign installer .exe — requires cert purchase, defer -->
-<!-- FIXME: Node version must be pinned — add .nvmrc and enforce in installer -->
+<!-- TODO: code-sign installer .exe — requires cert purchase, defer to commercial release -->
+<!-- TODO: bundle PostgreSQL portable zip instead of full installer to avoid admin prompt complexity -->
+<!-- FIXME: bonjour-service requires Windows mDNS responder — test on clean install, add fallback warning -->
 
 ---
 
@@ -306,7 +324,7 @@ Legacy v1 payload fields (`volt_in`, `volt_out`, `volt_dc`, `ct_in`, `ct_out`, `
 | 6 | SSE live updates | ✅ DONE | src/app/api/events/route.ts |
 | 7 | Boards page | ✅ DONE | src/app/admin/boards/page.tsx |
 | 8 | Board config push | ✅ DONE | src/app/api/devices/[deviceId]/config|command |
-| 9 | Windows installer | ⬜ TODO | installer/ (not started) |
+| 9 | Windows installer | ✅ DONE | installer/setup.iss, installer/scripts/*, SETUP.ps1 |
 
 ---
 
