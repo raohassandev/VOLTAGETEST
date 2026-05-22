@@ -1,8 +1,13 @@
+﻿/**
+ * Next.js 16 Proxy (formerly middleware.ts).
+ * Runs in Node.js runtime before each matched request.
+ * Redirects unauthenticated page requests to /welcome.
+ */
 import { NextResponse, type NextRequest } from "next/server";
 
 const SESSION_COOKIE = "ups_session";
 
-// Edge-runtime-safe session check (no bcrypt, no prisma).
+// Node.js-runtime session check (no bcrypt, no prisma needed here).
 // Mirrors the logic in src/lib/auth.ts verifySessionToken.
 function hasValidSession(request: NextRequest): boolean {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
