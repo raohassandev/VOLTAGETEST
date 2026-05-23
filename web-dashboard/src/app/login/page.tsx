@@ -71,19 +71,8 @@ export default async function Login({
             Username
             <input
               autoComplete="username"
-              className="rounded-lg border px-3 py-2.5 text-sm text-slate-100 outline-none transition-colors placeholder:text-slate-600 focus:ring-1"
-              style={{
-                background: "var(--surface-2)",
-                borderColor: "var(--border-default)",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "var(--cyan-500)";
-                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(6,182,212,0.15)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "var(--border-default)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
+              className="rounded-lg border border-slate-600 px-3 py-2.5 text-sm text-slate-100 outline-none transition-colors placeholder:text-slate-600 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20"
+              style={{ background: "var(--surface-2)" }}
               name="username"
               required
             />
@@ -93,19 +82,8 @@ export default async function Login({
             Password
             <input
               autoComplete="current-password"
-              className="rounded-lg border px-3 py-2.5 text-sm text-slate-100 outline-none transition-colors placeholder:text-slate-600"
-              style={{
-                background: "var(--surface-2)",
-                borderColor: "var(--border-default)",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "var(--cyan-500)";
-                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(6,182,212,0.15)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "var(--border-default)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
+              className="rounded-lg border border-slate-600 px-3 py-2.5 text-sm text-slate-100 outline-none transition-colors placeholder:text-slate-600 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20"
+              style={{ background: "var(--surface-2)" }}
               name="password"
               required
               type="password"
