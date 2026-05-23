@@ -58,16 +58,69 @@ function SummaryRow({
   const offline = devices.length - online;
   const critCount = serverAlarms.filter((a) => a.severity === "critical").length;
   const warnCount = serverAlarms.filter((a) => a.severity === "warning").length;
-  // Sum VA from online devices only — offline telemetry is stale and should not appear as live load
   const totalVa = onlineDevices.reduce((s, d) => s + Number(d.telemetry.s_out_va ?? 0), 0);
 
   const stats = [
-    { label: "Total UPS",      value: devices.length,        icon: Cpu,          color: "text-slate-700",   bg: "bg-slate-100",  href: null },
-    { label: "Online",         value: online,                icon: Wifi,         color: online ? "text-emerald-700" : "text-slate-400", bg: online ? "bg-emerald-50" : "bg-slate-100", href: null },
-    { label: "Offline",        value: offline,               icon: WifiOff,      color: offline ? "text-red-700" : "text-slate-500", bg: offline ? "bg-red-50" : "bg-slate-100", href: null },
-    { label: "Critical alarms",value: critCount,             icon: AlertTriangle,color: critCount ? "text-red-700" : "text-slate-500", bg: critCount ? "bg-red-50" : "bg-slate-100", href: "/alarms" },
-    { label: "Warnings",       value: warnCount,             icon: AlertTriangle,color: warnCount ? "text-amber-700" : "text-slate-500", bg: warnCount ? "bg-amber-50" : "bg-slate-100", href: "/alarms" },
-    { label: "Total output VA",value: formatNumber(totalVa), icon: Gauge,        color: "text-blue-700",    bg: "bg-blue-50",    href: null },
+    {
+      label: "Total UPS",
+      value: devices.length,
+      icon: Cpu,
+      valueColor: "text-slate-100",
+      iconColor: "text-slate-400",
+      iconBg: "bg-slate-800",
+      border: "border-slate-700",
+      href: null,
+    },
+    {
+      label: "Online",
+      value: online,
+      icon: Wifi,
+      valueColor: online ? "text-emerald-400" : "text-slate-500",
+      iconColor: online ? "text-emerald-400" : "text-slate-600",
+      iconBg: online ? "bg-emerald-900/50" : "bg-slate-800",
+      border: online ? "border-emerald-800" : "border-slate-700",
+      href: null,
+    },
+    {
+      label: "Offline",
+      value: offline,
+      icon: WifiOff,
+      valueColor: offline ? "text-red-400" : "text-slate-500",
+      iconColor: offline ? "text-red-400" : "text-slate-600",
+      iconBg: offline ? "bg-red-900/40" : "bg-slate-800",
+      border: offline ? "border-red-800" : "border-slate-700",
+      href: null,
+    },
+    {
+      label: "Critical",
+      value: critCount,
+      icon: AlertTriangle,
+      valueColor: critCount ? "text-red-400" : "text-slate-500",
+      iconColor: critCount ? "text-red-400" : "text-slate-600",
+      iconBg: critCount ? "bg-red-900/40" : "bg-slate-800",
+      border: critCount ? "border-red-800" : "border-slate-700",
+      href: "/alarms",
+    },
+    {
+      label: "Warnings",
+      value: warnCount,
+      icon: AlertTriangle,
+      valueColor: warnCount ? "text-amber-400" : "text-slate-500",
+      iconColor: warnCount ? "text-amber-400" : "text-slate-600",
+      iconBg: warnCount ? "bg-amber-900/40" : "bg-slate-800",
+      border: warnCount ? "border-amber-800" : "border-slate-700",
+      href: "/alarms",
+    },
+    {
+      label: "Output VA",
+      value: formatNumber(totalVa),
+      icon: Gauge,
+      valueColor: "text-cyan-300",
+      iconColor: "text-cyan-400",
+      iconBg: "bg-cyan-900/40",
+      border: "border-cyan-800",
+      href: null,
+    },
   ];
 
   return (
@@ -76,23 +129,30 @@ function SummaryRow({
         const Icon = s.icon;
         const inner = (
           <>
-            <div className={`mb-2 inline-flex h-8 w-8 items-center justify-center rounded-md ${s.bg}`}>
-              <Icon size={16} className={s.color} />
+            <div className={`mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg ${s.iconBg} border ${s.border}`}>
+              <Icon size={15} className={s.iconColor} />
             </div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{s.label}</p>
-            <p className={`mt-0.5 text-xl font-bold ${s.color}`}>{s.value}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+              {s.label}
+            </p>
+            <p className={`mt-0.5 text-xl font-bold ${s.valueColor}`}>{s.value}</p>
           </>
         );
         return s.href ? (
           <Link
             key={s.label}
             href={s.href}
-            className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-300 hover:shadow-md transition-shadow"
+            className={`iot-card rounded-xl border p-4 ${s.border}`}
+            style={{ background: "var(--surface-1)" }}
           >
             {inner}
           </Link>
         ) : (
-          <div key={s.label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div
+            key={s.label}
+            className={`rounded-xl border p-4 ${s.border}`}
+            style={{ background: "var(--surface-1)" }}
+          >
             {inner}
           </div>
         );
@@ -129,106 +189,145 @@ function UpsCard({
     ? formatNumber(Number(device.telemetry.volt_dc ?? 0))
     : "--";
 
-  const borderColor =
-    !online ? "border-slate-200" :
-    tone === "critical" ? "border-red-200" :
-    tone === "warning" ? "border-amber-200" :
-    "border-slate-200";
+  // Border + glow based on state
+  const borderClass =
+    !online ? "border-slate-700" :
+    tone === "critical" ? "border-red-700" :
+    tone === "warning" ? "border-amber-700" :
+    "border-slate-700";
+
+  const glowStyle =
+    !online ? {} :
+    tone === "critical" ? { boxShadow: "0 0 0 1px rgba(239,68,68,0.3), 0 4px 20px rgba(239,68,68,0.12)" } :
+    tone === "warning"  ? { boxShadow: "0 0 0 1px rgba(245,158,11,0.3), 0 4px 20px rgba(245,158,11,0.1)" } :
+    { boxShadow: "0 0 0 1px rgba(6,182,212,0.1), 0 2px 12px rgba(0,0,0,0.3)" };
 
   const headerBg =
-    !online ? "bg-slate-50" :
-    tone === "critical" ? "bg-red-50" :
-    tone === "warning" ? "bg-amber-50" :
-    "bg-white";
+    !online ? "bg-slate-800/40" :
+    tone === "critical" ? "bg-red-900/20" :
+    tone === "warning" ? "bg-amber-900/15" :
+    "bg-slate-800/30";
 
   return (
-    <div className={`flex flex-col rounded-lg border bg-white shadow-sm overflow-hidden ${borderColor}`}>
+    <div
+      className={`iot-card flex flex-col rounded-xl border overflow-hidden ${borderClass} ${!online ? "opacity-70" : ""}`}
+      style={{ background: "var(--surface-1)", ...glowStyle }}
+    >
       {/* Card header */}
-      <div className={`flex items-start justify-between gap-2 p-4 pb-3 ${headerBg}`}>
+      <div className={`flex items-start justify-between gap-2 px-4 pt-4 pb-3 ${headerBg}`}>
         <div className="min-w-0">
-          <p className="truncate font-bold text-slate-950 leading-tight">{upsId}</p>
+          <p className="truncate font-bold text-slate-100 leading-tight tracking-tight">{upsId}</p>
           {location && (
-            <p className="mt-0.5 truncate text-xs text-slate-500">{location}</p>
+            <p className="mt-0.5 truncate text-xs" style={{ color: "var(--text-muted)" }}>{location}</p>
           )}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           {online ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
-              <Wifi size={10} /> Online
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-700 bg-emerald-900/40 px-2 py-0.5 text-xs font-bold text-emerald-400">
+              <span className="status-dot online iot-pulse" style={{ width: "5px", height: "5px" }} />
+              Online
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-600">
-              <WifiOff size={10} /> Offline
+            <span className="inline-flex items-center gap-1 rounded-full border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs font-bold text-slate-400">
+              <WifiOff size={9} /> Offline
             </span>
           )}
           {tone === "critical" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
-              <AlertTriangle size={10} /> CRITICAL
+            <span className="inline-flex items-center gap-1 rounded-full border border-red-700 bg-red-900/40 px-2 py-0.5 text-xs font-bold text-red-400">
+              <AlertTriangle size={9} className="iot-blink" /> CRITICAL
             </span>
           )}
           {tone === "warning" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
-              <AlertTriangle size={10} /> WARNING
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-700 bg-amber-900/30 px-2 py-0.5 text-xs font-bold text-amber-400">
+              <AlertTriangle size={9} /> WARNING
             </span>
           )}
         </div>
       </div>
 
-      {/* Metrics grid — greyed out when offline to signal stale data */}
-      <div className={`grid grid-cols-4 divide-x divide-slate-100 border-t border-slate-100 text-center ${!online ? "opacity-40" : ""}`}>
+      {/* Metrics grid */}
+      <div
+        className={`grid grid-cols-4 text-center border-t ${!online ? "opacity-40" : ""}`}
+        style={{ borderColor: "var(--border-subtle)" }}
+      >
         {[
-          { label: "In V",    value: formatNumber(Number(device.telemetry.volt_in ?? 0)) },
-          { label: "Out V",   value: formatNumber(Number(device.telemetry.volt_out ?? 0)) },
-          { label: "Bat V",   value: voltDcDisplay },
-          { label: "Load %",  value: loadPct !== null ? `${formatNumber(loadPct)}%` : "--" },
-        ].map(({ label, value }) => (
-          <div key={label} className="py-2.5">
-            <p className="text-xs text-slate-400">{label}</p>
-            <p className="text-sm font-bold text-slate-950">{value}</p>
+          { label: "In V",   value: formatNumber(Number(device.telemetry.volt_in ?? 0)) },
+          { label: "Out V",  value: formatNumber(Number(device.telemetry.volt_out ?? 0)) },
+          { label: "Bat V",  value: voltDcDisplay },
+          { label: "Load",   value: loadPct !== null ? `${formatNumber(loadPct)}%` : "--" },
+        ].map(({ label, value }, i) => (
+          <div
+            key={label}
+            className={`py-2.5 ${i > 0 ? "border-l" : ""}`}
+            style={{ borderColor: "var(--border-subtle)" }}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
+            <p className="text-sm font-bold text-slate-100">{value}</p>
           </div>
         ))}
       </div>
 
-      <div className={`grid grid-cols-4 divide-x divide-slate-100 border-t border-slate-100 text-center ${!online ? "opacity-40" : ""}`}>
+      <div
+        className={`grid grid-cols-4 text-center border-t ${!online ? "opacity-40" : ""}`}
+        style={{ borderColor: "var(--border-subtle)" }}
+      >
         {[
-          { label: "Out A",   value: formatNumber(Number(device.telemetry.ct_out ?? 0)) },
-          { label: "Out VA",  value: formatNumber(Number(device.telemetry.s_out_va ?? 0)) },
-          { label: "RSSI",    value: device.telemetry.rssi ? `${device.telemetry.rssi}` : "--" },
-          { label: "In A",    value: formatNumber(Number(device.telemetry.ct_in ?? 0)) },
-        ].map(({ label, value }) => (
-          <div key={label} className="py-2">
-            <p className="text-xs text-slate-400">{label}</p>
-            <p className="text-sm font-semibold text-slate-700">{value}</p>
+          { label: "Out A",  value: formatNumber(Number(device.telemetry.ct_out ?? 0)) },
+          { label: "Out VA", value: formatNumber(Number(device.telemetry.s_out_va ?? 0)) },
+          { label: "RSSI",   value: device.telemetry.rssi ? `${device.telemetry.rssi}` : "--" },
+          { label: "In A",   value: formatNumber(Number(device.telemetry.ct_in ?? 0)) },
+        ].map(({ label, value }, i) => (
+          <div
+            key={label}
+            className={`py-2 ${i > 0 ? "border-l" : ""}`}
+            style={{ borderColor: "var(--border-subtle)" }}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
+            <p className="text-xs font-semibold text-slate-300">{value}</p>
           </div>
         ))}
       </div>
 
-      {/* Board IP */}
-      <div className="border-t border-slate-100 px-4 py-2">
+      {/* Board IP row */}
+      <div className="border-t px-4 py-2" style={{ borderColor: "var(--border-subtle)" }}>
         {boardIp ? (
           <div className="flex items-center justify-between gap-2">
-            <span className="font-mono text-xs text-slate-500">{boardIp}</span>
+            <span className="font-mono text-xs text-slate-400">{boardIp}</span>
             <div className="flex gap-1">
-              <a href={`http://${boardIp}/`} target="_blank" rel="noreferrer" className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600 hover:bg-slate-200" title="Open board portal">
-                <ExternalLink size={10} className="inline" /> Portal
-              </a>
-              <a href={`http://${boardIp}/config`} target="_blank" rel="noreferrer" className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600 hover:bg-slate-200">Config</a>
-              <a href={`http://${boardIp}/update`} target="_blank" rel="noreferrer" className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600 hover:bg-slate-200">OTA</a>
+              {[
+                { label: "Portal", href: `http://${boardIp}/` },
+                { label: "Config", href: `http://${boardIp}/config` },
+                { label: "OTA",    href: `http://${boardIp}/update` },
+              ].map(({ label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-xs font-semibold text-slate-400 hover:border-slate-600 hover:text-slate-200 transition-colors"
+                >
+                  {label === "Portal" && <ExternalLink size={9} className="inline mr-0.5" />}
+                  {label}
+                </a>
+              ))}
             </div>
           </div>
         ) : (
-          <p className="text-xs text-slate-400 italic">Board IP not available</p>
+          <p className="text-xs italic" style={{ color: "var(--text-muted)" }}>No board IP</p>
         )}
       </div>
 
-      {/* Footer actions */}
-      <div className="mt-auto flex items-center justify-between border-t border-slate-100 bg-slate-50 px-4 py-2.5">
-        <span className="text-xs text-slate-400">
-          {online ? device.lastMessageAt : `Last seen ${formatAgo(nowMs - device.lastSeenMs)}`}
+      {/* Footer */}
+      <div
+        className="mt-auto flex items-center justify-between border-t px-4 py-2.5"
+        style={{ borderColor: "var(--border-subtle)", background: "var(--surface-2)" }}
+      >
+        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+          {online ? device.lastMessageAt : `Offline · ${formatAgo(nowMs - device.lastSeenMs)}`}
         </span>
         <Link
           href={`/ups/${upsId}`}
-          className="inline-flex items-center gap-1 rounded-md bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+          className="inline-flex items-center gap-1 rounded-lg border border-cyan-800 bg-cyan-900/30 px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-900/50 transition-colors"
         >
           Details <ArrowRight size={11} />
         </Link>
@@ -254,25 +353,19 @@ function CompactTable({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[820px] border-collapse text-sm">
         <thead>
-          <tr className="border-b border-slate-200 text-left text-xs text-slate-500 uppercase tracking-wide">
-            <th className="py-2 pr-3 w-28">UPS</th>
-            <th className="py-2 pr-3 w-28">Location</th>
-            <th className="py-2 pr-3 w-14">In V</th>
-            <th className="py-2 pr-3 w-14">Out V</th>
-            <th className="py-2 pr-3 w-14">Bat V</th>
-            <th className="py-2 pr-3 w-14">Out A</th>
-            <th className="py-2 pr-3 w-16">Out VA</th>
-            <th className="py-2 pr-3 w-14">Load %</th>
-            <th className="py-2 pr-3 w-16">RSSI</th>
-            <th className="py-2 pr-3 w-28">Board IP</th>
-            <th className="py-2 pr-3 w-20">Status</th>
-            <th className="py-2 w-24">Last seen</th>
+          <tr
+            className="border-b text-left text-xs font-semibold uppercase tracking-wide"
+            style={{ borderColor: "var(--border-default)", color: "var(--text-muted)" }}
+          >
+            {["UPS", "Location", "In V", "Out V", "Bat V", "Out A", "Out VA", "Load %", "RSSI", "Board IP", "Status", "Last seen"].map((h) => (
+              <th key={h} className="py-2.5 pr-3 whitespace-nowrap">{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {devices.length === 0 ? (
             <tr>
-              <td className="py-5 text-slate-400 text-xs" colSpan={12}>
+              <td className="py-5 text-xs" style={{ color: "var(--text-muted)" }} colSpan={12}>
                 No UPS devices found.
               </td>
             </tr>
@@ -283,62 +376,59 @@ function CompactTable({
               const tone = alarmTone(alarms);
               const upsId = device.inventory?.upsId || device.telemetry.ups_id || device.id;
               const capacityVa = device.inventory?.capacityVa ?? 0;
-              const loadPct = capacityVa > 0
-                ? (Number(device.telemetry.s_out_va ?? 0) / capacityVa) * 100
-                : null;
+              const loadPct = capacityVa > 0 ? (Number(device.telemetry.s_out_va ?? 0) / capacityVa) * 100 : null;
               const boardIp = device.telemetry.ip || "";
-              const voltDcDisplay = device.telemetry.volt_dc != null
-                ? formatNumber(Number(device.telemetry.volt_dc ?? 0))
-                : "--";
+              const voltDcDisplay = device.telemetry.volt_dc != null ? formatNumber(Number(device.telemetry.volt_dc ?? 0)) : "--";
 
               return (
                 <tr
                   key={device.id}
-                  className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${!online ? "opacity-60" : ""}`}
+                  className={`border-b transition-colors ${!online ? "opacity-50" : ""}`}
+                  style={{ borderColor: "var(--border-subtle)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-2)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                 >
                   <td className="py-2.5 pr-3 font-semibold">
-                    <Link href={`/ups/${upsId}`} className="text-blue-700 hover:underline">
+                    <Link href={`/ups/${upsId}`} className="text-cyan-400 hover:text-cyan-300 hover:underline">
                       {upsId}
                     </Link>
                   </td>
-                  <td className="py-2.5 pr-3 text-slate-500 text-xs">
+                  <td className="py-2.5 pr-3 text-xs" style={{ color: "var(--text-muted)" }}>
                     {[device.inventory?.floor, device.inventory?.location].filter(Boolean).join(" / ") || "--"}
                   </td>
-                  <td className="py-2.5 pr-3">{formatNumber(Number(device.telemetry.volt_in ?? 0))}</td>
-                  <td className="py-2.5 pr-3">{formatNumber(Number(device.telemetry.volt_out ?? 0))}</td>
-                  <td className="py-2.5 pr-3">{voltDcDisplay}</td>
-                  <td className="py-2.5 pr-3">{formatNumber(Number(device.telemetry.ct_out ?? 0))}</td>
-                  <td className="py-2.5 pr-3">{formatNumber(Number(device.telemetry.s_out_va ?? 0))}</td>
+                  <td className="py-2.5 pr-3 text-slate-300">{formatNumber(Number(device.telemetry.volt_in ?? 0))}</td>
+                  <td className="py-2.5 pr-3 text-slate-300">{formatNumber(Number(device.telemetry.volt_out ?? 0))}</td>
+                  <td className="py-2.5 pr-3 text-slate-300">{voltDcDisplay}</td>
+                  <td className="py-2.5 pr-3 text-slate-300">{formatNumber(Number(device.telemetry.ct_out ?? 0))}</td>
+                  <td className="py-2.5 pr-3 text-slate-300">{formatNumber(Number(device.telemetry.s_out_va ?? 0))}</td>
                   <td className="py-2.5 pr-3">
                     {loadPct !== null ? (
-                      <span className={loadPct > 95 ? "font-bold text-red-700" : loadPct > 80 ? "font-semibold text-amber-700" : ""}>
+                      <span className={loadPct > 95 ? "font-bold text-red-400" : loadPct > 80 ? "font-semibold text-amber-400" : "text-slate-300"}>
                         {formatNumber(loadPct)}%
                       </span>
                     ) : "--"}
                   </td>
-                  <td className="py-2.5 pr-3 text-xs text-slate-500">
-                    {device.telemetry.rssi ? `${device.telemetry.rssi} dBm` : "--"}
+                  <td className="py-2.5 pr-3 text-xs text-slate-400">
+                    {device.telemetry.rssi ? `${device.telemetry.rssi}` : "--"}
                   </td>
                   <td className="py-2.5 pr-3">
                     {boardIp ? (
-                      <a href={`http://${boardIp}/`} target="_blank" rel="noreferrer" className="font-mono text-xs text-blue-700 hover:underline">
+                      <a href={`http://${boardIp}/`} target="_blank" rel="noreferrer" className="font-mono text-xs text-cyan-400 hover:underline">
                         {boardIp}
                       </a>
-                    ) : (
-                      <span className="text-slate-400 text-xs">—</span>
-                    )}
+                    ) : <span className="text-slate-600 text-xs">—</span>}
                   </td>
                   <td className="py-2.5 pr-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                      !online ? "bg-slate-100 text-slate-500" :
-                      tone === "critical" ? "bg-red-100 text-red-700" :
-                      tone === "warning" ? "bg-amber-100 text-amber-700" :
-                      "bg-emerald-100 text-emerald-700"
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold border ${
+                      !online ? "bg-slate-800 border-slate-700 text-slate-500" :
+                      tone === "critical" ? "bg-red-900/40 border-red-700 text-red-400" :
+                      tone === "warning"  ? "bg-amber-900/30 border-amber-700 text-amber-400" :
+                      "bg-emerald-900/30 border-emerald-700 text-emerald-400"
                     }`}>
-                      {!online ? "offline" : tone === "critical" ? "critical" : tone === "warning" ? "warning" : "normal"}
+                      {!online ? "offline" : tone === "critical" ? "critical" : tone === "warning" ? "warning" : "online"}
                     </span>
                   </td>
-                  <td className="py-2.5 text-xs text-slate-400">{device.lastMessageAt}</td>
+                  <td className="py-2.5 text-xs" style={{ color: "var(--text-muted)" }}>{device.lastMessageAt}</td>
                 </tr>
               );
             })
@@ -352,7 +442,6 @@ function CompactTable({
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 20;
-
 type FilterTab = "all" | "online" | "offline" | "alarm";
 type ViewMode  = "cards" | "list";
 
@@ -369,7 +458,6 @@ export default function Home() {
     return () => window.clearInterval(t);
   }, []);
 
-
   const alarmsByDevice = new Map<string, ServerAlarm[]>();
   for (const a of serverAlarms) {
     const list = alarmsByDevice.get(a.deviceId) ?? [];
@@ -381,11 +469,9 @@ export default function Home() {
     const upsId = d.inventory?.upsId || d.telemetry.ups_id || d.id;
     const online = nowMs - d.lastSeenMs < offlineThresholdMs;
     const hasAlarm = (alarmsByDevice.get(d.id) ?? []).length > 0;
-
     if (filterTab === "online" && !online) return false;
     if (filterTab === "offline" && online) return false;
     if (filterTab === "alarm" && !hasAlarm) return false;
-
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -415,17 +501,18 @@ export default function Home() {
 
         {/* Filter + search + view toggle */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {filterTabs.map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => { setFilterTab(key); setPage(1); }}
                 type="button"
-                className={`rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
+                className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-all ${
                   filterTab === key
-                    ? "border-slate-950 bg-slate-950 text-white"
-                    : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                    ? "border-cyan-700 bg-cyan-900/40 text-cyan-300"
+                    : "border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200"
                 }`}
+                style={{ background: filterTab === key ? undefined : "var(--surface-1)" }}
               >
                 {label}
               </button>
@@ -433,38 +520,42 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <input
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm placeholder:text-slate-400 sm:w-52"
+              className="w-full rounded-lg border px-3 py-1.5 text-sm text-slate-100 outline-none transition-colors placeholder:text-slate-600 focus:border-cyan-600 sm:w-52"
+              style={{ background: "var(--surface-1)", borderColor: "var(--border-default)" }}
               placeholder="Search UPS, device, location…"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
             {/* View toggle */}
-            <div className="flex rounded-md border border-slate-300 bg-white overflow-hidden shrink-0">
+            <div className="flex rounded-lg border border-slate-700 overflow-hidden shrink-0" style={{ background: "var(--surface-1)" }}>
               <button
                 type="button"
                 title="Card view"
                 onClick={() => setViewMode("cards")}
-                className={`px-2.5 py-1.5 ${viewMode === "cards" ? "bg-slate-950 text-white" : "text-slate-500 hover:bg-slate-50"}`}
+                className={`px-2.5 py-1.5 transition-colors ${viewMode === "cards" ? "bg-cyan-900/40 text-cyan-300" : "text-slate-500 hover:text-slate-300"}`}
               >
-                <LayoutGrid size={16} />
+                <LayoutGrid size={15} />
               </button>
               <button
                 type="button"
                 title="List view"
                 onClick={() => setViewMode("list")}
-                className={`px-2.5 py-1.5 border-l border-slate-300 ${viewMode === "list" ? "bg-slate-950 text-white" : "text-slate-500 hover:bg-slate-50"}`}
+                className={`px-2.5 py-1.5 border-l border-slate-700 transition-colors ${viewMode === "list" ? "bg-cyan-900/40 text-cyan-300" : "text-slate-500 hover:text-slate-300"}`}
               >
-                <List size={16} />
+                <List size={15} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Devices — cards or list */}
+        {/* Empty state */}
         {filtered.length === 0 ? (
-          <div className="rounded-lg border border-slate-200 bg-white p-10 text-center shadow-sm">
-            <Server size={32} className="mx-auto mb-3 text-slate-300" />
-            <p className="text-sm font-semibold text-slate-500">
+          <div
+            className="rounded-xl border p-12 text-center"
+            style={{ background: "var(--surface-1)", borderColor: "var(--border-subtle)" }}
+          >
+            <Server size={36} className="mx-auto mb-4 text-slate-600" />
+            <p className="text-sm font-semibold text-slate-400">
               {fleetDevices.length === 0 ? "Waiting for UPS telemetry…" : "No devices match the current filter."}
             </p>
           </div>
@@ -483,31 +574,37 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <section className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <section
+                className="rounded-xl border overflow-hidden"
+                style={{ background: "var(--surface-1)", borderColor: "var(--border-default)" }}
+              >
                 <CompactTable devices={paginated} nowMs={nowMs} alarmsByDevice={alarmsByDevice} offlineThresholdMs={offlineThresholdMs} />
               </section>
             )}
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                <p className="text-sm text-slate-500">
-                  Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
+              <div
+                className="flex items-center justify-between rounded-xl border px-4 py-3"
+                style={{ background: "var(--surface-1)", borderColor: "var(--border-subtle)" }}
+              >
+                <p className="text-sm text-slate-400">
+                  {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
                 </p>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={safePage === 1}
-                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-600 disabled:opacity-40 hover:bg-slate-50"
+                    className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-semibold text-slate-400 disabled:opacity-40 hover:border-slate-600 hover:text-slate-200 transition-colors"
                     type="button"
                   >
                     Prev
                   </button>
-                  <span className="text-sm font-semibold text-slate-700">{safePage} / {totalPages}</span>
+                  <span className="text-sm font-semibold text-slate-300">{safePage} / {totalPages}</span>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={safePage === totalPages}
-                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-600 disabled:opacity-40 hover:bg-slate-50"
+                    className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-semibold text-slate-400 disabled:opacity-40 hover:border-slate-600 hover:text-slate-200 transition-colors"
                     type="button"
                   >
                     Next

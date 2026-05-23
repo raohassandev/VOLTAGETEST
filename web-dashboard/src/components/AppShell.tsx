@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Activity,
   Bell,
   ChevronDown,
   Eye,
@@ -11,6 +10,7 @@ import {
   ShieldCheck,
   Wrench,
   X,
+  Zap,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -59,11 +59,11 @@ const ROLE_RANK: Record<UserRole, number> = {
   manufacturer: 3,
 };
 
-const ROLE_META: Record<UserRole, { label: string; color: string; bg: string; icon: React.ElementType }> = {
-  viewer:       { label: "Viewer",       color: "text-slate-700",  bg: "bg-slate-100",  icon: Eye },
-  technician:   { label: "Technician",   color: "text-blue-700",   bg: "bg-blue-50",    icon: Wrench },
-  admin:        { label: "Admin",        color: "text-violet-700", bg: "bg-violet-50",  icon: ShieldCheck },
-  manufacturer: { label: "Manufacturer", color: "text-amber-700",  bg: "bg-amber-50",   icon: FlaskConical },
+const ROLE_META: Record<UserRole, { label: string; color: string; bg: string; border: string; icon: React.ElementType }> = {
+  viewer:       { label: "Viewer",       color: "text-slate-300",  bg: "bg-slate-800",  border: "border-slate-600",  icon: Eye },
+  technician:   { label: "Technician",   color: "text-cyan-300",   bg: "bg-cyan-900/60", border: "border-cyan-700",  icon: Wrench },
+  admin:        { label: "Admin",        color: "text-violet-300", bg: "bg-violet-900/60", border: "border-violet-700", icon: ShieldCheck },
+  manufacturer: { label: "Manufacturer", color: "text-amber-300",  bg: "bg-amber-900/60", border: "border-amber-700", icon: FlaskConical },
 };
 
 const PASSWORD_ROLES = new Set<UserRole>(["admin", "manufacturer"]);
@@ -74,7 +74,6 @@ function readRoleCookie(): UserRole {
   if (!match) return "viewer";
   try {
     const value = decodeURIComponent(match[1]);
-    // Format is "base64payload.hmac" — only the payload part is needed client-side
     const payload = value.includes(".") ? value.slice(0, value.lastIndexOf(".")) : value;
     const parsed = JSON.parse(atob(payload)) as { role?: UserRole };
     return parsed.role ?? "viewer";
@@ -125,12 +124,21 @@ function RoleSwitcher({ currentRole, onClose }: { currentRole: UserRole; onClose
     <div
       ref={overlayRef}
       onClick={(e) => e.target === overlayRef.current && onClose()}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
     >
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-xl p-5">
+      <div
+        className="w-full max-w-sm rounded-2xl border border-slate-700 shadow-2xl p-5"
+        style={{ background: "var(--surface-2)" }}
+      >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-slate-950">Switch Role</h2>
-          <button onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-100">
+          <div className="flex items-center gap-2">
+            <Zap size={16} className="text-cyan-400" />
+            <h2 className="font-bold text-slate-100">Switch Role</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors"
+          >
             <X size={16} />
           </button>
         </div>
@@ -147,14 +155,14 @@ function RoleSwitcher({ currentRole, onClose }: { currentRole: UserRole; onClose
                 onClick={() => { setSelected(r); setPassword(""); setError(""); }}
                 className={`flex items-center gap-2 rounded-lg border p-3 text-left transition-all ${
                   isActive
-                    ? `${m.bg} border-current ${m.color} shadow-sm`
-                    : "border-slate-200 bg-white hover:border-slate-300"
+                    ? `${m.bg} ${m.border} ${m.color} shadow-lg`
+                    : "border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800"
                 }`}
               >
-                <Icon size={16} className={isActive ? m.color : "text-slate-400"} />
+                <Icon size={16} className={isActive ? m.color : "text-slate-500"} />
                 <div>
-                  <p className={`text-xs font-bold ${isActive ? m.color : "text-slate-700"}`}>{m.label}</p>
-                  {isCurrent && <p className="text-[10px] text-slate-400">current</p>}
+                  <p className={`text-xs font-bold ${isActive ? m.color : "text-slate-300"}`}>{m.label}</p>
+                  {isCurrent && <p className="text-[10px] text-slate-500">current</p>}
                 </div>
               </button>
             );
@@ -165,7 +173,7 @@ function RoleSwitcher({ currentRole, onClose }: { currentRole: UserRole; onClose
           <>
             {PASSWORD_ROLES.has(selected) ? (
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1">
                   <KeyRound size={11} /> {ROLE_META[selected].label} Password
                 </label>
                 <input
@@ -175,30 +183,28 @@ function RoleSwitcher({ currentRole, onClose }: { currentRole: UserRole; onClose
                   onChange={(e) => { setPassword(e.target.value); setError(""); }}
                   onKeyDown={(e) => e.key === "Enter" && switchRole()}
                   placeholder="Enter password…"
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                  className="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors placeholder:text-slate-600"
                 />
-                {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
+                {error && <p className="text-xs text-red-400 font-semibold">{error}</p>}
                 <button
                   onClick={switchRole}
                   disabled={loading || !password}
-                  className={`rounded-lg py-2 text-sm font-semibold text-white transition-colors disabled:opacity-50 ${
-                    ROLE_META[selected].bg.replace("bg-", "bg-").replace("-50", "-600 hover:bg-") + ROLE_META[selected].bg.replace("bg-", "").replace("-50", "-700")
-                  } bg-slate-900 hover:bg-slate-800`}
+                  className="rounded-lg py-2 text-sm font-semibold text-white transition-all disabled:opacity-40 bg-cyan-600 hover:bg-cyan-500 disabled:cursor-not-allowed"
                 >
                   {loading ? "Authenticating…" : `Switch to ${ROLE_META[selected].label}`}
                 </button>
               </div>
             ) : (
               <>
-                <p className="text-xs text-slate-500 mb-2">
+                <p className="text-xs text-slate-400 mb-2">
                   Operator-mode switch — no re-authentication required.
                   Your admin session remains active; only the permission view changes.
                 </p>
-                {error && <p className="text-xs text-red-600 font-semibold mb-2">{error}</p>}
+                {error && <p className="text-xs text-red-400 font-semibold mb-2">{error}</p>}
                 <button
                   onClick={switchRole}
                   disabled={loading}
-                  className="w-full rounded-lg bg-slate-900 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                  className="w-full rounded-lg bg-cyan-600 hover:bg-cyan-500 py-2 text-sm font-semibold text-white disabled:opacity-40 transition-colors"
                 >
                   {loading ? "Switching…" : `Continue as ${ROLE_META[selected].label}`}
                 </button>
@@ -254,7 +260,7 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
   const RoleIcon = meta.icon;
 
   return (
-    <div className="min-h-screen bg-[#eef3f8] text-slate-950">
+    <div className="min-h-screen text-slate-100" style={{ background: "var(--background)" }}>
       {showSwitcher && (
         <RoleSwitcher
           currentRole={userRole}
@@ -263,24 +269,44 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
       )}
 
       {/* Sticky top navbar */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white shadow-sm">
-        <div className="mx-auto flex h-12 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <header
+        className="sticky top-0 z-30 border-b"
+        style={{
+          background: "rgba(17, 24, 39, 0.92)",
+          borderColor: "var(--border-subtle)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+        }}
+      >
+        <div className="mx-auto flex h-13 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8" style={{ height: "52px" }}>
 
           {/* Brand */}
-          <Link href="/" className="flex shrink-0 items-center gap-2.5 mr-2">
-            <Image
-              src="/brand/automatrix-logo.png"
-              alt="Automatrix"
-              width={36}
-              height={36}
-              className="shrink-0 object-contain sm:w-9 sm:h-9 w-7 h-7"
-              priority
-            />
+          <Link href="/" className="flex shrink-0 items-center gap-2.5 mr-3">
+            <div className="relative">
+              <Image
+                src="/brand/automatrix-logo.png"
+                alt="Automatrix"
+                width={34}
+                height={34}
+                className="shrink-0 object-contain"
+                priority
+              />
+              {/* Subtle glow behind logo */}
+              <div
+                className="absolute inset-0 rounded-full blur-md opacity-40 pointer-events-none"
+                style={{ background: "var(--cyan-500)" }}
+              />
+            </div>
             <div className="flex flex-col leading-tight">
-              <span className="font-bold text-sm text-slate-950 tracking-tight">UMS — UPS Monitoring</span>
-              <span className="hidden text-xs text-slate-400 font-normal lg:block">Industrial UPS Monitoring System</span>
+              <span className="font-bold text-sm text-white tracking-tight">UMS</span>
+              <span className="hidden text-[10px] font-normal lg:block" style={{ color: "var(--text-secondary)" }}>
+                Industrial UPS Monitoring
+              </span>
             </div>
           </Link>
+
+          {/* Divider */}
+          <div className="hidden md:block h-6 w-px" style={{ background: "var(--border-subtle)" }} />
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto">
@@ -288,10 +314,10 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
               <Link
                 key={key}
                 href={href}
-                className={`rounded-md px-3 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors ${
+                className={`rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all ${
                   activeNav === key
-                    ? "bg-slate-950 text-white"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                    ? "text-cyan-300 bg-cyan-900/30 border border-cyan-800/60"
+                    : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
                 }`}
               >
                 {label}
@@ -299,37 +325,45 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
             ))}
           </nav>
 
-          {/* Right: status + role badge + sign out */}
+          {/* Right controls */}
           <div className="ml-auto flex shrink-0 items-center gap-2">
+
+            {/* API status */}
             <span
-              className={`hidden sm:inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+              className={`hidden sm:inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold border ${
                 apiStatus === "ok"
-                  ? "bg-emerald-50 text-emerald-700"
+                  ? "text-emerald-400 bg-emerald-900/30 border-emerald-800"
                   : apiStatus === "degraded"
-                  ? "bg-red-50 text-red-700"
-                  : "bg-slate-100 text-slate-400"
+                  ? "text-red-400 bg-red-900/30 border-red-800"
+                  : "text-slate-500 bg-slate-800/30 border-slate-700"
               }`}
             >
-              <Activity size={11} />
-              {apiStatus === "ok" ? "API Online" : apiStatus === "degraded" ? "API Error" : "—"}
+              <span
+                className={`status-dot ${
+                  apiStatus === "ok" ? "online iot-pulse" : apiStatus === "degraded" ? "critical" : "offline"
+                }`}
+                style={{ width: "6px", height: "6px" }}
+              />
+              {apiStatus === "ok" ? "Live" : apiStatus === "degraded" ? "Degraded" : "—"}
             </span>
 
+            {/* Alarm count */}
             <Link
               href="/alarms"
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold transition-colors ${
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold transition-all border ${
                 alarmCount > 0
-                  ? "bg-red-100 text-red-700 hover:bg-red-200"
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  ? "bg-red-900/40 text-red-300 border-red-700 hover:bg-red-900/60"
+                  : "bg-slate-800/40 text-slate-400 border-slate-700 hover:bg-slate-800/60"
               }`}
             >
-              <Bell size={11} />
-              {alarmCount > 0 ? `${alarmCount} alarm${alarmCount !== 1 ? "s" : ""}` : "No alarms"}
+              <Bell size={11} className={alarmCount > 0 ? "iot-blink" : ""} />
+              {alarmCount > 0 ? `${alarmCount}` : "0"}
             </Link>
 
             {/* Role badge / switcher */}
             <button
               onClick={() => setShowSwitcher(true)}
-              className={`hidden sm:inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors hover:shadow-sm ${meta.bg} ${meta.color} border-current/20`}
+              className={`hidden sm:inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-all hover:opacity-90 ${meta.bg} ${meta.color} ${meta.border}`}
               title="Switch role"
             >
               <RoleIcon size={11} />
@@ -337,9 +371,10 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
               <ChevronDown size={10} className="opacity-60" />
             </button>
 
+            {/* Exit */}
             <form action="/api/logout" method="post" className="hidden sm:block">
               <button
-                className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                className="flex items-center gap-1 rounded-md border border-slate-700 bg-slate-800/60 px-2.5 py-1 text-xs font-semibold text-slate-400 hover:border-slate-600 hover:text-slate-200 transition-colors"
                 type="submit"
               >
                 <LogOut size={11} />
@@ -349,7 +384,7 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
 
             {/* Mobile menu toggle */}
             <button
-              className="flex md:hidden items-center rounded-md border border-slate-200 p-1 text-slate-600 hover:bg-slate-50"
+              className="flex md:hidden items-center rounded-md border border-slate-700 bg-slate-800/60 p-1 text-slate-400 hover:text-slate-200 transition-colors"
               onClick={() => setMobileOpen((v) => !v)}
               type="button"
               aria-label="Toggle menu"
@@ -364,15 +399,20 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
 
         {/* Mobile dropdown */}
         {mobileOpen && (
-          <div className="border-t border-slate-100 bg-white px-4 pb-3 pt-2 md:hidden">
+          <div
+            className="border-t px-4 pb-3 pt-2 md:hidden"
+            style={{ background: "var(--surface-1)", borderColor: "var(--border-subtle)" }}
+          >
             <nav className="flex flex-col gap-1">
               {visibleLinks.map(({ key, label, href }) => (
                 <Link
                   key={key}
                   href={href}
                   onClick={() => setMobileOpen(false)}
-                  className={`rounded-md px-3 py-2 text-sm font-semibold ${
-                    activeNav === key ? "bg-slate-950 text-white" : "text-slate-700 hover:bg-slate-100"
+                  className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    activeNav === key
+                      ? "bg-cyan-900/40 text-cyan-300 border border-cyan-800"
+                      : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
                   }`}
                 >
                   {label}
@@ -380,12 +420,15 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
               ))}
               <button
                 onClick={() => { setMobileOpen(false); setShowSwitcher(true); }}
-                className={`mt-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold ${meta.bg} ${meta.color}`}
+                className={`mt-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold border ${meta.bg} ${meta.color} ${meta.border}`}
               >
                 <RoleIcon size={14} /> {meta.label} — Switch Role
               </button>
               <form action="/api/logout" method="post" className="mt-1">
-                <button className="w-full rounded-md border border-slate-200 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" type="submit">
+                <button
+                  className="w-full rounded-md border border-slate-700 bg-slate-800/40 py-2 text-sm font-semibold text-slate-400 hover:bg-slate-800 transition-colors"
+                  type="submit"
+                >
                   Exit
                 </button>
               </form>
@@ -395,7 +438,7 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
       </header>
 
       {/* Page content */}
-      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8 iot-page">
         {children}
       </div>
     </div>

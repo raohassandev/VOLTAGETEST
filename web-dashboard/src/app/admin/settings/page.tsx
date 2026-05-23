@@ -12,13 +12,16 @@ interface SettingsPayload {
   offlineThresholdSecs?: number;
 }
 
+const inputCls  = "rounded-md border border-slate-600 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-600 transition-colors font-normal";
+const inputStyle = { background: "var(--surface-2)" };
+
 export default function SettingsAdminPage() {
-  const [rawRetentionDays, setRawRetentionDays] = useState(30);
+  const [rawRetentionDays,      setRawRetentionDays]      = useState(30);
   const [rollupRetentionMonths, setRollupRetentionMonths] = useState(12);
-  const [alarmRetentionMonths, setAlarmRetentionMonths] = useState(24);
-  const [offlineThresholdSecs, setOfflineThresholdSecs] = useState(60);
+  const [alarmRetentionMonths,  setAlarmRetentionMonths]  = useState(24);
+  const [offlineThresholdSecs,  setOfflineThresholdSecs]  = useState(60);
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [msg,    setMsg]    = useState("");
 
   useEffect(() => {
     fetch("/api/settings", { cache: "no-store" })
@@ -54,37 +57,37 @@ export default function SettingsAdminPage() {
 
   return (
     <AppShell activeNav="settings">
-      <div className="flex max-w-3xl flex-col gap-5">
+      <div className="flex max-w-3xl flex-col gap-5 iot-page">
         <div>
-          <h1 className="text-2xl font-bold text-slate-950">System Settings</h1>
-          <p className="text-sm text-slate-500">Retention, alarm, and monitoring thresholds.</p>
+          <h1 className="text-2xl font-bold text-white">System Settings</h1>
+          <p className="text-sm text-slate-400">Retention, alarm, and monitoring thresholds.</p>
         </div>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold">Data retention</h2>
+        <section className="rounded-lg border border-slate-700 p-5" style={{ background: "var(--surface-1)" }}>
+          <h2 className="mb-4 text-lg font-semibold text-white">Data retention</h2>
           <div className="grid gap-4 md:grid-cols-3">
-            <label className="grid gap-1 text-sm font-semibold text-slate-700">
+            <label className="grid gap-1 text-sm font-semibold text-slate-400">
               Raw telemetry (days)
               <input
-                className="rounded-md border border-slate-300 px-3 py-2 font-normal"
+                className={inputCls} style={inputStyle}
                 min={1} max={365} type="number"
                 value={rawRetentionDays}
                 onChange={(e) => setRawRetentionDays(Number(e.target.value))}
               />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-700">
+            <label className="grid gap-1 text-sm font-semibold text-slate-400">
               Rollup history (months)
               <input
-                className="rounded-md border border-slate-300 px-3 py-2 font-normal"
+                className={inputCls} style={inputStyle}
                 min={1} max={120} type="number"
                 value={rollupRetentionMonths}
                 onChange={(e) => setRollupRetentionMonths(Number(e.target.value))}
               />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-700">
+            <label className="grid gap-1 text-sm font-semibold text-slate-400">
               Alarm history (months)
               <input
-                className="rounded-md border border-slate-300 px-3 py-2 font-normal"
+                className={inputCls} style={inputStyle}
                 min={1} max={120} type="number"
                 value={alarmRetentionMonths}
                 onChange={(e) => setAlarmRetentionMonths(Number(e.target.value))}
@@ -93,25 +96,25 @@ export default function SettingsAdminPage() {
           </div>
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold">Device monitoring</h2>
-          <label className="grid max-w-xs gap-1 text-sm font-semibold text-slate-700">
+        <section className="rounded-lg border border-slate-700 p-5" style={{ background: "var(--surface-1)" }}>
+          <h2 className="mb-4 text-lg font-semibold text-white">Device monitoring</h2>
+          <label className="grid max-w-xs gap-1 text-sm font-semibold text-slate-400">
             Offline threshold (seconds)
             <input
-              className="rounded-md border border-slate-300 px-3 py-2 font-normal"
+              className={inputCls} style={inputStyle}
               min={10} max={3600} type="number"
               value={offlineThresholdSecs}
               onChange={(e) => setOfflineThresholdSecs(Number(e.target.value))}
             />
-            <span className="text-xs font-normal text-slate-400">
+            <span className="text-xs font-normal text-slate-600">
               A device is marked offline if no telemetry is received for this many seconds.
             </span>
           </label>
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="mb-3 text-sm text-slate-500">
-            <strong>Measurement limitations:</strong> Active power (W), power factor, and energy (kWh) fields
+        <section className="rounded-lg border border-slate-700 p-4" style={{ background: "var(--surface-2)" }}>
+          <p className="text-sm text-slate-500">
+            <strong className="text-slate-400">Measurement limitations:</strong> Active power (W), power factor, and energy (kWh) fields
             are not computed. The firmware measures apparent power (VA) only via RMS voltage × RMS current.
             These fields are stored as null and shown as &ldquo;not supported&rdquo; in the UI until
             waveform-sampling firmware is validated and deployed.
@@ -120,14 +123,14 @@ export default function SettingsAdminPage() {
 
         <div className="flex items-center gap-3">
           <button
-            className="rounded-md bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            className="rounded-md bg-cyan-700 hover:bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition-colors"
             onClick={save}
             disabled={saving}
             type="button"
           >
             {saving ? "Saving…" : "Save settings"}
           </button>
-          {msg && <span className="text-sm font-semibold text-emerald-700">{msg}</span>}
+          {msg && <span className="text-sm font-semibold text-emerald-400">{msg}</span>}
         </div>
       </div>
     </AppShell>

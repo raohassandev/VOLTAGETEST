@@ -20,19 +20,19 @@ interface CalibProfile {
 }
 
 const DEFAULT_PROFILE: CalibProfile = {
-  vInScale: 1, vInOffset: 0,
-  vOutScale: 1, vOutOffset: 0,
+  vInScale: 1,   vInOffset: 0,
+  vOutScale: 1,  vOutOffset: 0,
   vDcScale: 0.0442, vDcOffset: 0,
-  iInScale: 1, iInOffset: 0,
-  iOutScale: 1, iOutOffset: 0,
+  iInScale: 1,   iInOffset: 0,
+  iOutScale: 1,  iOutOffset: 0,
 };
 
 const CHANNELS: { key: keyof CalibProfile; label: string; scaleKey: keyof CalibProfile; offsetKey: keyof CalibProfile }[] = [
-  { key: "vInScale", label: "Input Voltage (V_in)", scaleKey: "vInScale", offsetKey: "vInOffset" },
-  { key: "vOutScale", label: "Output Voltage (V_out)", scaleKey: "vOutScale", offsetKey: "vOutOffset" },
-  { key: "vDcScale", label: "Battery Voltage (V_dc)", scaleKey: "vDcScale", offsetKey: "vDcOffset" },
-  { key: "iInScale", label: "Input Current (I_in)", scaleKey: "iInScale", offsetKey: "iInOffset" },
-  { key: "iOutScale", label: "Output Current (I_out)", scaleKey: "iOutScale", offsetKey: "iOutOffset" },
+  { key: "vInScale",  label: "Input Voltage (V_in)",    scaleKey: "vInScale",  offsetKey: "vInOffset"  },
+  { key: "vOutScale", label: "Output Voltage (V_out)",  scaleKey: "vOutScale", offsetKey: "vOutOffset" },
+  { key: "vDcScale",  label: "Battery Voltage (V_dc)",  scaleKey: "vDcScale",  offsetKey: "vDcOffset"  },
+  { key: "iInScale",  label: "Input Current (I_in)",    scaleKey: "iInScale",  offsetKey: "iInOffset"  },
+  { key: "iOutScale", label: "Output Current (I_out)",  scaleKey: "iOutScale", offsetKey: "iOutOffset" },
 ];
 
 function profileToForm(p: Partial<CalibProfile>): Record<string, string> {
@@ -44,15 +44,18 @@ function formToProfile(f: Record<string, string>): CalibProfile {
   return Object.fromEntries(Object.entries(f).map(([k, v]) => [k, parseFloat(v) || 0])) as unknown as CalibProfile;
 }
 
+const numInputCls = "rounded border border-slate-600 px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-cyan-600 transition-colors";
+const numInputStyle = { background: "var(--surface-1)" };
+
 export default function CalibrationPage() {
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [form, setForm] = useState<Record<string, string>>(profileToForm(DEFAULT_PROFILE));
+  const [devices,    setDevices]    = useState<Device[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [selected,   setSelected]   = useState<string | null>(null);
+  const [form,       setForm]       = useState<Record<string, string>>(profileToForm(DEFAULT_PROFILE));
   const [hasProfile, setHasProfile] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [error, setError] = useState("");
+  const [saving,     setSaving]     = useState(false);
+  const [msg,        setMsg]        = useState("");
+  const [error,      setError]      = useState("");
 
   useEffect(() => {
     fetch("/api/devices", { cache: "no-store" })
@@ -105,35 +108,41 @@ export default function CalibrationPage() {
 
   return (
     <AppShell activeNav="calibration">
-      <div className="flex max-w-5xl flex-col gap-5">
+      <div className="flex max-w-5xl flex-col gap-5 iot-page">
         <div className="flex items-center gap-2">
-          <FlaskConical size={18} className="text-slate-500" />
-          <h1 className="text-2xl font-bold text-slate-950">Calibration Profiles</h1>
+          <FlaskConical size={18} className="text-amber-400" />
+          <h1 className="text-2xl font-bold text-white">Calibration Profiles</h1>
         </div>
 
-        {error && <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        {error && <p className="rounded-md bg-red-900/30 border border-red-800 p-3 text-sm text-red-400">{error}</p>}
 
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Device list */}
-          <section className="rounded-lg border border-slate-200 bg-white shadow-sm lg:col-span-1">
-            <div className="border-b border-slate-100 px-4 py-3">
-              <p className="text-sm font-semibold text-slate-700">Select device</p>
+          <section className="rounded-lg border border-slate-700 lg:col-span-1" style={{ background: "var(--surface-1)" }}>
+            <div className="border-b border-slate-700 px-4 py-3">
+              <p className="text-sm font-semibold text-slate-300">Select device</p>
             </div>
             {loading ? (
-              <p className="p-4 text-sm text-slate-400">Loading…</p>
+              <p className="p-4 text-sm text-slate-500">Loading…</p>
             ) : devices.length === 0 ? (
-              <p className="p-4 text-sm text-slate-400">No devices found.</p>
+              <p className="p-4 text-sm text-slate-500">No devices found.</p>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-slate-800">
                 {devices.map((d) => (
                   <li key={d.deviceId}>
                     <button
                       onClick={() => selectDevice(d.deviceId)}
-                      className={`w-full px-4 py-3 text-left transition-colors hover:bg-slate-50 ${selected === d.deviceId ? "bg-slate-950 text-white hover:bg-slate-800" : ""}`}
+                      className={`w-full px-4 py-3 text-left transition-colors ${
+                        selected === d.deviceId
+                          ? "bg-cyan-900/40 border-l-2 border-cyan-500"
+                          : "hover:bg-slate-800/60"
+                      }`}
                       type="button"
                     >
-                      <p className={`text-sm font-semibold truncate ${selected === d.deviceId ? "text-white" : "text-slate-950"}`}>{d.deviceId}</p>
-                      <p className={`text-xs truncate ${selected === d.deviceId ? "text-slate-300" : "text-slate-400"}`}>
+                      <p className={`text-sm font-semibold truncate ${selected === d.deviceId ? "text-cyan-300" : "text-slate-200"}`}>
+                        {d.deviceId}
+                      </p>
+                      <p className={`text-xs truncate ${selected === d.deviceId ? "text-cyan-500" : "text-slate-500"}`}>
                         {d.upsId ?? "No UPS"} · {d.online ? "Online" : "Offline"}
                       </p>
                     </button>
@@ -144,21 +153,21 @@ export default function CalibrationPage() {
           </section>
 
           {/* Calibration form */}
-          <section className="rounded-lg border border-slate-200 bg-white shadow-sm lg:col-span-2">
+          <section className="rounded-lg border border-slate-700 lg:col-span-2" style={{ background: "var(--surface-1)" }}>
             {!selected ? (
-              <div className="flex h-64 items-center justify-center text-slate-400">
+              <div className="flex h-64 items-center justify-center text-slate-500">
                 <p className="text-sm">Select a device to view or edit its calibration profile.</p>
               </div>
             ) : (
               <div className="p-5">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <p className="font-bold text-slate-950">{selected}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="font-bold text-white">{selected}</p>
+                    <p className="text-xs text-slate-500">
                       {hasProfile ? "Custom profile active" : "Using default values"} · firmware: {selectedDevice?.firmware ?? "unknown"}
                     </p>
                   </div>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${hasProfile ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${hasProfile ? "bg-cyan-900/40 border border-cyan-800 text-cyan-300" : "bg-slate-700 border border-slate-600 text-slate-400"}`}>
                     {hasProfile ? "Custom" : "Default"}
                   </span>
                 </div>
@@ -169,25 +178,23 @@ export default function CalibrationPage() {
 
                 <div className="space-y-4">
                   {CHANNELS.map((ch) => (
-                    <div key={ch.label} className="rounded-md border border-slate-100 bg-slate-50 p-3">
-                      <p className="mb-2 text-xs font-semibold text-slate-600">{ch.label}</p>
+                    <div key={ch.label} className="rounded-md border border-slate-700 p-3" style={{ background: "var(--surface-2)" }}>
+                      <p className="mb-2 text-xs font-semibold text-slate-400">{ch.label}</p>
                       <div className="grid grid-cols-2 gap-3">
                         <label className="flex flex-col gap-1 text-xs">
-                          <span className="text-slate-400">Scale (multiplier)</span>
+                          <span className="text-slate-500">Scale (multiplier)</span>
                           <input
-                            type="number"
-                            step="any"
-                            className="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm"
+                            type="number" step="any"
+                            className={numInputCls} style={numInputStyle}
                             value={form[ch.scaleKey]}
                             onChange={(e) => setForm((f) => ({ ...f, [ch.scaleKey]: e.target.value }))}
                           />
                         </label>
                         <label className="flex flex-col gap-1 text-xs">
-                          <span className="text-slate-400">Offset (additive)</span>
+                          <span className="text-slate-500">Offset (additive)</span>
                           <input
-                            type="number"
-                            step="any"
-                            className="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm"
+                            type="number" step="any"
+                            className={numInputCls} style={numInputStyle}
                             value={form[ch.offsetKey]}
                             onChange={(e) => setForm((f) => ({ ...f, [ch.offsetKey]: e.target.value }))}
                           />
@@ -199,7 +206,7 @@ export default function CalibrationPage() {
 
                 <div className="mt-5 flex items-center gap-3">
                   <button
-                    className="flex items-center gap-2 rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                    className="flex items-center gap-2 rounded-md bg-cyan-700 hover:bg-cyan-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-colors"
                     onClick={save}
                     disabled={saving}
                     type="button"
@@ -208,14 +215,14 @@ export default function CalibrationPage() {
                     {saving ? "Saving…" : "Save profile"}
                   </button>
                   <button
-                    className="flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    className="flex items-center gap-2 rounded-md border border-slate-600 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
                     onClick={resetToDefault}
                     type="button"
                   >
                     <RotateCcw size={14} />
                     Reset to defaults
                   </button>
-                  {msg && <span className="text-sm font-semibold text-emerald-700">{msg}</span>}
+                  {msg && <span className={`text-sm font-semibold ${msg.includes("fail") ? "text-red-400" : "text-emerald-400"}`}>{msg}</span>}
                 </div>
               </div>
             )}

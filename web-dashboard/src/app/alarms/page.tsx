@@ -62,17 +62,25 @@ function AlarmCard({
 
   return (
     <div
-      className={`rounded-lg border bg-white shadow-sm overflow-hidden ${
-        isCritical && isActive ? "border-red-200" :
-        !isCritical && isActive ? "border-amber-200" :
-        "border-slate-200"
+      className={`rounded-lg border overflow-hidden iot-card ${
+        isCritical && isActive ? "border-red-800" :
+        !isCritical && isActive ? "border-amber-800" :
+        "border-slate-700"
       }`}
+      style={{
+        background: "var(--surface-1)",
+        boxShadow: isCritical && isActive
+          ? "0 0 12px rgba(239,68,68,0.08)"
+          : !isCritical && isActive
+          ? "0 0 12px rgba(245,158,11,0.08)"
+          : undefined,
+      }}
     >
       {/* Top colour bar */}
       <div className={`h-1 w-full ${
         isCritical && isActive ? "bg-red-500" :
-        !isCritical && isActive ? "bg-amber-400" :
-        "bg-slate-200"
+        !isCritical && isActive ? "bg-amber-500" :
+        "bg-slate-700"
       }`} />
 
       <div className="p-4">
@@ -80,25 +88,25 @@ function AlarmCard({
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${
-              isCritical ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+              isCritical ? "bg-red-900/50 text-red-400 border border-red-800" : "bg-amber-900/50 text-amber-400 border border-amber-800"
             }`}>
               <AlertTriangle size={10} />
               {alarm.severity.toUpperCase()}
             </span>
             <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-              isActive ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"
+              isActive ? "bg-red-900/40 text-red-400" : "bg-emerald-900/40 text-emerald-400"
             }`}>
               {alarm.state}
             </span>
             {alarm.metric && alarm.metric !== "offline" && (
-              <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+              <span className="font-mono text-xs text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
                 {alarm.metric}
               </span>
             )}
           </div>
           {alarm.state === "active" && !alarm.acknowledgedAt && canAck && ackingId !== alarm.id && (
             <button
-              className="shrink-0 rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="shrink-0 rounded-md border border-slate-600 px-3 py-1 text-xs font-semibold text-slate-300 hover:bg-slate-700 transition-colors"
               onClick={() => onAckOpen(alarm.id)}
               type="button"
             >
@@ -108,12 +116,12 @@ function AlarmCard({
         </div>
 
         {/* Message */}
-        <p className="text-sm font-semibold text-slate-900 mb-2">{alarm.message}</p>
+        <p className="text-sm font-semibold text-slate-100 mb-2">{alarm.message}</p>
 
         {/* Meta row */}
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
           {alarm.upsId && (
-            <Link href={`/ups/${alarm.upsId}`} className="font-semibold text-blue-700 hover:underline">
+            <Link href={`/ups/${alarm.upsId}`} className="font-semibold text-cyan-400 hover:text-cyan-300 hover:underline">
               {alarm.upsId}
             </Link>
           )}
@@ -122,32 +130,36 @@ function AlarmCard({
           )}
           <span>First seen: {new Date(alarm.firstSeenAt).toLocaleString()}</span>
           {alarm.acknowledgedAt && (
-            <span className="text-emerald-700">Ack&apos;d by {alarm.acknowledgedBy ?? "—"}</span>
+            <span className="text-emerald-400">Ack&apos;d by {alarm.acknowledgedBy ?? "—"}</span>
           )}
           {alarm.comment && (
-            <span className="italic text-slate-400">&quot;{alarm.comment}&quot;</span>
+            <span className="italic text-slate-500">&quot;{alarm.comment}&quot;</span>
           )}
         </div>
 
         {/* Ack inline form */}
         {ackingId === alarm.id && (
-          <div className="mt-3 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+          <div
+            className="mt-3 flex items-center gap-2 rounded-md border border-slate-700 p-3"
+            style={{ background: "var(--surface-2)" }}
+          >
             <input
-              className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm"
+              className="flex-1 rounded-md border border-slate-600 px-3 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-500 transition-colors"
+              style={{ background: "var(--surface-1)" }}
               placeholder="Optional comment…"
               value={ackComment}
               onChange={(e) => onAckCommentChange(e.target.value)}
               autoFocus
             />
             <button
-              className="rounded-md bg-slate-950 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800"
+              className="rounded-md bg-cyan-700 hover:bg-cyan-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors"
               onClick={() => onAckConfirm(alarm.id)}
               type="button"
             >
               Confirm
             </button>
             <button
-              className="rounded-md border border-slate-300 p-1.5 text-slate-500 hover:bg-slate-100"
+              className="rounded-md border border-slate-600 p-1.5 text-slate-400 hover:bg-slate-700 transition-colors"
               onClick={onAckCancel}
               type="button"
             >
@@ -207,13 +219,13 @@ export default function AlarmsPage() {
 
   return (
     <AppShell activeNav="alarms">
-      <div className="flex flex-col gap-5 max-w-4xl">
+      <div className="flex flex-col gap-5 max-w-4xl iot-page">
 
         {/* Header + filter */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-950">Alarm Management</h1>
-            <p className="text-sm text-slate-500">Monitor and acknowledge UPS alarm conditions.</p>
+            <h1 className="text-2xl font-bold text-white">Alarm Management</h1>
+            <p className="text-sm text-slate-400">Monitor and acknowledge UPS alarm conditions.</p>
           </div>
           <nav className="flex gap-1.5">
             {(["active", "cleared", "all"] as FilterState[]).map((s) => (
@@ -221,8 +233,8 @@ export default function AlarmsPage() {
                 key={s}
                 className={`rounded-md border px-3 py-1.5 text-sm font-semibold capitalize transition-colors ${
                   filter === s
-                    ? "border-slate-950 bg-slate-950 text-white"
-                    : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                    ? "border-cyan-700 bg-cyan-900/40 text-cyan-300"
+                    : "border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                 }`}
                 onClick={() => setFilter(s)}
                 type="button"
@@ -235,41 +247,56 @@ export default function AlarmsPage() {
 
         {/* Summary counters */}
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-lg border border-red-200 bg-white p-4 shadow-sm">
+          <div
+            className="rounded-lg border border-red-900/60 p-4"
+            style={{ background: "var(--surface-1)", boxShadow: critical.length ? "0 0 16px rgba(239,68,68,0.1)" : undefined }}
+          >
             <div className="mb-1 flex items-center gap-2">
-              <AlertTriangle size={15} className="text-red-600" />
+              <AlertTriangle size={15} className={critical.length ? "text-red-400 iot-blink" : "text-slate-600"} />
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Critical</p>
             </div>
-            <p className="text-3xl font-bold text-red-700">{critical.length}</p>
+            <p className={`text-3xl font-bold ${critical.length ? "text-red-400" : "text-slate-500"}`}>{critical.length}</p>
           </div>
-          <div className="rounded-lg border border-amber-200 bg-white p-4 shadow-sm">
+          <div
+            className="rounded-lg border border-amber-900/60 p-4"
+            style={{ background: "var(--surface-1)" }}
+          >
             <div className="mb-1 flex items-center gap-2">
-              <AlertTriangle size={15} className="text-amber-500" />
+              <AlertTriangle size={15} className={warning.length ? "text-amber-400" : "text-slate-600"} />
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warning</p>
             </div>
-            <p className="text-3xl font-bold text-amber-600">{warning.length}</p>
+            <p className={`text-3xl font-bold ${warning.length ? "text-amber-400" : "text-slate-500"}`}>{warning.length}</p>
           </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div
+            className="rounded-lg border border-slate-700 p-4"
+            style={{ background: "var(--surface-1)" }}
+          >
             <div className="mb-1 flex items-center gap-2">
-              <Clock size={15} className="text-slate-400" />
+              <Clock size={15} className="text-slate-500" />
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total shown</p>
             </div>
-            <p className="text-3xl font-bold text-slate-950">{alarms.length}</p>
+            <p className="text-3xl font-bold text-slate-300">{alarms.length}</p>
           </div>
         </div>
 
         {/* Alarm cards */}
         {loading ? (
-          <div className="rounded-lg border border-slate-200 bg-white p-10 text-center text-sm text-slate-400 shadow-sm">
+          <div
+            className="rounded-lg border border-slate-700 p-10 text-center text-sm text-slate-500 iot-shimmer"
+            style={{ background: "var(--surface-1)" }}
+          >
             Loading alarms…
           </div>
         ) : alarms.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-lg border border-slate-200 bg-white py-14 shadow-sm text-emerald-700">
+          <div
+            className="flex flex-col items-center gap-3 rounded-lg border border-emerald-900/50 py-14 text-emerald-400"
+            style={{ background: "var(--surface-1)" }}
+          >
             <CheckCircle2 size={40} />
             <p className="font-semibold">
               {filter === "active" ? "No active alarms — all systems normal." : "No alarms found."}
             </p>
-            <Link href="/" className="text-sm text-slate-500 underline hover:text-slate-700">
+            <Link href="/" className="text-sm text-slate-500 underline hover:text-slate-300">
               Back to dashboard
             </Link>
           </div>
