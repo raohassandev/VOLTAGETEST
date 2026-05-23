@@ -57,16 +57,12 @@ function SummaryRow({
   const online   = onlineDevices.length;
   const offline  = devices.length - online;
   const critCount = serverAlarms.filter((a) => a.severity === "critical").length;
+  const warnCount = serverAlarms.filter((a) => a.severity === "warning").length;
   const totalPOutW = onlineDevices.reduce((s, d) => {
     const p = d.telemetry.p_out_w;
     return s + (p != null ? Number(p) : 0);
   }, 0);
   const hasPOutW = onlineDevices.some((d) => d.telemetry.p_out_w != null);
-  const totalEOutKwh = onlineDevices.reduce((s, d) => {
-    const e = d.telemetry.e_out_kwh;
-    return s + (e != null ? Number(e) : 0);
-  }, 0);
-  const hasEOutKwh = onlineDevices.some((d) => d.telemetry.e_out_kwh != null);
 
   const stats = [
     {
@@ -110,6 +106,16 @@ function SummaryRow({
       href: "/alarms",
     },
     {
+      label: "Warnings",
+      value: warnCount,
+      icon: AlertTriangle,
+      valueColor: warnCount ? "text-amber-400" : "text-slate-500",
+      iconColor: warnCount ? "text-amber-400" : "text-slate-600",
+      iconBg: warnCount ? "bg-amber-900/40" : "bg-slate-800",
+      border: warnCount ? "border-amber-800" : "border-slate-700",
+      href: "/alarms",
+    },
+    {
       label: "Live Out W",
       value: hasPOutW ? formatNumber(totalPOutW) : "–",
       icon: Gauge,
@@ -117,16 +123,6 @@ function SummaryRow({
       iconColor: "text-cyan-400",
       iconBg: "bg-cyan-900/40",
       border: "border-cyan-800",
-      href: null,
-    },
-    {
-      label: "Energy kWh",
-      value: hasEOutKwh ? formatNumber(totalEOutKwh) : "–",
-      icon: Gauge,
-      valueColor: "text-violet-300",
-      iconColor: "text-violet-400",
-      iconBg: "bg-violet-900/40",
-      border: "border-violet-800",
       href: null,
     },
   ];
@@ -242,22 +238,20 @@ function UpsCard({
         </div>
       </div>
 
-      {/* Primary metrics */}
+      {/* Primary metrics — 4-col single row (original layout) */}
       <div
-        className={`grid grid-cols-3 text-center border-t ${!online ? "opacity-40" : ""}`}
+        className={`grid grid-cols-4 text-center border-t ${!online ? "opacity-40" : ""}`}
         style={{ borderColor: "var(--border-subtle)" }}
       >
         {[
-          { label: "Out V",  value: formatNumber(Number(device.telemetry.volt_out ?? 0)) },
-          { label: "Out A",  value: formatNumber(Number(device.telemetry.ct_out   ?? 0)) },
-          { label: "Out W",  value: device.telemetry.p_out_w != null ? formatNumber(Number(device.telemetry.p_out_w)) : "–" },
-          { label: "PF",     value: device.telemetry.pf_out  != null ? formatNumber(Number(device.telemetry.pf_out))  : "–" },
-          { label: "Bat V",  value: voltDcDisplay },
-          { label: "Out VA", value: formatNumber(Number(device.telemetry.s_out_va ?? 0)) },
+          { label: "In V",  value: formatNumber(Number(device.telemetry.volt_in  ?? 0)) },
+          { label: "Out V", value: formatNumber(Number(device.telemetry.volt_out ?? 0)) },
+          { label: "Bat V", value: voltDcDisplay },
+          { label: "Load",  value: loadPct !== null ? `${formatNumber(loadPct)}%` : "--" },
         ].map(({ label, value }, i) => (
           <div
             key={label}
-            className={`py-2 sm:py-2.5 ${i % 3 !== 0 ? "border-l" : ""} ${i >= 3 ? "border-t" : ""}`}
+            className={`py-2 sm:py-2.5 ${i > 0 ? "border-l" : ""}`}
             style={{ borderColor: "var(--border-subtle)" }}
           >
             <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
@@ -266,24 +260,20 @@ function UpsCard({
         ))}
       </div>
 
-      {/* Secondary metrics */}
+      {/* Secondary metrics — 4-col single row (original layout) */}
       <div
         className={`grid grid-cols-4 text-center border-t ${!online ? "opacity-40" : ""}`}
         style={{ borderColor: "var(--border-subtle)" }}
       >
         {[
-          { label: "In V",   value: formatNumber(Number(device.telemetry.volt_in  ?? 0)) },
-          { label: "In A",   value: formatNumber(Number(device.telemetry.ct_in    ?? 0)) },
-          { label: "In W",   value: device.telemetry.p_in_w   != null ? formatNumber(Number(device.telemetry.p_in_w))   : "–" },
-          { label: "Hz In",  value: device.telemetry.freq_in  != null ? formatNumber(Number(device.telemetry.freq_in))  : "–" },
-          { label: "kWh In", value: device.telemetry.e_in_kwh != null ? formatNumber(Number(device.telemetry.e_in_kwh)) : "–" },
-          { label: "kWh Out",value: device.telemetry.e_out_kwh!= null ? formatNumber(Number(device.telemetry.e_out_kwh)): "–" },
+          { label: "Out A",  value: formatNumber(Number(device.telemetry.ct_out  ?? 0)) },
+          { label: "Out VA", value: formatNumber(Number(device.telemetry.s_out_va ?? 0)) },
           { label: "RSSI",   value: device.telemetry.rssi ? `${device.telemetry.rssi}` : "--" },
-          { label: "Load",   value: loadPct !== null ? `${formatNumber(loadPct)}%` : "--" },
+          { label: "In A",   value: formatNumber(Number(device.telemetry.ct_in ?? 0)) },
         ].map(({ label, value }, i) => (
           <div
             key={label}
-            className={`py-1.5 sm:py-2 ${i % 4 !== 0 ? "border-l" : ""} ${i >= 4 ? "border-t" : ""}`}
+            className={`py-1.5 sm:py-2 ${i > 0 ? "border-l" : ""}`}
             style={{ borderColor: "var(--border-subtle)" }}
           >
             <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
@@ -291,6 +281,31 @@ function UpsCard({
           </div>
         ))}
       </div>
+
+      {/* Energy row — 4-col, only shown when energy-analyzer firmware fields are present */}
+      {(device.telemetry.p_out_w != null || device.telemetry.pf_out != null ||
+        device.telemetry.freq_in != null || device.telemetry.e_out_kwh != null) && (
+        <div
+          className={`grid grid-cols-4 text-center border-t ${!online ? "opacity-40" : ""}`}
+          style={{ borderColor: "var(--border-subtle)", background: "var(--surface-2)" }}
+        >
+          {[
+            { label: "Out W",  value: device.telemetry.p_out_w  != null ? formatNumber(Number(device.telemetry.p_out_w))  : "–" },
+            { label: "PF",     value: device.telemetry.pf_out   != null ? formatNumber(Number(device.telemetry.pf_out))   : "–" },
+            { label: "Hz",     value: device.telemetry.freq_in  != null ? formatNumber(Number(device.telemetry.freq_in))  : "–" },
+            { label: "kWh",    value: device.telemetry.e_out_kwh!= null ? formatNumber(Number(device.telemetry.e_out_kwh)): "–" },
+          ].map(({ label, value }, i) => (
+            <div
+              key={label}
+              className={`py-1.5 sm:py-2 ${i > 0 ? "border-l" : ""}`}
+              style={{ borderColor: "var(--border-subtle)" }}
+            >
+              <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
+              <p className="text-xs font-semibold text-cyan-300">{value}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Board IP */}
       <div className="border-t px-3 sm:px-4 py-2" style={{ borderColor: "var(--border-subtle)" }}>
