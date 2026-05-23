@@ -15,6 +15,16 @@ export interface TelemetrySnapshot {
   ctOut: number;
   sInVa: number;
   sOutVa: number;
+  pInW?: number | null;
+  pOutW?: number | null;
+  pfIn?: number | null;
+  pfOut?: number | null;
+  freqIn?: number | null;
+  freqOut?: number | null;
+  qInVar?: number | null;
+  qOutVar?: number | null;
+  eInKwh?: number | null;
+  eOutKwh?: number | null;
 }
 
 interface ThresholdCheck {
@@ -240,7 +250,7 @@ export async function evaluateAlarms(
 ): Promise<void> {
   const resolved = await resolveThresholds(prisma, snap, batteryNominalV, capacityVa);
 
-  const snapValues: Record<string, number> = {
+  const snapValues: Record<string, number | undefined> = {
     volt_in: snap.voltIn,
     volt_out: snap.voltOut,
     volt_dc: snap.voltDc,
@@ -249,9 +259,22 @@ export async function evaluateAlarms(
     s_out_va: snap.sOutVa,
     load_percent: capacityVa > 0 ? (snap.sOutVa / capacityVa) * 100 : 0,
     overload_pct: capacityVa > 0 ? (snap.sOutVa / capacityVa) * 100 : 0,
+    p_in_w: snap.pInW ?? undefined,
+    p_out_w: snap.pOutW ?? undefined,
+    pf_in: snap.pfIn ?? undefined,
+    pf_out: snap.pfOut ?? undefined,
+    freq_in: snap.freqIn ?? undefined,
+    freq_out: snap.freqOut ?? undefined,
+    q_in_var: snap.qInVar ?? undefined,
+    q_out_var: snap.qOutVar ?? undefined,
+    e_in_kwh: snap.eInKwh ?? undefined,
+    e_out_kwh: snap.eOutKwh ?? undefined,
   };
 
-  const checks: ThresholdCheck[] = resolved.map((t) => ({ ...t, value: snapValues[t.metric] ?? 0 }));
+  // Skip checks for metrics with no value in this snapshot (e.g. energy fields not yet firmware-supported)
+  const checks: ThresholdCheck[] = resolved
+    .filter((t) => snapValues[t.metric] !== undefined)
+    .map((t) => ({ ...t, value: snapValues[t.metric] as number }));
 
   const now = Date.now();
   const candidates = new Map<string, AlarmCandidate>();

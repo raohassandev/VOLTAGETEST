@@ -71,6 +71,8 @@ MIGRATIONS=$($COMPOSE exec -T postgres sh -lc \
   'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "select migration_name from \"_prisma_migrations\" order by finished_at;"')
 echo "$MIGRATIONS"
 echo "$MIGRATIONS" | grep -q "20260520000000_init" && pass "init migration present" || fail "init migration missing"
+echo "$MIGRATIONS" | grep -q "20260523000001_v2_fields" && pass "v2_fields migration present" || fail "v2_fields migration missing"
+echo "$MIGRATIONS" | grep -q "20260523120000_add_telemetry1m_energy_fields" && pass "energy_fields migration present" || fail "energy_fields migration missing"
 
 TABLES=$($COMPOSE exec -T postgres sh -lc \
   'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "\dt"')
@@ -130,8 +132,8 @@ echo "$SYSHEALTH2" | grep -q '"embedded"' && fail "Embedded broker active — EN
 
 MQTT_USER=$(grep MQTT_USERNAME .env | cut -d= -f2)
 MQTT_PASS=$(grep MQTT_PASSWORD .env | cut -d= -f2)
-TOPIC="building/site1/ups/DOCKER-SMOKE-001/telemetry"
-PAYLOAD='{"device_id":"DOCKER-SMOKE-001","volt_in":231.2,"volt_out":229.8,"volt_dc":558,"ct_in":2.1,"ct_out":2.0,"s_in_va":485.5,"s_out_va":460.2,"freq_in":49.98,"freq_out":49.96,"q_in_var":5.3,"q_out_var":4.8,"rssi":-45,"seq":1}'
+TOPIC="ums/devices/DOCKER-SMOKE-001/data"
+PAYLOAD='{"device_id":"DOCKER-SMOKE-001","volt_in":230,"volt_out":229,"volt_dc":13.4,"ct_in":2.3,"ct_out":1.8,"s_in_va":530,"s_out_va":420,"freq_in":50.0,"freq_out":50.0,"p_in_w":498,"p_out_w":400,"pf_in":0.94,"pf_out":0.95,"q_in_var":180,"q_out_var":140,"e_in_kwh":12.3,"e_out_kwh":11.8,"rssi":-65,"seq":1}'
 
 # Need a device user in passwords — use dashboard user via ACL override or test user
 # If DOCKER-SMOKE-001 user exists in passwords file, use it; else use dashboard via modified ACL
@@ -147,11 +149,13 @@ sleep 3
 # ── Step 9: Verify DB telemetry ───────────────────────────────────────────────
 step "9. DB telemetry verification"
 RAW=$($COMPOSE exec -T postgres sh -lc \
-  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "select \"deviceId\",\"voltIn\",\"freqIn\",\"freqOut\",\"qInVar\",\"qOutVar\" from \"TelemetryRaw\" where \"deviceId\"='"'"'DOCKER-SMOKE-001'"'"' order by \"receivedAt\" desc limit 1;"')
+  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "select \"deviceId\",\"voltIn\",\"freqIn\",\"freqOut\",\"pInW\",\"pOutW\",\"pfIn\",\"pfOut\",\"qInVar\",\"qOutVar\",\"eInKwh\",\"eOutKwh\" from \"TelemetryRaw\" where \"deviceId\"='"'"'DOCKER-SMOKE-001'"'"' order by \"receivedAt\" desc limit 1;"')
 echo "TelemetryRaw: $RAW"
 echo "$RAW" | grep -q "DOCKER-SMOKE-001" && pass "TelemetryRaw row inserted" || fail "TelemetryRaw not inserted — check worker logs"
-echo "$RAW" | grep -q "49.98" && pass "freqIn stored correctly" || fail "freqIn missing — standalone worker may not be mapping freq_in"
-echo "$RAW" | grep -q "5.3" && pass "qInVar stored correctly" || fail "qInVar missing"
+echo "$RAW" | grep -q "50" && pass "freqIn stored correctly" || fail "freqIn missing — check worker field mapping"
+echo "$RAW" | grep -q "180" && pass "qInVar stored correctly" || fail "qInVar missing"
+echo "$RAW" | grep -q "498" && pass "pInW stored correctly" || fail "pInW missing"
+echo "$RAW" | grep -q "12.3" && pass "eInKwh stored correctly" || fail "eInKwh missing"
 
 LATEST=$($COMPOSE exec -T postgres sh -lc \
   'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "select \"deviceId\",\"voltIn\",\"freqIn\" from \"TelemetryLatest\" where \"deviceId\"='"'"'DOCKER-SMOKE-001'"'"';"')

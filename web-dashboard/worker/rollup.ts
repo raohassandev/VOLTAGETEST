@@ -45,29 +45,46 @@ export async function runRollup(prisma: PrismaClient): Promise<void> {
   let rows: RollupRow[];
   try {
     rows = await prisma.$queryRaw<RollupRow[]>`
+      WITH base AS (
+        SELECT *
+        FROM "TelemetryRaw"
+        WHERE "receivedAt" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '2 hours'
+          AND date_trunc('minute', "receivedAt") < date_trunc('minute', NOW() AT TIME ZONE 'UTC')
+      ),
+      kwh_last AS (
+        SELECT DISTINCT ON ("deviceId", date_trunc('minute', "receivedAt"))
+          "deviceId",
+          date_trunc('minute', "receivedAt") AS "bucket",
+          "eInKwh"  AS "eInKwhLast",
+          "eOutKwh" AS "eOutKwhLast"
+        FROM base
+        ORDER BY "deviceId", date_trunc('minute', "receivedAt"), "receivedAt" DESC
+      )
       SELECT
-        "deviceId",
-        date_trunc('minute', "receivedAt") AS "bucketStart",
+        b."deviceId",
+        date_trunc('minute', b."receivedAt") AS "bucketStart",
         COUNT(*)                           AS "sampleCount",
-        AVG("voltIn")   AS "voltInAvg",  MIN("voltIn")   AS "voltInMin",  MAX("voltIn")   AS "voltInMax",
-        AVG("voltOut")  AS "voltOutAvg", MIN("voltOut")  AS "voltOutMin", MAX("voltOut")  AS "voltOutMax",
-        AVG("voltDc")   AS "voltDcAvg",  MIN("voltDc")   AS "voltDcMin",  MAX("voltDc")   AS "voltDcMax",
-        AVG("ctIn")     AS "ctInAvg",                                     MAX("ctIn")     AS "ctInMax",
-        AVG("ctOut")    AS "ctOutAvg",                                     MAX("ctOut")    AS "ctOutMax",
-        AVG("sInVa")    AS "sInVaAvg",                                     MAX("sInVa")    AS "sInVaMax",
-        AVG("sOutVa")   AS "sOutVaAvg",                                    MAX("sOutVa")   AS "sOutVaMax",
-        AVG("rssi")     AS "rssiAvg",
-        AVG("freqIn")   AS "freqInAvg",
-        AVG("freqOut")  AS "freqOutAvg",
-        AVG("pInW")     AS "pInWAvg",    MAX("pInW")     AS "pInWMax",
-        AVG("pOutW")    AS "pOutWAvg",   MAX("pOutW")    AS "pOutWMax",
-        AVG("pfIn")     AS "pfInAvg",    AVG("pfOut")    AS "pfOutAvg",
-        AVG("qInVar")   AS "qInVarAvg",  AVG("qOutVar")  AS "qOutVarAvg",
-        MAX("eInKwh")   AS "eInKwhLast", MAX("eOutKwh")  AS "eOutKwhLast"
-      FROM "TelemetryRaw"
-      WHERE "receivedAt" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '2 hours'
-        AND date_trunc('minute', "receivedAt") < date_trunc('minute', NOW() AT TIME ZONE 'UTC')
-      GROUP BY "deviceId", date_trunc('minute', "receivedAt")
+        AVG(b."voltIn")   AS "voltInAvg",  MIN(b."voltIn")   AS "voltInMin",  MAX(b."voltIn")   AS "voltInMax",
+        AVG(b."voltOut")  AS "voltOutAvg", MIN(b."voltOut")  AS "voltOutMin", MAX(b."voltOut")  AS "voltOutMax",
+        AVG(b."voltDc")   AS "voltDcAvg",  MIN(b."voltDc")   AS "voltDcMin",  MAX(b."voltDc")   AS "voltDcMax",
+        AVG(b."ctIn")     AS "ctInAvg",                                       MAX(b."ctIn")     AS "ctInMax",
+        AVG(b."ctOut")    AS "ctOutAvg",                                       MAX(b."ctOut")    AS "ctOutMax",
+        AVG(b."sInVa")    AS "sInVaAvg",                                       MAX(b."sInVa")    AS "sInVaMax",
+        AVG(b."sOutVa")   AS "sOutVaAvg",                                      MAX(b."sOutVa")   AS "sOutVaMax",
+        AVG(b."rssi")     AS "rssiAvg",
+        AVG(b."freqIn")   AS "freqInAvg",
+        AVG(b."freqOut")  AS "freqOutAvg",
+        AVG(b."pInW")     AS "pInWAvg",    MAX(b."pInW")     AS "pInWMax",
+        AVG(b."pOutW")    AS "pOutWAvg",   MAX(b."pOutW")    AS "pOutWMax",
+        AVG(b."pfIn")     AS "pfInAvg",    AVG(b."pfOut")    AS "pfOutAvg",
+        AVG(b."qInVar")   AS "qInVarAvg",  AVG(b."qOutVar")  AS "qOutVarAvg",
+        k."eInKwhLast",
+        k."eOutKwhLast"
+      FROM base b
+      JOIN kwh_last k
+        ON k."deviceId" = b."deviceId"
+       AND k."bucket"   = date_trunc('minute', b."receivedAt")
+      GROUP BY b."deviceId", date_trunc('minute', b."receivedAt"), k."eInKwhLast", k."eOutKwhLast"
     `;
   } catch (err) {
     console.error("[rollup] query failed:", err);

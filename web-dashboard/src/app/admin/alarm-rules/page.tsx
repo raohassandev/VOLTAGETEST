@@ -45,6 +45,16 @@ const METRIC_OPTIONS = [
   { value: "ct_out",        label: "Output Current" },
   { value: "s_out_va",      label: "Output Apparent Power" },
   { value: "load_percent",  label: "Load %" },
+  { value: "p_in_w",        label: "Input Real Power (W)" },
+  { value: "p_out_w",       label: "Output Real Power (W)" },
+  { value: "pf_in",         label: "Input Power Factor" },
+  { value: "pf_out",        label: "Output Power Factor" },
+  { value: "freq_in",       label: "Input Frequency (Hz)" },
+  { value: "freq_out",      label: "Output Frequency (Hz)" },
+  { value: "q_in_var",      label: "Input Reactive Power (VAR)" },
+  { value: "q_out_var",     label: "Output Reactive Power (VAR)" },
+  { value: "e_in_kwh",      label: "Input Energy (kWh)" },
+  { value: "e_out_kwh",     label: "Output Energy (kWh)" },
   { value: "offline",       label: "Device Offline" },
 ];
 
