@@ -43,6 +43,7 @@
 #include <esp_adc_cal.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include <HTTPUpdateServer.h>
 #include <Preferences.h>
 #include <math.h>
 
@@ -236,7 +237,8 @@ struct WifiSettings {
 
 static WifiSettings wifiSettings;
 static Preferences  prefs;
-static WebServer    webServer(80);
+static WebServer          webServer(80);
+static HTTPUpdateServer   httpUpdater;
 static String       mqttHost;
 static String       deviceId;
 
@@ -569,7 +571,7 @@ static void appendFloat(String& s, const char* key, float val, uint8_t decimals 
     if (isnan(val)) {
         s += F("null");
     } else {
-        s += String(val, decimals);
+        s += String(val, (unsigned int)decimals);
     }
 }
 
@@ -634,13 +636,13 @@ static bool mqttWriteStr(WiFiClient& c, const String& s)
 static bool mqttConnect(WiFiClient& c, const String& clientId)
 {
     uint32_t rem = 10 + 2 + clientId.length();
-    if (c.write(0x10) != 1) return false;
+    if (c.write((uint8_t)0x10) != 1) return false;
     if (!mqttWriteLength(c, rem)) return false;
     if (!mqttWriteStr(c, F("MQTT"))) return false;
-    if (c.write(0x04) != 1) return false;  // protocol level 4
-    if (c.write(0x02) != 1) return false;  // clean session
-    if (c.write(0x00) != 1) return false;  // keepalive MSB
-    if (c.write(0x3C) != 1) return false;  // keepalive 60 s
+    if (c.write((uint8_t)0x04) != 1) return false;  // protocol level 4
+    if (c.write((uint8_t)0x02) != 1) return false;  // clean session
+    if (c.write((uint8_t)0x00) != 1) return false;  // keepalive MSB
+    if (c.write((uint8_t)0x3C) != 1) return false;  // keepalive 60 s
     if (!mqttWriteStr(c, clientId)) return false;
 
     unsigned long t = millis();
@@ -652,7 +654,7 @@ static bool mqttConnect(WiFiClient& c, const String& clientId)
 static bool mqttPublish(WiFiClient& c, const String& topic, const String& payload)
 {
     uint32_t rem = 2 + topic.length() + payload.length();
-    if (c.write(0x31) != 1) return false;
+    if (c.write((uint8_t)0x31) != 1) return false;
     if (!mqttWriteLength(c, rem)) return false;
     if (!mqttWriteStr(c, topic)) return false;
     return (size_t)c.print(payload) == payload.length();
@@ -913,7 +915,10 @@ void setupWebServer()
     webServer.on("/save",         HTTP_POST, handleSave);
     webServer.on("/calib",        HTTP_POST, handleCalib);
     webServer.on("/resetenergy",  HTTP_POST, handleResetEnergy);
+    // OTA firmware update via HTTP — browse to http://<device-ip>/update
+    httpUpdater.setup(&webServer, "/update");
     webServer.begin();
+    Serial.println(F("[OTA] HTTP update server at /update"));
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
