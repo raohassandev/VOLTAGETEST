@@ -18,7 +18,7 @@ export async function ensureMqttIngestionStarted() {
   await loadStore();
 
   const brokerUrl = process.env.MQTT_BROKER_URL;
-  const topic = process.env.MQTT_TOPIC || "building/+/ups/+/telemetry";
+  const topic = process.env.MQTT_TOPIC || "ums/devices/+/data";
 
   if (!brokerUrl) {
     return;

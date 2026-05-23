@@ -52,12 +52,16 @@ interface UpsDetail {
     firmware: string | null;
     receivedAt: string;
     loadPct: number | null;
-    pInW: null;
-    pOutW: null;
-    pfIn: null;
-    pfOut: null;
-    eInKwh: null;
-    eOutKwh: null;
+    pInW: number | null;
+    pOutW: number | null;
+    pfIn: number | null;
+    pfOut: number | null;
+    eInKwh: number | null;
+    eOutKwh: number | null;
+    freqIn: number | null;
+    freqOut: number | null;
+    qInVar: number | null;
+    qOutVar: number | null;
   } | null;
   commissioning: {
     seq: number | null;
@@ -140,17 +144,6 @@ function MetricCard({
         {unit && <span className="ml-1 text-sm font-normal text-slate-500">{unit}</span>}
       </p>
       {note && <p className="mt-1 text-xs text-slate-500 italic">{note}</p>}
-    </div>
-  );
-}
-
-// ── Unsupported metric card ───────────────────────────────────────────────────
-
-function UnsupportedCard({ label }: { label: string }) {
-  return (
-    <div className="rounded-lg border border-slate-800 p-4" style={{ background: "var(--surface-2)" }}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-slate-600">Not supported</p>
     </div>
   );
 }
@@ -447,21 +440,82 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
           <MetricCard label="Output Apparent Power" value={fmt(telemetry?.sOutVa, 0)} unit="VA" />
         </div>
 
-        {/* ── Measurement limitations ──────────────────────────────────────── */}
-        <div className="rounded-lg border border-slate-700 p-4" style={{ background: "var(--surface-2)" }}>
-          <div className="flex gap-2">
-            <Info size={15} className="mt-0.5 shrink-0 text-slate-500" />
-            <p className="text-sm text-slate-400">
-              <strong className="text-slate-300">Measurement limitations:</strong> Active power (W), power factor, and energy (kWh) are not
-              computed. Current firmware measures RMS voltage / current and apparent power (VA) only. These fields
-              will display once waveform-sampling firmware is validated and deployed.
-            </p>
+        {/* ── Energy analyzer fields ───────────────────────────────────────── */}
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500">Power &amp; energy (energy analyzer firmware)</h2>
+            <div className="flex gap-1 items-center text-xs text-slate-600">
+              <Info size={11} />
+              <span>Fields show &ldquo;Not available — firmware calibration required&rdquo; when the waveform firmware is not installed or calibrated.</span>
+            </div>
           </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <UnsupportedCard label="Active Power In" />
-            <UnsupportedCard label="Active Power Out" />
-            <UnsupportedCard label="Power Factor" />
-            <UnsupportedCard label="Energy kWh" />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              label="Active Power In"
+              value={telemetry?.pInW != null ? fmt(telemetry.pInW, 1) : "Not available"}
+              unit={telemetry?.pInW != null ? "W" : ""}
+              note={telemetry?.pInW == null ? "firmware calibration required" : undefined}
+            />
+            <MetricCard
+              label="Active Power Out"
+              value={telemetry?.pOutW != null ? fmt(telemetry.pOutW, 1) : "Not available"}
+              unit={telemetry?.pOutW != null ? "W" : ""}
+              note={telemetry?.pOutW == null ? "firmware calibration required" : undefined}
+            />
+            <MetricCard
+              label="Power Factor In"
+              value={telemetry?.pfIn != null ? fmt(telemetry.pfIn, 3) : "Not available"}
+              unit=""
+              note={telemetry?.pfIn == null ? "firmware calibration required" : undefined}
+            />
+            <MetricCard
+              label="Power Factor Out"
+              value={telemetry?.pfOut != null ? fmt(telemetry.pfOut, 3) : "Not available"}
+              unit=""
+              note={telemetry?.pfOut == null ? "firmware calibration required" : undefined}
+            />
+            <MetricCard
+              label="Frequency In"
+              value={telemetry?.freqIn != null ? fmt(telemetry.freqIn, 1) : "Not available"}
+              unit={telemetry?.freqIn != null ? "Hz" : ""}
+              note={telemetry?.freqIn == null ? "firmware calibration required" : undefined}
+            />
+            <MetricCard
+              label="Frequency Out"
+              value={telemetry?.freqOut != null ? fmt(telemetry.freqOut, 1) : "Not available"}
+              unit={telemetry?.freqOut != null ? "Hz" : ""}
+              note={telemetry?.freqOut == null ? "firmware calibration required" : undefined}
+            />
+            <MetricCard
+              label="Reactive Power In"
+              value={telemetry?.qInVar != null ? fmt(telemetry.qInVar, 1) : "Not available"}
+              unit={telemetry?.qInVar != null ? "VAR" : ""}
+              note={telemetry?.qInVar == null ? "firmware calibration required" : undefined}
+            />
+            <MetricCard
+              label="Reactive Power Out"
+              value={telemetry?.qOutVar != null ? fmt(telemetry.qOutVar, 1) : "Not available"}
+              unit={telemetry?.qOutVar != null ? "VAR" : ""}
+              note={telemetry?.qOutVar == null ? "firmware calibration required" : undefined}
+            />
+            <MetricCard
+              label="Energy In"
+              value={telemetry?.eInKwh != null ? fmt(telemetry.eInKwh, 3) : "Not available"}
+              unit={telemetry?.eInKwh != null ? "kWh" : ""}
+              note={telemetry?.eInKwh == null ? "firmware calibration required" : undefined}
+            />
+            <MetricCard
+              label="Energy Out"
+              value={telemetry?.eOutKwh != null ? fmt(telemetry.eOutKwh, 3) : "Not available"}
+              unit={telemetry?.eOutKwh != null ? "kWh" : ""}
+              note={telemetry?.eOutKwh == null ? "firmware calibration required" : undefined}
+            />
+          </div>
+          <div className="mt-3 flex gap-2 rounded-lg border border-slate-700 p-3" style={{ background: "var(--surface-2)" }}>
+            <Info size={13} className="mt-0.5 shrink-0 text-slate-500" />
+            <p className="text-xs text-slate-500">
+              Energy analyzer firmware supports real power (W), power factor, energy (kWh), reactive power (VAR), and line frequency when the waveform-sampling firmware is installed and calibrated. Accuracy depends on voltage/current sensor calibration. Phase correction is computed but not yet applied in firmware v1.x — reactive power (VAR) is unsigned.
+            </p>
           </div>
         </div>
 

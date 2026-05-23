@@ -246,6 +246,16 @@ model Telemetry1m {
   rssiAvg     Float?
   freqInAvg   Float?
   freqOutAvg  Float?
+  pInWAvg     Float?
+  pInWMax     Float?
+  pOutWAvg    Float?
+  pOutWMax    Float?
+  pfInAvg     Float?
+  pfOutAvg    Float?
+  qInVarAvg   Float?
+  qOutVarAvg  Float?
+  eInKwhLast  Float?
+  eOutKwhLast Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

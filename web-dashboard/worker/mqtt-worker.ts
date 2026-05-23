@@ -13,7 +13,7 @@ import { evaluateAlarms, markDeviceOffline, markDeviceOnline } from "../src/lib/
 import { runRollup, runRetentionCleanup } from "./rollup";
 
 const BROKER_URL = process.env.MQTT_BROKER_URL;
-const TOPIC = process.env.MQTT_TOPIC || "building/+/ups/+/telemetry";
+const TOPIC = process.env.MQTT_TOPIC || "ums/devices/+/data";
 // Initialised from env; overridden by DB SystemSettings.offlineThresholdSecs when available
 let OFFLINE_THRESHOLD_MS = Number(process.env.OFFLINE_THRESHOLD_SECS || "60") * 1000;
 const OFFLINE_CHECK_INTERVAL_MS = 30_000;

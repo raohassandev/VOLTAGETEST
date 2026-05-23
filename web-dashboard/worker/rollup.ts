@@ -24,6 +24,16 @@ interface RollupRow {
   rssiAvg: number | null;
   freqInAvg: number | null;
   freqOutAvg: number | null;
+  pInWAvg: number | null;
+  pInWMax: number | null;
+  pOutWAvg: number | null;
+  pOutWMax: number | null;
+  pfInAvg: number | null;
+  pfOutAvg: number | null;
+  qInVarAvg: number | null;
+  qOutVarAvg: number | null;
+  eInKwhLast: number | null;
+  eOutKwhLast: number | null;
 }
 
 /**
@@ -48,7 +58,12 @@ export async function runRollup(prisma: PrismaClient): Promise<void> {
         AVG("sOutVa")   AS "sOutVaAvg",                                    MAX("sOutVa")   AS "sOutVaMax",
         AVG("rssi")     AS "rssiAvg",
         AVG("freqIn")   AS "freqInAvg",
-        AVG("freqOut")  AS "freqOutAvg"
+        AVG("freqOut")  AS "freqOutAvg",
+        AVG("pInW")     AS "pInWAvg",    MAX("pInW")     AS "pInWMax",
+        AVG("pOutW")    AS "pOutWAvg",   MAX("pOutW")    AS "pOutWMax",
+        AVG("pfIn")     AS "pfInAvg",    AVG("pfOut")    AS "pfOutAvg",
+        AVG("qInVar")   AS "qInVarAvg",  AVG("qOutVar")  AS "qOutVarAvg",
+        MAX("eInKwh")   AS "eInKwhLast", MAX("eOutKwh")  AS "eOutKwhLast"
       FROM "TelemetryRaw"
       WHERE "receivedAt" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '2 hours'
         AND date_trunc('minute', "receivedAt") < date_trunc('minute', NOW() AT TIME ZONE 'UTC')
@@ -83,9 +98,19 @@ export async function runRollup(prisma: PrismaClient): Promise<void> {
           ctOutAvg: row.ctOutAvg, ctOutMax: row.ctOutMax,
           sInVaAvg: row.sInVaAvg,   sInVaMax: row.sInVaMax,
           sOutVaAvg: row.sOutVaAvg, sOutVaMax: row.sOutVaMax,
-          rssiAvg:   row.rssiAvg   ?? null,
-          freqInAvg: row.freqInAvg ?? null,
-          freqOutAvg: row.freqOutAvg ?? null,
+          rssiAvg:     row.rssiAvg     ?? null,
+          freqInAvg:   row.freqInAvg   ?? null,
+          freqOutAvg:  row.freqOutAvg  ?? null,
+          pInWAvg:     row.pInWAvg     ?? null,
+          pInWMax:     row.pInWMax     ?? null,
+          pOutWAvg:    row.pOutWAvg    ?? null,
+          pOutWMax:    row.pOutWMax    ?? null,
+          pfInAvg:     row.pfInAvg     ?? null,
+          pfOutAvg:    row.pfOutAvg    ?? null,
+          qInVarAvg:   row.qInVarAvg   ?? null,
+          qOutVarAvg:  row.qOutVarAvg  ?? null,
+          eInKwhLast:  row.eInKwhLast  ?? null,
+          eOutKwhLast: row.eOutKwhLast ?? null,
         },
         update: {
           sampleCount: Number(row.sampleCount),
@@ -96,9 +121,19 @@ export async function runRollup(prisma: PrismaClient): Promise<void> {
           ctOutAvg: row.ctOutAvg, ctOutMax: row.ctOutMax,
           sInVaAvg: row.sInVaAvg,   sInVaMax: row.sInVaMax,
           sOutVaAvg: row.sOutVaAvg, sOutVaMax: row.sOutVaMax,
-          rssiAvg:   row.rssiAvg   ?? null,
-          freqInAvg: row.freqInAvg ?? null,
-          freqOutAvg: row.freqOutAvg ?? null,
+          rssiAvg:     row.rssiAvg     ?? null,
+          freqInAvg:   row.freqInAvg   ?? null,
+          freqOutAvg:  row.freqOutAvg  ?? null,
+          pInWAvg:     row.pInWAvg     ?? null,
+          pInWMax:     row.pInWMax     ?? null,
+          pOutWAvg:    row.pOutWAvg    ?? null,
+          pOutWMax:    row.pOutWMax    ?? null,
+          pfInAvg:     row.pfInAvg     ?? null,
+          pfOutAvg:    row.pfOutAvg    ?? null,
+          qInVarAvg:   row.qInVarAvg   ?? null,
+          qOutVarAvg:  row.qOutVarAvg  ?? null,
+          eInKwhLast:  row.eInKwhLast  ?? null,
+          eOutKwhLast: row.eOutKwhLast ?? null,
         },
       });
     } catch (err) {

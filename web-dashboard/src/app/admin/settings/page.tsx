@@ -115,10 +115,7 @@ export default function SettingsAdminPage() {
 
         <section className="rounded-lg border border-slate-700 p-4" style={{ background: "var(--surface-2)" }}>
           <p className="text-sm text-slate-500">
-            <strong className="text-slate-400">Measurement limitations:</strong> Active power (W), power factor, and energy (kWh) fields
-            are not computed. The firmware measures apparent power (VA) only via RMS voltage × RMS current.
-            These fields are stored as null and shown as &ldquo;not supported&rdquo; in the UI until
-            waveform-sampling firmware is validated and deployed.
+            <strong className="text-slate-400">Energy analyzer firmware:</strong> Energy analyzer firmware supports real power (W), power factor, energy (kWh), reactive power (VAR), and line frequency when the waveform-sampling firmware is installed and calibrated. Accuracy depends on voltage/current sensor calibration. Phase correction is computed but not yet applied in firmware v1.x — reactive power (VAR) is unsigned.
           </p>
         </section>
 

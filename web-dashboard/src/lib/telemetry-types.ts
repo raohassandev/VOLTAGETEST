@@ -1,6 +1,21 @@
-export type TelemetryKey = "volt_in" | "volt_out" | "volt_dc" | "ct_in" | "ct_out";
+export type TelemetryKey =
+  | "volt_in"
+  | "volt_out"
+  | "volt_dc"
+  | "ct_in"
+  | "ct_out"
+  | "freq_in"
+  | "freq_out"
+  | "p_in_w"
+  | "p_out_w"
+  | "pf_in"
+  | "pf_out"
+  | "q_in_var"
+  | "q_out_var"
+  | "e_in_kwh"
+  | "e_out_kwh";
 
-export type RawTelemetry = Record<TelemetryKey, number> & {
+export type RawTelemetry = Record<"volt_in" | "volt_out" | "volt_dc" | "ct_in" | "ct_out", number> & {
   device_id?: string;
   firmware?: string;
   ip?: string;
@@ -21,6 +36,17 @@ export type RawTelemetry = Record<TelemetryKey, number> & {
    *  - "passthrough"     — no calibration applied (non-DB path)
    */
   volt_dc_calibration_source?: "server_profile" | "server_default" | "passthrough";
+  // Energy analyzer fields (null when firmware does not support or no waveform)
+  freq_in?: number | null;
+  freq_out?: number | null;
+  p_in_w?: number | null;
+  p_out_w?: number | null;
+  pf_in?: number | null;
+  pf_out?: number | null;
+  q_in_var?: number | null;
+  q_out_var?: number | null;
+  e_in_kwh?: number | null;
+  e_out_kwh?: number | null;
 };
 
 export type TelemetryStore = {
@@ -34,6 +60,16 @@ export const telemetryKeys: TelemetryKey[] = [
   "volt_dc",
   "ct_in",
   "ct_out",
+  "freq_in",
+  "freq_out",
+  "p_in_w",
+  "p_out_w",
+  "pf_in",
+  "pf_out",
+  "q_in_var",
+  "q_out_var",
+  "e_in_kwh",
+  "e_out_kwh",
 ];
 
 export const initialTelemetry: RawTelemetry = {
@@ -45,6 +81,16 @@ export const initialTelemetry: RawTelemetry = {
   volt_dc: 0,
   volt_in: 0,
   volt_out: 0,
+  freq_in: null,
+  freq_out: null,
+  p_in_w: null,
+  p_out_w: null,
+  pf_in: null,
+  pf_out: null,
+  q_in_var: null,
+  q_out_var: null,
+  e_in_kwh: null,
+  e_out_kwh: null,
 };
 
 export function normalizeTelemetry(parsed: Partial<RawTelemetry>, topic = ""): RawTelemetry {
@@ -65,10 +111,19 @@ export function normalizeTelemetry(parsed: Partial<RawTelemetry>, topic = ""): R
     volt_dc: Number(parsed.volt_dc ?? 0),
     volt_in: Number(parsed.volt_in ?? 0),
     volt_out: Number(parsed.volt_out ?? 0),
+    freq_in:   parsed.freq_in   !== undefined ? parsed.freq_in   : null,
+    freq_out:  parsed.freq_out  !== undefined ? parsed.freq_out  : null,
+    p_in_w:    parsed.p_in_w    !== undefined ? parsed.p_in_w    : null,
+    p_out_w:   parsed.p_out_w   !== undefined ? parsed.p_out_w   : null,
+    pf_in:     parsed.pf_in     !== undefined ? parsed.pf_in     : null,
+    pf_out:    parsed.pf_out    !== undefined ? parsed.pf_out    : null,
+    q_in_var:  parsed.q_in_var  !== undefined ? parsed.q_in_var  : null,
+    q_out_var: parsed.q_out_var !== undefined ? parsed.q_out_var : null,
+    e_in_kwh:  parsed.e_in_kwh  !== undefined ? parsed.e_in_kwh  : null,
+    e_out_kwh: parsed.e_out_kwh !== undefined ? parsed.e_out_kwh : null,
   };
 }
 
 export function telemetryDeviceId(telemetry: RawTelemetry) {
   return telemetry.device_id || telemetry.ups_id || telemetry.ip || "unassigned-device";
 }
-
