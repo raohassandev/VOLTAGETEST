@@ -3,6 +3,7 @@
 import { Cpu, ExternalLink, Radio, RefreshCw, Search, Wifi, WifiOff, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { checkUnauthorized } from "@/lib/handle-unauthorized";
 
 interface Board {
   deviceId: string;
@@ -65,8 +66,8 @@ export default function BoardsPage() {
   function loadAll() {
     setLoading(true);
     Promise.all([
-      fetch("/api/devices",    { cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/discovered", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/devices",    { cache: "no-store" }).then((r) => { if (checkUnauthorized(r)) throw new Error("401"); return r.json(); }),
+      fetch("/api/discovered", { cache: "no-store" }).then((r) => { if (checkUnauthorized(r)) throw new Error("401"); return r.json(); }),
     ]).then(([devData, discData]) => {
       setBoards((devData as { devices?: Board[] }).devices ?? []);
       setDiscovered((discData as { discovered?: Discovered[] }).discovered ?? []);

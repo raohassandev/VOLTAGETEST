@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { checkUnauthorized } from "@/lib/handle-unauthorized";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -170,6 +171,7 @@ function TrendChart({ deviceId }: { deviceId: string }) {
           `/api/telemetry/history?deviceId=${encodeURIComponent(deviceId)}&limit=120`,
           { cache: "no-store" },
         );
+        if (checkUnauthorized(res)) return;
         if (!res.ok || cancelled) return;
         const data = (await res.json()) as { source: string; history: HistoryPoint[] };
         if (!cancelled) setPoints(data.history ?? []);
@@ -293,6 +295,7 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
       try {
         const res = await fetch(`/api/ups/${upsId}`, { cache: "no-store" });
         if (cancelled) return;
+        if (checkUnauthorized(res)) return;
         if (!res.ok) {
           const j = (await res.json()) as { error?: string };
           if (!cancelled) setError(j.error ?? "Failed to load.");

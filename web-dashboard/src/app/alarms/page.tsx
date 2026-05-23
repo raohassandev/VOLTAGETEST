@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, Clock, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { checkUnauthorized } from "@/lib/handle-unauthorized";
 import type { UserRole } from "@/lib/auth";
 
 function readRole(): UserRole {
@@ -188,6 +189,7 @@ export default function AlarmsPage() {
   const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/alarms?state=${filter}&limit=200`, { cache: "no-store" });
+      if (checkUnauthorized(res)) return;
       if (!res.ok) return;
       const data = (await res.json()) as { alarms: AlarmRecord[] };
       setAlarms(data.alarms);

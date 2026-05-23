@@ -3,6 +3,7 @@
 import { KeyRound, Plus, Shield, Trash2, UserCheck, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { checkUnauthorized } from "@/lib/handle-unauthorized";
 
 interface User {
   id: string;
@@ -47,12 +48,12 @@ export default function UsersPage() {
   function reload() {
     setLoading(true);
     fetch("/api/users", { cache: "no-store" })
-      .then((r) => r.json())
+      .then((r) => { if (checkUnauthorized(r)) throw new Error("401"); return r.json(); })
       .then((d: { users?: User[]; error?: string }) => {
         if (d.error) setError(d.error);
         else setUsers(d.users ?? []);
       })
-      .catch(() => setError("Could not load users."))
+      .catch((e) => { if ((e as Error).message !== "401") setError("Could not load users."); })
       .finally(() => setLoading(false));
   }
 

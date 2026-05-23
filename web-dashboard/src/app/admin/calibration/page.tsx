@@ -3,6 +3,7 @@
 import { FlaskConical, RotateCcw, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { checkUnauthorized } from "@/lib/handle-unauthorized";
 
 interface Device {
   deviceId: string;
@@ -59,9 +60,9 @@ export default function CalibrationPage() {
 
   useEffect(() => {
     fetch("/api/devices", { cache: "no-store" })
-      .then((r) => r.json())
+      .then((r) => { if (checkUnauthorized(r)) throw new Error("401"); return r.json(); })
       .then((d: { devices?: Device[] }) => setDevices(d.devices ?? []))
-      .catch(() => setError("Could not load devices."))
+      .catch((e) => { if ((e as Error).message !== "401") setError("Could not load devices."); })
       .finally(() => setLoading(false));
   }, []);
 

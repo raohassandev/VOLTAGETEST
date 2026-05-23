@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { checkUnauthorized } from "@/lib/handle-unauthorized";
 
 interface SettingsPayload {
   settings: {
@@ -25,7 +26,7 @@ export default function SettingsAdminPage() {
 
   useEffect(() => {
     fetch("/api/settings", { cache: "no-store" })
-      .then((r) => r.json())
+      .then((r) => { if (checkUnauthorized(r)) throw new Error("401"); return r.json(); })
       .then((d: SettingsPayload) => {
         if (d.settings) {
           setRawRetentionDays(d.settings.rawRetentionDays);

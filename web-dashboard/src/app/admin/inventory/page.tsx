@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { checkUnauthorized } from "@/lib/handle-unauthorized";
 import type { UpsInventoryItem } from "@/lib/telemetry";
 import type { UserRole } from "@/lib/auth";
 
@@ -47,7 +48,7 @@ export default function InventoryAdminPage() {
 
   useEffect(() => {
     fetch("/api/inventory", { cache: "no-store" })
-      .then((r) => r.json())
+      .then((r) => { if (checkUnauthorized(r)) throw new Error("401"); return r.json(); })
       .then((d: { inventory?: UpsInventoryItem[] }) => {
         if (Array.isArray(d.inventory)) setInventory(d.inventory);
       })

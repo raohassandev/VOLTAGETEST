@@ -3,6 +3,7 @@
 import { Plus, Trash2, Settings, Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { checkUnauthorized } from "@/lib/handle-unauthorized";
 
 interface AlarmRule {
   id: string;
@@ -92,7 +93,7 @@ export default function AlarmRulesPage() {
 
   useEffect(() => {
     fetch("/api/ups", { cache: "no-store" })
-      .then((r) => r.json())
+      .then((r) => { if (checkUnauthorized(r)) throw new Error("401"); return r.json(); })
       .then((data: { units?: UpsListItem[] }) => setUpsList(data.units ?? []))
       .catch(() => undefined);
   }, []);
@@ -100,9 +101,9 @@ export default function AlarmRulesPage() {
   useEffect(() => {
     let cancelled = false;
     fetch("/api/alarm-rules", { cache: "no-store" })
-      .then((res) => res.json())
+      .then((res) => { if (checkUnauthorized(res)) throw new Error("401"); return res.json(); })
       .then((data: { rules: AlarmRule[] }) => { if (!cancelled) setRules(data.rules); })
-      .catch(() => { if (!cancelled) setError("Could not load rules."); })
+      .catch((e) => { if (!cancelled && (e as Error).message !== "401") setError("Could not load rules."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [refreshTick]);

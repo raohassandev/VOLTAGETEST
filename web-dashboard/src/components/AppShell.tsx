@@ -17,6 +17,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { checkUnauthorized } from "@/lib/handle-unauthorized";
 import type { UserRole } from "@/lib/auth";
 
 export type NavItem =
@@ -240,6 +241,7 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
           fetch("/api/health", { cache: "no-store" }),
         ]);
         if (cancelled) return;
+        if (checkUnauthorized(alarmsRes)) return;
         if (alarmsRes.ok) {
           const d = (await alarmsRes.json()) as { alarms?: unknown[] };
           if (!cancelled) setAlarmCount(d.alarms?.length ?? 0);
