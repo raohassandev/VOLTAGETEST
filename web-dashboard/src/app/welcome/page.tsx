@@ -1,9 +1,9 @@
 "use client";
 
-import { Eye, FlaskConical, KeyRound, ShieldCheck, Wrench, Zap } from "lucide-react";
+import { AlertTriangle, Eye, FlaskConical, KeyRound, ShieldCheck, Wrench, Zap } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
 type Role = "viewer" | "technician" | "admin" | "manufacturer";
 
@@ -66,8 +66,10 @@ const ROLES: RoleCard[] = [
   },
 ];
 
-export default function WelcomePage() {
+function WelcomePageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get("expired") === "1";
   const [selected, setSelected] = useState<Role | null>(null);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -110,6 +112,14 @@ export default function WelcomePage() {
       className="flex min-h-screen flex-col items-center justify-center px-4 py-10"
       style={{ background: "var(--background)" }}
     >
+      {/* Session expired banner */}
+      {sessionExpired && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-lg border border-amber-700 bg-amber-900/80 px-4 py-2.5 text-sm font-semibold text-amber-200 shadow-xl backdrop-blur-sm">
+          <AlertTriangle size={15} className="text-amber-400 shrink-0" />
+          Your session has expired. Please sign in again.
+        </div>
+      )}
+
       {/* Ambient glow */}
       <div
         className="pointer-events-none fixed top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full blur-3xl opacity-10"
@@ -249,5 +259,13 @@ export default function WelcomePage() {
         © {new Date().getFullYear()} Automatrix — UMS v0.2
       </p>
     </main>
+  );
+}
+
+export default function WelcomePage() {
+  return (
+    <Suspense>
+      <WelcomePageInner />
+    </Suspense>
   );
 }

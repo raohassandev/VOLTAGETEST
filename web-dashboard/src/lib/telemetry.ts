@@ -2,6 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+// ── Session expiry helper ─────────────────────────────────────────────────────
+// Shared flag so only one redirect fires regardless of how many polls hit 401.
+let _sessionExpiredHandled = false;
+
+function handleUnauthorized() {
+  if (_sessionExpiredHandled) return;
+  _sessionExpiredHandled = true;
+  // Small delay so any in-flight renders finish before navigation.
+  window.setTimeout(() => {
+    window.location.href = "/welcome?expired=1";
+  }, 200);
+}
+
 import {
   normalizeTelemetry,
   type RawTelemetry,
@@ -106,6 +119,7 @@ export function useTelemetry() {
     async function loadSystemSettings() {
       try {
         const response = await fetch("/api/settings", { cache: "no-store" });
+        if (response.status === 401) { handleUnauthorized(); return; }
         if (!response.ok) return;
         const payload = (await response.json()) as { settings?: Omit<SystemSettings, "offlineThresholdSecs">; offlineThresholdSecs?: number };
         if (!cancelled && payload.settings) {
@@ -131,6 +145,7 @@ export function useTelemetry() {
     async function loadInventory() {
       try {
         const response = await fetch("/api/inventory", { cache: "no-store" });
+        if (response.status === 401) { handleUnauthorized(); return; }
         if (!response.ok) return;
         const payload = (await response.json()) as { inventory?: UpsInventoryItem[] };
         if (!cancelled && Array.isArray(payload.inventory)) {
@@ -153,6 +168,7 @@ export function useTelemetry() {
     async function loadLatestTelemetry() {
       try {
         const response = await fetch("/api/telemetry/latest", { cache: "no-store" });
+        if (response.status === 401) { handleUnauthorized(); return; }
         if (!response.ok) return;
         const payload = (await response.json()) as { latest?: Record<string, RawTelemetry> };
         if (cancelled || !payload.latest) return;
@@ -194,6 +210,7 @@ export function useTelemetry() {
     async function pollHealth() {
       try {
         const res = await fetch("/api/health", { cache: "no-store" });
+        if (res.status === 401) { handleUnauthorized(); return; }
         if (!cancelled) {
           const body = (await res.json()) as { status?: string };
           setApiStatus(body.status === "ok" ? "ok" : "degraded");
@@ -217,6 +234,7 @@ export function useTelemetry() {
     async function pollServerAlarms() {
       try {
         const res = await fetch("/api/alarms?state=active&limit=100", { cache: "no-store" });
+        if (res.status === 401) { handleUnauthorized(); return; }
         if (!res.ok || cancelled) return;
         const data = (await res.json()) as { alarms?: ServerAlarm[] };
         if (!cancelled) setServerAlarms(data.alarms ?? []);
