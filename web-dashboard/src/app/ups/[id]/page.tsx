@@ -626,48 +626,54 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
           {alarmHistory.length === 0 ? (
             <p className="text-sm text-slate-500">No alarm history recorded for this UPS.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-slate-700 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <th className="py-2 pr-3">Metric</th>
-                    <th className="py-2 pr-3">Severity</th>
-                    <th className="py-2 pr-3">State</th>
-                    <th className="py-2 pr-3">Message</th>
-                    <th className="py-2 pr-3">First seen</th>
-                    <th className="py-2">Cleared</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {alarmHistory.slice(0, 50).map((alarm) => (
-                    <tr key={alarm.id} className="border-b border-slate-800 hover:bg-slate-800/40 transition-colors">
-                      <td className="py-2 pr-3 font-mono text-xs font-semibold text-slate-300">{alarm.metric}</td>
-                      <td className="py-2 pr-3">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                          alarm.severity === "critical" ? "bg-red-900/50 text-red-400" : "bg-amber-900/50 text-amber-400"
-                        }`}>
-                          {alarm.severity.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-3">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                          alarm.state === "active" ? "bg-red-900/40 text-red-400" : "bg-emerald-900/40 text-emerald-400"
-                        }`}>
-                          {alarm.state}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-3 text-slate-400">{alarm.message}</td>
-                      <td className="py-2 pr-3 text-xs text-slate-500 whitespace-nowrap">
-                        {new Date(alarm.firstSeenAt).toLocaleString()}
-                      </td>
-                      <td className="py-2 text-xs text-slate-500 whitespace-nowrap">
-                        {alarm.clearedAt ? new Date(alarm.clearedAt).toLocaleString() : "—"}
-                      </td>
+            <>
+              {/* Mobile list */}
+              <div className="divide-y divide-slate-800 -mx-5 sm:hidden">
+                {alarmHistory.slice(0, 50).map((alarm) => (
+                  <div key={alarm.id} className="px-5 py-3 flex flex-col gap-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-xs font-bold text-slate-300">{alarm.metric}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${alarm.severity === "critical" ? "bg-red-900/50 text-red-400" : "bg-amber-900/50 text-amber-400"}`}>{alarm.severity.toUpperCase()}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${alarm.state === "active" ? "bg-red-900/40 text-red-400" : "bg-emerald-900/40 text-emerald-400"}`}>{alarm.state}</span>
+                    </div>
+                    <p className="text-xs text-slate-400">{alarm.message}</p>
+                    <p className="text-[10px] text-slate-600">{new Date(alarm.firstSeenAt).toLocaleString()}{alarm.clearedAt ? ` → ${new Date(alarm.clearedAt).toLocaleString()}` : ""}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full min-w-[640px] border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-700 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <th className="py-2 pr-3">Metric</th>
+                      <th className="py-2 pr-3">Severity</th>
+                      <th className="py-2 pr-3">State</th>
+                      <th className="py-2 pr-3">Message</th>
+                      <th className="py-2 pr-3">First seen</th>
+                      <th className="py-2">Cleared</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {alarmHistory.slice(0, 50).map((alarm) => (
+                      <tr key={alarm.id} className="border-b border-slate-800 hover:bg-slate-800/40 transition-colors">
+                        <td className="py-2 pr-3 font-mono text-xs font-semibold text-slate-300">{alarm.metric}</td>
+                        <td className="py-2 pr-3">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${alarm.severity === "critical" ? "bg-red-900/50 text-red-400" : "bg-amber-900/50 text-amber-400"}`}>{alarm.severity.toUpperCase()}</span>
+                        </td>
+                        <td className="py-2 pr-3">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${alarm.state === "active" ? "bg-red-900/40 text-red-400" : "bg-emerald-900/40 text-emerald-400"}`}>{alarm.state}</span>
+                        </td>
+                        <td className="py-2 pr-3 text-slate-400">{alarm.message}</td>
+                        <td className="py-2 pr-3 text-xs text-slate-500 whitespace-nowrap">{new Date(alarm.firstSeenAt).toLocaleString()}</td>
+                        <td className="py-2 text-xs text-slate-500 whitespace-nowrap">{alarm.clearedAt ? new Date(alarm.clearedAt).toLocaleString() : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </section>
       </div>

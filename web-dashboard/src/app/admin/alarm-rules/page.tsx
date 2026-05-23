@@ -293,57 +293,92 @@ export default function AlarmRulesPage() {
           {rules.length === 0 ? (
             <p className="p-5 text-sm text-slate-500">No alarm rules defined. The alarm engine uses built-in defaults.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-slate-700 text-left text-xs text-slate-500 uppercase tracking-wide">
-                    <th className="px-4 py-3">Metric</th>
-                    <th className="px-4 py-3">Label</th>
-                    <th className="px-4 py-3">Scope</th>
-                    <th className="px-4 py-3">Scope ID</th>
-                    <th className="px-4 py-3">Low warn</th>
-                    <th className="px-4 py-3">Low crit</th>
-                    <th className="px-4 py-3">High warn</th>
-                    <th className="px-4 py-3">High crit</th>
-                    <th className="px-4 py-3">Debounce</th>
-                    <th className="px-4 py-3">Enabled</th>
-                    <th className="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rules.map((rule) => (
-                    <tr key={rule.id} className={`border-b border-slate-800 hover:bg-slate-800/40 transition-colors ${!rule.enabled ? "opacity-40" : ""}`}>
-                      <td className="px-4 py-3 font-semibold text-slate-200">{metricLabel(rule.metric)}</td>
-                      <td className="px-4 py-3 text-slate-400">{rule.label}</td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-full bg-slate-700 border border-slate-600 px-2 py-0.5 text-xs font-semibold text-slate-300">{scopeOf(rule)}</span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 font-mono text-xs">{scopeId(rule)}</td>
-                      <td className="px-4 py-3 text-slate-300">{fmt(rule.lowWarning)}</td>
-                      <td className="px-4 py-3 text-slate-300">{fmt(rule.lowCritical)}</td>
-                      <td className="px-4 py-3 text-slate-300">{fmt(rule.highWarning)}</td>
-                      <td className="px-4 py-3 text-slate-300">{fmt(rule.highCritical)}</td>
-                      <td className="px-4 py-3 text-slate-300">{rule.debounceSeconds}s</td>
-                      <td className="px-4 py-3">
+            <>
+              {/* Mobile card list */}
+              <div className="divide-y divide-slate-800 sm:hidden">
+                {rules.map((rule) => (
+                  <div key={rule.id} className={`p-4 flex flex-col gap-2 ${!rule.enabled ? "opacity-40" : ""}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-bold text-slate-100">{metricLabel(rule.metric)}</p>
+                        <p className="text-xs text-slate-500">{rule.label}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
-                          className={`rounded-full px-2 py-0.5 text-xs font-semibold transition-colors ${rule.enabled ? "bg-emerald-900/40 border border-emerald-800 text-emerald-400 hover:bg-emerald-900/60" : "bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600"}`}
-                          onClick={() => toggleEnabled(rule)}
-                          type="button"
-                        >
-                          {rule.enabled ? "Yes" : "No"}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <button className="text-slate-500 hover:text-slate-300 transition-colors" onClick={() => openEdit(rule)} type="button" title="Edit"><Pencil size={14} /></button>
-                          <button className="text-red-600 hover:text-red-400 transition-colors" onClick={() => deleteRule(rule.id)} type="button" title="Delete"><Trash2 size={15} /></button>
-                        </div>
-                      </td>
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold transition-colors ${rule.enabled ? "bg-emerald-900/40 border border-emerald-800 text-emerald-400" : "bg-slate-700 border border-slate-600 text-slate-400"}`}
+                          onClick={() => toggleEnabled(rule)} type="button"
+                        >{rule.enabled ? "On" : "Off"}</button>
+                        <button className="text-slate-500 hover:text-slate-300 transition-colors" onClick={() => openEdit(rule)} type="button"><Pencil size={13} /></button>
+                        <button className="text-red-600 hover:text-red-400 transition-colors" onClick={() => deleteRule(rule.id)} type="button"><Trash2 size={13} /></button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                      <span className="text-slate-500">Scope</span>
+                      <span className="text-slate-300 font-semibold">{scopeOf(rule)} {scopeId(rule) !== "all" ? `· ${scopeId(rule)}` : ""}</span>
+                      <span className="text-slate-500">Low warn / crit</span>
+                      <span className="text-slate-300">{fmt(rule.lowWarning)} / {fmt(rule.lowCritical)}</span>
+                      <span className="text-slate-500">High warn / crit</span>
+                      <span className="text-slate-300">{fmt(rule.highWarning)} / {fmt(rule.highCritical)}</span>
+                      <span className="text-slate-500">Debounce</span>
+                      <span className="text-slate-300">{rule.debounceSeconds}s</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full min-w-[800px] border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-700 text-left text-xs text-slate-500 uppercase tracking-wide">
+                      <th className="px-4 py-3">Metric</th>
+                      <th className="px-4 py-3">Label</th>
+                      <th className="px-4 py-3">Scope</th>
+                      <th className="px-4 py-3">Scope ID</th>
+                      <th className="px-4 py-3">Low warn</th>
+                      <th className="px-4 py-3">Low crit</th>
+                      <th className="px-4 py-3">High warn</th>
+                      <th className="px-4 py-3">High crit</th>
+                      <th className="px-4 py-3">Debounce</th>
+                      <th className="px-4 py-3">Enabled</th>
+                      <th className="px-4 py-3"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {rules.map((rule) => (
+                      <tr key={rule.id} className={`border-b border-slate-800 hover:bg-slate-800/40 transition-colors ${!rule.enabled ? "opacity-40" : ""}`}>
+                        <td className="px-4 py-3 font-semibold text-slate-200">{metricLabel(rule.metric)}</td>
+                        <td className="px-4 py-3 text-slate-400">{rule.label}</td>
+                        <td className="px-4 py-3">
+                          <span className="rounded-full bg-slate-700 border border-slate-600 px-2 py-0.5 text-xs font-semibold text-slate-300">{scopeOf(rule)}</span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 font-mono text-xs">{scopeId(rule)}</td>
+                        <td className="px-4 py-3 text-slate-300">{fmt(rule.lowWarning)}</td>
+                        <td className="px-4 py-3 text-slate-300">{fmt(rule.lowCritical)}</td>
+                        <td className="px-4 py-3 text-slate-300">{fmt(rule.highWarning)}</td>
+                        <td className="px-4 py-3 text-slate-300">{fmt(rule.highCritical)}</td>
+                        <td className="px-4 py-3 text-slate-300">{rule.debounceSeconds}s</td>
+                        <td className="px-4 py-3">
+                          <button
+                            className={`rounded-full px-2 py-0.5 text-xs font-semibold transition-colors ${rule.enabled ? "bg-emerald-900/40 border border-emerald-800 text-emerald-400 hover:bg-emerald-900/60" : "bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600"}`}
+                            onClick={() => toggleEnabled(rule)}
+                            type="button"
+                          >
+                            {rule.enabled ? "Yes" : "No"}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <button className="text-slate-500 hover:text-slate-300 transition-colors" onClick={() => openEdit(rule)} type="button" title="Edit"><Pencil size={14} /></button>
+                            <button className="text-red-600 hover:text-red-400 transition-colors" onClick={() => deleteRule(rule.id)} type="button" title="Delete"><Trash2 size={15} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </section>
 

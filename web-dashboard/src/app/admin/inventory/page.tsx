@@ -178,7 +178,42 @@ export default function InventoryAdminPage() {
           <div className="px-5 py-4 border-b border-slate-700">
             <h2 className="text-base font-semibold text-white">Registered UPS units ({inventory.length})</h2>
           </div>
-          <div className="overflow-x-auto">
+
+          {/* Mobile card list */}
+          <div className="divide-y divide-slate-800 sm:hidden">
+            {inventory.length === 0 ? (
+              <p className="p-4 text-sm text-slate-500">No UPS units registered yet.</p>
+            ) : inventory.map((item) => (
+              <div key={item.id} className="p-4 flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-2">
+                  <Link href={`/ups/${item.upsId}`} className="text-sm font-bold text-cyan-400 hover:text-cyan-300 hover:underline">
+                    {item.upsId}
+                  </Link>
+                  {canEdit && (
+                    <div className="flex gap-2 shrink-0">
+                      <button className="rounded border border-slate-600 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-700 transition-colors" onClick={() => setForm({ ...item })} type="button">Edit</button>
+                      <button className="inline-flex items-center rounded border border-red-800 px-2 py-0.5 text-red-400 hover:bg-red-900/30 transition-colors" onClick={() => remove(item.upsId)} type="button"><Trash2 size={12} /></button>
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <span className="text-slate-500">Device ID</span>
+                  <span className="font-mono text-slate-300">{item.deviceId || "—"}</span>
+                  <span className="text-slate-500">Serial</span>
+                  <span className="text-slate-300">{item.serial || "—"}</span>
+                  <span className="text-slate-500">Location</span>
+                  <span className="text-slate-300">{[item.floor, item.location].filter(Boolean).join(" / ") || "—"}</span>
+                  <span className="text-slate-500">Capacity</span>
+                  <span className="text-slate-300">{item.capacityVa.toLocaleString()} VA</span>
+                  <span className="text-slate-500">Battery V</span>
+                  <span className="text-slate-300">{item.batteryNominalV} V</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full min-w-[760px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-slate-700 text-left text-xs text-slate-500 uppercase tracking-wide">

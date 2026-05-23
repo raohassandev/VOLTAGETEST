@@ -178,21 +178,19 @@ export default function UsersPage() {
           ) : users.length === 0 ? (
             <p className="p-5 text-sm text-slate-500">No DB users yet. Login uses env-var credentials.</p>
           ) : (
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-slate-700 text-left text-xs text-slate-500 uppercase tracking-wide">
-                  <th className="px-4 py-3">Username</th>
-                  <th className="px-4 py-3">Role</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Created</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Mobile card list */}
+              <div className="divide-y divide-slate-800 sm:hidden">
                 {users.map((u) => (
-                  <tr key={u.id} className={`border-b border-slate-800 hover:bg-slate-800/40 transition-colors ${!u.active ? "opacity-40" : ""}`}>
-                    <td className="px-4 py-3 font-semibold text-slate-200">{u.username}</td>
-                    <td className="px-4 py-3">
+                  <div key={u.id} className={`p-4 flex flex-col gap-2 ${!u.active ? "opacity-50" : ""}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-bold text-slate-100">{u.username}</p>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => { setPwdModal({ id: u.id, username: u.username }); setNewPwd(""); setPwdError(""); }} className="text-slate-500 hover:text-slate-300 transition-colors" type="button" title="Change password"><KeyRound size={14} /></button>
+                        <button onClick={() => deleteUser(u)} className="text-red-700 hover:text-red-400 transition-colors" type="button" title="Delete"><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
                       <select
                         className={`rounded-full px-2 py-0.5 text-xs font-bold border-0 outline-none cursor-pointer ${ROLE_BADGES[u.role] ?? "bg-slate-700 text-slate-300"}`}
                         style={{ background: "transparent" }}
@@ -201,8 +199,6 @@ export default function UsersPage() {
                       >
                         {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                       </select>
-                    </td>
-                    <td className="px-4 py-3">
                       <button
                         onClick={() => toggleActive(u)}
                         className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold transition-colors ${u.active ? "bg-emerald-900/40 border border-emerald-800 text-emerald-400" : "bg-slate-700 border border-slate-600 text-slate-400"}`}
@@ -211,22 +207,63 @@ export default function UsersPage() {
                         <UserCheck size={10} />
                         {u.active ? "Active" : "Inactive"}
                       </button>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-500">{new Date(u.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => { setPwdModal({ id: u.id, username: u.username }); setNewPwd(""); setPwdError(""); }} className="text-slate-600 hover:text-slate-300 transition-colors" type="button" title="Change password">
-                          <KeyRound size={14} />
-                        </button>
-                        <button onClick={() => deleteUser(u)} className="text-red-700 hover:text-red-400 transition-colors" type="button" title="Delete">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                      <span className="text-xs text-slate-600 ml-auto">{new Date(u.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop table */}
+              <table className="hidden sm:table w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-slate-700 text-left text-xs text-slate-500 uppercase tracking-wide">
+                    <th className="px-4 py-3">Username</th>
+                    <th className="px-4 py-3">Role</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Created</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id} className={`border-b border-slate-800 hover:bg-slate-800/40 transition-colors ${!u.active ? "opacity-40" : ""}`}>
+                      <td className="px-4 py-3 font-semibold text-slate-200">{u.username}</td>
+                      <td className="px-4 py-3">
+                        <select
+                          className={`rounded-full px-2 py-0.5 text-xs font-bold border-0 outline-none cursor-pointer ${ROLE_BADGES[u.role] ?? "bg-slate-700 text-slate-300"}`}
+                          style={{ background: "transparent" }}
+                          value={u.role}
+                          onChange={(e) => changeRole(u, e.target.value)}
+                        >
+                          {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => toggleActive(u)}
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold transition-colors ${u.active ? "bg-emerald-900/40 border border-emerald-800 text-emerald-400" : "bg-slate-700 border border-slate-600 text-slate-400"}`}
+                          type="button"
+                        >
+                          <UserCheck size={10} />
+                          {u.active ? "Active" : "Inactive"}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-500">{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => { setPwdModal({ id: u.id, username: u.username }); setNewPwd(""); setPwdError(""); }} className="text-slate-600 hover:text-slate-300 transition-colors" type="button" title="Change password">
+                            <KeyRound size={14} />
+                          </button>
+                          <button onClick={() => deleteUser(u)} className="text-red-700 hover:text-red-400 transition-colors" type="button" title="Delete">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </section>
 

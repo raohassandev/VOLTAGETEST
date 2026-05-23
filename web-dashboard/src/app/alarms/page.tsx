@@ -219,7 +219,7 @@ export default function AlarmsPage() {
 
   return (
     <AppShell activeNav="alarms">
-      <div className="flex flex-col gap-5 max-w-4xl iot-page">
+      <div className="flex flex-col gap-4 sm:gap-5 max-w-4xl iot-page">
 
         {/* Header + filter */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -227,11 +227,11 @@ export default function AlarmsPage() {
             <h1 className="text-2xl font-bold text-white">Alarm Management</h1>
             <p className="text-sm text-slate-400">Monitor and acknowledge UPS alarm conditions.</p>
           </div>
-          <nav className="flex gap-1.5">
+          <nav className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide shrink-0">
             {(["active", "cleared", "all"] as FilterState[]).map((s) => (
               <button
                 key={s}
-                className={`rounded-md border px-3 py-1.5 text-sm font-semibold capitalize transition-colors ${
+                className={`rounded-md border px-3 py-1.5 text-sm font-semibold capitalize transition-colors whitespace-nowrap ${
                   filter === s
                     ? "border-cyan-700 bg-cyan-900/40 text-cyan-300"
                     : "border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
@@ -246,36 +246,36 @@ export default function AlarmsPage() {
         </div>
 
         {/* Summary counters */}
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <div
-            className="rounded-lg border border-red-900/60 p-4"
+            className="rounded-lg border border-red-900/60 p-3 sm:p-4"
             style={{ background: "var(--surface-1)", boxShadow: critical.length ? "0 0 16px rgba(239,68,68,0.1)" : undefined }}
           >
-            <div className="mb-1 flex items-center gap-2">
-              <AlertTriangle size={15} className={critical.length ? "text-red-400 iot-blink" : "text-slate-600"} />
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Critical</p>
+            <div className="mb-1 flex items-center gap-1.5">
+              <AlertTriangle size={13} className={critical.length ? "text-red-400 iot-blink" : "text-slate-600"} />
+              <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide">Critical</p>
             </div>
-            <p className={`text-3xl font-bold ${critical.length ? "text-red-400" : "text-slate-500"}`}>{critical.length}</p>
+            <p className={`text-2xl sm:text-3xl font-bold ${critical.length ? "text-red-400" : "text-slate-500"}`}>{critical.length}</p>
           </div>
           <div
-            className="rounded-lg border border-amber-900/60 p-4"
+            className="rounded-lg border border-amber-900/60 p-3 sm:p-4"
             style={{ background: "var(--surface-1)" }}
           >
-            <div className="mb-1 flex items-center gap-2">
-              <AlertTriangle size={15} className={warning.length ? "text-amber-400" : "text-slate-600"} />
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warning</p>
+            <div className="mb-1 flex items-center gap-1.5">
+              <AlertTriangle size={13} className={warning.length ? "text-amber-400" : "text-slate-600"} />
+              <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide">Warning</p>
             </div>
-            <p className={`text-3xl font-bold ${warning.length ? "text-amber-400" : "text-slate-500"}`}>{warning.length}</p>
+            <p className={`text-2xl sm:text-3xl font-bold ${warning.length ? "text-amber-400" : "text-slate-500"}`}>{warning.length}</p>
           </div>
           <div
-            className="rounded-lg border border-slate-700 p-4"
+            className="rounded-lg border border-slate-700 p-3 sm:p-4"
             style={{ background: "var(--surface-1)" }}
           >
-            <div className="mb-1 flex items-center gap-2">
-              <Clock size={15} className="text-slate-500" />
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total shown</p>
+            <div className="mb-1 flex items-center gap-1.5">
+              <Clock size={13} className="text-slate-500" />
+              <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide">Total</p>
             </div>
-            <p className="text-3xl font-bold text-slate-300">{alarms.length}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-300">{alarms.length}</p>
           </div>
         </div>
 
