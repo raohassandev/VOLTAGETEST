@@ -1,6 +1,6 @@
 "use client";
 
-import { Cpu, ExternalLink, Radio, RefreshCw, Search, Trash2, Wifi, WifiOff, Zap } from "lucide-react";
+import { Cpu, ExternalLink, Radio, RefreshCw, Search, Wifi, WifiOff, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 
@@ -59,7 +59,6 @@ export default function BoardsPage() {
   const [search, setSearch]           = useState("");
   const [loading, setLoading]         = useState(true);
   const [scanning, setScanning]       = useState(false);
-  const [deletingId, setDeletingId]   = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const esRef = useRef<EventSource | null>(null);
 
@@ -80,17 +79,6 @@ export default function BoardsPage() {
     setScanning(true);
     await fetch("/api/discovered/scan", { method: "POST" });
     setTimeout(() => { setScanning(false); loadAll(); }, 8_000);
-  }
-
-  async function deleteDevice(deviceId: string) {
-    if (!confirm(`Remove device "${deviceId}"?\n\nThis will hide it from boards and telemetry views. It will reappear if it sends new MQTT messages.`)) return;
-    setDeletingId(deviceId);
-    try {
-      await fetch(`/api/devices/${encodeURIComponent(deviceId)}`, { method: "DELETE" });
-      setBoards((prev) => prev.filter((b) => b.deviceId !== deviceId));
-    } finally {
-      setDeletingId(null);
-    }
   }
 
   useEffect(() => {
@@ -252,14 +240,6 @@ export default function BoardsPage() {
                           <span className="rounded-full bg-slate-700 border border-slate-600 px-2 py-0.5 font-semibold text-slate-300">v{b.firmware}</span>
                         )}
                         <span className="text-slate-600">{timeAgo(b.lastSeenAt)}</span>
-                        <button
-                          className="ml-auto inline-flex items-center gap-1 rounded border border-red-800 px-2 py-1 text-xs font-semibold text-red-400 hover:bg-red-900/30 transition-colors disabled:opacity-40"
-                          onClick={() => deleteDevice(b.deviceId)}
-                          disabled={deletingId === b.deviceId}
-                          type="button"
-                        >
-                          <Trash2 size={11} /> Remove
-                        </button>
                       </div>
                     </div>
                   ))}
@@ -322,15 +302,6 @@ export default function BoardsPage() {
                                   className="rounded bg-cyan-900/50 border border-cyan-800 px-2 py-1 text-xs font-semibold text-cyan-300 hover:bg-cyan-900/70">OTA</a>
                               </>}
                               {b.online && <CommandBtn deviceId={b.deviceId} />}
-                              <button
-                                className="inline-flex items-center rounded border border-red-800 p-1 text-red-400 hover:bg-red-900/30 transition-colors disabled:opacity-40 ml-auto"
-                                onClick={() => deleteDevice(b.deviceId)}
-                                disabled={deletingId === b.deviceId}
-                                type="button"
-                                title="Remove device"
-                              >
-                                <Trash2 size={13} />
-                              </button>
                             </div>
                           </td>
                         </tr>
