@@ -5,6 +5,10 @@ RUN npm ci
 
 FROM node:22-alpine AS runner
 WORKDIR /app
+
+# Prisma schema engine + tsx require OpenSSL on Alpine
+RUN apk add --no-cache openssl
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY prisma ./prisma
 COPY worker ./worker
