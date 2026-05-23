@@ -40,7 +40,7 @@ function alarmTone(alarms: ServerAlarm[]) {
   return "normal";
 }
 
-// ── Summary row ───────────────────────────────────────────────────────────────
+// ── Summary stats row ─────────────────────────────────────────────────────────
 
 function SummaryRow({
   devices,
@@ -54,11 +54,11 @@ function SummaryRow({
   offlineThresholdMs: number;
 }) {
   const onlineDevices = devices.filter((d) => nowMs - d.lastSeenMs < offlineThresholdMs);
-  const online = onlineDevices.length;
-  const offline = devices.length - online;
+  const online   = onlineDevices.length;
+  const offline  = devices.length - online;
   const critCount = serverAlarms.filter((a) => a.severity === "critical").length;
   const warnCount = serverAlarms.filter((a) => a.severity === "warning").length;
-  const totalVa = onlineDevices.reduce((s, d) => s + Number(d.telemetry.s_out_va ?? 0), 0);
+  const totalVa   = onlineDevices.reduce((s, d) => s + Number(d.telemetry.s_out_va ?? 0), 0);
 
   const stats = [
     {
@@ -124,44 +124,34 @@ function SummaryRow({
   ];
 
   return (
-    <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    // 3 cols on mobile → 3 on sm → 6 on lg
+    <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-6">
       {stats.map((s) => {
         const Icon = s.icon;
         const inner = (
           <>
-            <div className={`mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg ${s.iconBg} border ${s.border}`}>
-              <Icon size={15} className={s.iconColor} />
+            <div className={`mb-1.5 sm:mb-2 inline-flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg ${s.iconBg} border ${s.border}`}>
+              <Icon size={14} className={s.iconColor} />
             </div>
-            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+            <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide leading-tight" style={{ color: "var(--text-muted)" }}>
               {s.label}
             </p>
-            <p className={`mt-0.5 text-xl font-bold ${s.valueColor}`}>{s.value}</p>
+            <p className={`mt-0.5 text-lg sm:text-xl font-bold leading-tight ${s.valueColor}`}>{s.value}</p>
           </>
         );
+        const cls = `rounded-xl border p-3 sm:p-4 ${s.border}`;
+        const style = { background: "var(--surface-1)" };
         return s.href ? (
-          <Link
-            key={s.label}
-            href={s.href}
-            className={`iot-card rounded-xl border p-4 ${s.border}`}
-            style={{ background: "var(--surface-1)" }}
-          >
-            {inner}
-          </Link>
+          <Link key={s.label} href={s.href} className={`iot-card ${cls}`} style={style}>{inner}</Link>
         ) : (
-          <div
-            key={s.label}
-            className={`rounded-xl border p-4 ${s.border}`}
-            style={{ background: "var(--surface-1)" }}
-          >
-            {inner}
-          </div>
+          <div key={s.label} className={cls} style={style}>{inner}</div>
         );
       })}
     </div>
   );
 }
 
-// ── UPS card ──────────────────────────────────────────────────────────────────
+// ── UPS Card ──────────────────────────────────────────────────────────────────
 
 function UpsCard({
   device,
@@ -174,38 +164,36 @@ function UpsCard({
   deviceAlarms: ServerAlarm[];
   offlineThresholdMs: number;
 }) {
-  const online = nowMs - device.lastSeenMs < offlineThresholdMs;
-  const tone = alarmTone(deviceAlarms);
-  const upsId = device.inventory?.upsId || device.telemetry.ups_id || device.id;
+  const online   = nowMs - device.lastSeenMs < offlineThresholdMs;
+  const tone     = alarmTone(deviceAlarms);
+  const upsId    = device.inventory?.upsId || device.telemetry.ups_id || device.id;
   const location = [device.inventory?.floor, device.inventory?.location].filter(Boolean).join(" / ") || null;
-  const boardIp = device.telemetry.ip || null;
+  const boardIp  = device.telemetry.ip || null;
 
   const capacityVa = device.inventory?.capacityVa ?? 0;
-  const loadPct = capacityVa > 0
+  const loadPct    = capacityVa > 0
     ? (Number(device.telemetry.s_out_va ?? 0) / capacityVa) * 100
     : null;
-
   const voltDcDisplay = device.telemetry.volt_dc != null
     ? formatNumber(Number(device.telemetry.volt_dc ?? 0))
     : "--";
 
-  // Border + glow based on state
   const borderClass =
-    !online ? "border-slate-700" :
-    tone === "critical" ? "border-red-700" :
-    tone === "warning" ? "border-amber-700" :
+    !online         ? "border-slate-700" :
+    tone === "critical" ? "border-red-700"   :
+    tone === "warning"  ? "border-amber-700" :
     "border-slate-700";
 
   const glowStyle =
-    !online ? {} :
+    !online             ? {} :
     tone === "critical" ? { boxShadow: "0 0 0 1px rgba(239,68,68,0.3), 0 4px 20px rgba(239,68,68,0.12)" } :
-    tone === "warning"  ? { boxShadow: "0 0 0 1px rgba(245,158,11,0.3), 0 4px 20px rgba(245,158,11,0.1)" } :
+    tone === "warning"  ? { boxShadow: "0 0 0 1px rgba(245,158,11,0.3), 0 4px 20px rgba(245,158,11,0.1)"  } :
     { boxShadow: "0 0 0 1px rgba(6,182,212,0.1), 0 2px 12px rgba(0,0,0,0.3)" };
 
   const headerBg =
-    !online ? "bg-slate-800/40" :
-    tone === "critical" ? "bg-red-900/20" :
-    tone === "warning" ? "bg-amber-900/15" :
+    !online             ? "bg-slate-800/40"  :
+    tone === "critical" ? "bg-red-900/20"    :
+    tone === "warning"  ? "bg-amber-900/15"  :
     "bg-slate-800/30";
 
   return (
@@ -214,84 +202,86 @@ function UpsCard({
       style={{ background: "var(--surface-1)", ...glowStyle }}
     >
       {/* Card header */}
-      <div className={`flex items-start justify-between gap-2 px-4 pt-4 pb-3 ${headerBg}`}>
+      <div className={`flex items-start justify-between gap-2 px-3 pt-3 pb-2.5 sm:px-4 sm:pt-4 sm:pb-3 ${headerBg}`}>
         <div className="min-w-0">
-          <p className="truncate font-bold text-slate-100 leading-tight tracking-tight">{upsId}</p>
+          <p className="truncate font-bold text-slate-100 leading-tight tracking-tight text-sm sm:text-base">{upsId}</p>
           {location && (
             <p className="mt-0.5 truncate text-xs" style={{ color: "var(--text-muted)" }}>{location}</p>
           )}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           {online ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-700 bg-emerald-900/40 px-2 py-0.5 text-xs font-bold text-emerald-400">
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-700 bg-emerald-900/40 px-1.5 sm:px-2 py-0.5 text-xs font-bold text-emerald-400">
               <span className="status-dot online iot-pulse" style={{ width: "5px", height: "5px" }} />
-              Online
+              <span className="hidden xs:inline">Online</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs font-bold text-slate-400">
-              <WifiOff size={9} /> Offline
+            <span className="inline-flex items-center gap-1 rounded-full border border-slate-600 bg-slate-800 px-1.5 sm:px-2 py-0.5 text-xs font-bold text-slate-400">
+              <WifiOff size={9} />
+              <span className="hidden xs:inline">Offline</span>
             </span>
           )}
           {tone === "critical" && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-red-700 bg-red-900/40 px-2 py-0.5 text-xs font-bold text-red-400">
-              <AlertTriangle size={9} className="iot-blink" /> CRITICAL
+            <span className="inline-flex items-center gap-0.5 rounded-full border border-red-700 bg-red-900/40 px-1.5 sm:px-2 py-0.5 text-xs font-bold text-red-400">
+              <AlertTriangle size={9} className="iot-blink" /> CRIT
             </span>
           )}
           {tone === "warning" && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-700 bg-amber-900/30 px-2 py-0.5 text-xs font-bold text-amber-400">
-              <AlertTriangle size={9} /> WARNING
+            <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-700 bg-amber-900/30 px-1.5 sm:px-2 py-0.5 text-xs font-bold text-amber-400">
+              <AlertTriangle size={9} /> WARN
             </span>
           )}
         </div>
       </div>
 
-      {/* Metrics grid */}
+      {/* Primary metrics */}
       <div
         className={`grid grid-cols-4 text-center border-t ${!online ? "opacity-40" : ""}`}
         style={{ borderColor: "var(--border-subtle)" }}
       >
         {[
-          { label: "In V",   value: formatNumber(Number(device.telemetry.volt_in ?? 0)) },
-          { label: "Out V",  value: formatNumber(Number(device.telemetry.volt_out ?? 0)) },
-          { label: "Bat V",  value: voltDcDisplay },
-          { label: "Load",   value: loadPct !== null ? `${formatNumber(loadPct)}%` : "--" },
+          { label: "In V",  value: formatNumber(Number(device.telemetry.volt_in  ?? 0)) },
+          { label: "Out V", value: formatNumber(Number(device.telemetry.volt_out ?? 0)) },
+          { label: "Bat V", value: voltDcDisplay },
+          { label: "Load",  value: loadPct !== null ? `${formatNumber(loadPct)}%` : "--" },
         ].map(({ label, value }, i) => (
           <div
             key={label}
-            className={`py-2.5 ${i > 0 ? "border-l" : ""}`}
+            className={`py-2 sm:py-2.5 ${i > 0 ? "border-l" : ""}`}
             style={{ borderColor: "var(--border-subtle)" }}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
-            <p className="text-sm font-bold text-slate-100">{value}</p>
+            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
+            <p className="text-xs sm:text-sm font-bold text-slate-100">{value}</p>
           </div>
         ))}
       </div>
 
+      {/* Secondary metrics */}
       <div
         className={`grid grid-cols-4 text-center border-t ${!online ? "opacity-40" : ""}`}
         style={{ borderColor: "var(--border-subtle)" }}
       >
         {[
-          { label: "Out A",  value: formatNumber(Number(device.telemetry.ct_out ?? 0)) },
+          { label: "Out A",  value: formatNumber(Number(device.telemetry.ct_out  ?? 0)) },
           { label: "Out VA", value: formatNumber(Number(device.telemetry.s_out_va ?? 0)) },
           { label: "RSSI",   value: device.telemetry.rssi ? `${device.telemetry.rssi}` : "--" },
           { label: "In A",   value: formatNumber(Number(device.telemetry.ct_in ?? 0)) },
         ].map(({ label, value }, i) => (
           <div
             key={label}
-            className={`py-2 ${i > 0 ? "border-l" : ""}`}
+            className={`py-1.5 sm:py-2 ${i > 0 ? "border-l" : ""}`}
             style={{ borderColor: "var(--border-subtle)" }}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
+            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
             <p className="text-xs font-semibold text-slate-300">{value}</p>
           </div>
         ))}
       </div>
 
-      {/* Board IP row */}
-      <div className="border-t px-4 py-2" style={{ borderColor: "var(--border-subtle)" }}>
+      {/* Board IP */}
+      <div className="border-t px-3 sm:px-4 py-2" style={{ borderColor: "var(--border-subtle)" }}>
         {boardIp ? (
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <span className="font-mono text-xs text-slate-400">{boardIp}</span>
             <div className="flex gap-1">
               {[
@@ -319,15 +309,15 @@ function UpsCard({
 
       {/* Footer */}
       <div
-        className="mt-auto flex items-center justify-between border-t px-4 py-2.5"
+        className="mt-auto flex items-center justify-between gap-2 border-t px-3 sm:px-4 py-2.5"
         style={{ borderColor: "var(--border-subtle)", background: "var(--surface-2)" }}
       >
-        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-          {online ? device.lastMessageAt : `Offline · ${formatAgo(nowMs - device.lastSeenMs)}`}
+        <span className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+          {online ? device.lastMessageAt : `${formatAgo(nowMs - device.lastSeenMs)}`}
         </span>
         <Link
           href={`/ups/${upsId}`}
-          className="inline-flex items-center gap-1 rounded-lg border border-cyan-800 bg-cyan-900/30 px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-900/50 transition-colors"
+          className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-cyan-800 bg-cyan-900/30 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-900/50 transition-colors"
         >
           Details <ArrowRight size={11} />
         </Link>
@@ -336,7 +326,7 @@ function UpsCard({
   );
 }
 
-// ── Compact table ─────────────────────────────────────────────────────────────
+// ── Compact list view ─────────────────────────────────────────────────────────
 
 function CompactTable({
   devices,
@@ -351,84 +341,71 @@ function CompactTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[820px] border-collapse text-sm">
+      <table className="w-full min-w-[720px] border-collapse text-sm">
         <thead>
           <tr
             className="border-b text-left text-xs font-semibold uppercase tracking-wide"
             style={{ borderColor: "var(--border-default)", color: "var(--text-muted)" }}
           >
-            {["UPS", "Location", "In V", "Out V", "Bat V", "Out A", "Out VA", "Load %", "RSSI", "Board IP", "Status", "Last seen"].map((h) => (
-              <th key={h} className="py-2.5 pr-3 whitespace-nowrap">{h}</th>
+            {["UPS", "Location", "In V", "Out V", "Bat V", "Out VA", "Load %", "RSSI", "Status", "Last seen"].map((h) => (
+              <th key={h} className="py-2.5 pr-3 whitespace-nowrap first:pl-4">{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {devices.length === 0 ? (
             <tr>
-              <td className="py-5 text-xs" style={{ color: "var(--text-muted)" }} colSpan={12}>
+              <td className="py-6 pl-4 text-xs" style={{ color: "var(--text-muted)" }} colSpan={10}>
                 No UPS devices found.
               </td>
             </tr>
           ) : (
             devices.map((device) => {
-              const alarms = alarmsByDevice.get(device.id) ?? [];
-              const online = nowMs - device.lastSeenMs < offlineThresholdMs;
-              const tone = alarmTone(alarms);
-              const upsId = device.inventory?.upsId || device.telemetry.ups_id || device.id;
+              const alarms    = alarmsByDevice.get(device.id) ?? [];
+              const online    = nowMs - device.lastSeenMs < offlineThresholdMs;
+              const tone      = alarmTone(alarms);
+              const upsId     = device.inventory?.upsId || device.telemetry.ups_id || device.id;
               const capacityVa = device.inventory?.capacityVa ?? 0;
-              const loadPct = capacityVa > 0 ? (Number(device.telemetry.s_out_va ?? 0) / capacityVa) * 100 : null;
-              const boardIp = device.telemetry.ip || "";
+              const loadPct   = capacityVa > 0 ? (Number(device.telemetry.s_out_va ?? 0) / capacityVa) * 100 : null;
               const voltDcDisplay = device.telemetry.volt_dc != null ? formatNumber(Number(device.telemetry.volt_dc ?? 0)) : "--";
 
               return (
                 <tr
                   key={device.id}
-                  className={`border-b transition-colors ${!online ? "opacity-50" : ""}`}
+                  className={`border-b transition-colors hover:bg-slate-800/40 ${!online ? "opacity-50" : ""}`}
                   style={{ borderColor: "var(--border-subtle)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-2)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                 >
-                  <td className="py-2.5 pr-3 font-semibold">
-                    <Link href={`/ups/${upsId}`} className="text-cyan-400 hover:text-cyan-300 hover:underline">
-                      {upsId}
-                    </Link>
+                  <td className="py-2.5 pr-3 pl-4 font-semibold whitespace-nowrap">
+                    <Link href={`/ups/${upsId}`} className="text-cyan-400 hover:text-cyan-300 hover:underline">{upsId}</Link>
                   </td>
-                  <td className="py-2.5 pr-3 text-xs" style={{ color: "var(--text-muted)" }}>
+                  <td className="py-2.5 pr-3 text-xs max-w-[120px] truncate" style={{ color: "var(--text-muted)" }}>
                     {[device.inventory?.floor, device.inventory?.location].filter(Boolean).join(" / ") || "--"}
                   </td>
-                  <td className="py-2.5 pr-3 text-slate-300">{formatNumber(Number(device.telemetry.volt_in ?? 0))}</td>
+                  <td className="py-2.5 pr-3 text-slate-300">{formatNumber(Number(device.telemetry.volt_in  ?? 0))}</td>
                   <td className="py-2.5 pr-3 text-slate-300">{formatNumber(Number(device.telemetry.volt_out ?? 0))}</td>
                   <td className="py-2.5 pr-3 text-slate-300">{voltDcDisplay}</td>
-                  <td className="py-2.5 pr-3 text-slate-300">{formatNumber(Number(device.telemetry.ct_out ?? 0))}</td>
                   <td className="py-2.5 pr-3 text-slate-300">{formatNumber(Number(device.telemetry.s_out_va ?? 0))}</td>
                   <td className="py-2.5 pr-3">
                     {loadPct !== null ? (
                       <span className={loadPct > 95 ? "font-bold text-red-400" : loadPct > 80 ? "font-semibold text-amber-400" : "text-slate-300"}>
                         {formatNumber(loadPct)}%
                       </span>
-                    ) : "--"}
+                    ) : <span className="text-slate-600">--</span>}
                   </td>
                   <td className="py-2.5 pr-3 text-xs text-slate-400">
                     {device.telemetry.rssi ? `${device.telemetry.rssi}` : "--"}
                   </td>
                   <td className="py-2.5 pr-3">
-                    {boardIp ? (
-                      <a href={`http://${boardIp}/`} target="_blank" rel="noreferrer" className="font-mono text-xs text-cyan-400 hover:underline">
-                        {boardIp}
-                      </a>
-                    ) : <span className="text-slate-600 text-xs">—</span>}
-                  </td>
-                  <td className="py-2.5 pr-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold border ${
-                      !online ? "bg-slate-800 border-slate-700 text-slate-500" :
-                      tone === "critical" ? "bg-red-900/40 border-red-700 text-red-400" :
-                      tone === "warning"  ? "bg-amber-900/30 border-amber-700 text-amber-400" :
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold border whitespace-nowrap ${
+                      !online             ? "bg-slate-800 border-slate-700 text-slate-500"         :
+                      tone === "critical" ? "bg-red-900/40 border-red-700 text-red-400"            :
+                      tone === "warning"  ? "bg-amber-900/30 border-amber-700 text-amber-400"      :
                       "bg-emerald-900/30 border-emerald-700 text-emerald-400"
                     }`}>
                       {!online ? "offline" : tone === "critical" ? "critical" : tone === "warning" ? "warning" : "online"}
                     </span>
                   </td>
-                  <td className="py-2.5 text-xs" style={{ color: "var(--text-muted)" }}>{device.lastMessageAt}</td>
+                  <td className="py-2.5 text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{device.lastMessageAt}</td>
                 </tr>
               );
             })
@@ -447,11 +424,11 @@ type ViewMode  = "cards" | "list";
 
 export default function Home() {
   const { fleetDevices, serverAlarms, offlineThresholdMs } = useTelemetry();
-  const [nowMs, setNowMs] = useState(() => Date.now());
-  const [search, setSearch] = useState("");
+  const [nowMs, setNowMs]         = useState(() => Date.now());
+  const [search, setSearch]       = useState("");
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
-  const [viewMode, setViewMode] = useState<ViewMode>("cards");
-  const [page, setPage] = useState(1);
+  const [viewMode, setViewMode]   = useState<ViewMode>("cards");
+  const [page, setPage]           = useState(1);
 
   useEffect(() => {
     const t = window.setInterval(() => setNowMs(Date.now()), 5_000);
@@ -466,12 +443,12 @@ export default function Home() {
   }
 
   const filtered = fleetDevices.filter((d) => {
-    const upsId = d.inventory?.upsId || d.telemetry.ups_id || d.id;
-    const online = nowMs - d.lastSeenMs < offlineThresholdMs;
+    const upsId  = d.inventory?.upsId || d.telemetry.ups_id || d.id;
+    const online  = nowMs - d.lastSeenMs < offlineThresholdMs;
     const hasAlarm = (alarmsByDevice.get(d.id) ?? []).length > 0;
-    if (filterTab === "online" && !online) return false;
-    if (filterTab === "offline" && online) return false;
-    if (filterTab === "alarm" && !hasAlarm) return false;
+    if (filterTab === "online"  && !online)    return false;
+    if (filterTab === "offline" &&  online)    return false;
+    if (filterTab === "alarm"   && !hasAlarm)  return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -482,51 +459,59 @@ export default function Home() {
     );
   });
 
-  const filterTabs: { key: FilterTab; label: string }[] = [
-    { key: "all",     label: `All (${fleetDevices.length})` },
-    { key: "online",  label: `Online (${fleetDevices.filter((d) => nowMs - d.lastSeenMs < offlineThresholdMs).length})` },
-    { key: "offline", label: `Offline (${fleetDevices.filter((d) => nowMs - d.lastSeenMs >= offlineThresholdMs).length})` },
-    { key: "alarm",   label: `Alarm (${new Set(serverAlarms.map((a) => a.deviceId)).size})` },
+  const filterTabs: { key: FilterTab; label: string; short: string }[] = [
+    { key: "all",     label: `All (${fleetDevices.length})`,          short: `All` },
+    { key: "online",  label: `Online (${fleetDevices.filter((d) => nowMs - d.lastSeenMs < offlineThresholdMs).length})`, short: "Online" },
+    { key: "offline", label: `Offline (${fleetDevices.filter((d) => nowMs - d.lastSeenMs >= offlineThresholdMs).length})`, short: "Offline" },
+    { key: "alarm",   label: `Alarm (${new Set(serverAlarms.map((a) => a.deviceId)).size})`, short: "Alarm" },
   ];
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const safePage   = Math.min(page, totalPages);
+  const paginated  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <AppShell activeNav="dashboard">
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4 sm:gap-5">
         {/* Summary stats */}
-        <SummaryRow devices={fleetDevices} nowMs={nowMs} serverAlarms={serverAlarms} offlineThresholdMs={offlineThresholdMs} />
+        <SummaryRow
+          devices={fleetDevices}
+          nowMs={nowMs}
+          serverAlarms={serverAlarms}
+          offlineThresholdMs={offlineThresholdMs}
+        />
 
-        {/* Filter + search + view toggle */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-1.5">
-            {filterTabs.map(({ key, label }) => (
+        {/* Filter bar */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          {/* Filter tabs — scrollable on mobile */}
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
+            {filterTabs.map(({ key, label, short }) => (
               <button
                 key={key}
                 onClick={() => { setFilterTab(key); setPage(1); }}
                 type="button"
-                className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-all ${
+                className={`shrink-0 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-all whitespace-nowrap ${
                   filterTab === key
                     ? "border-cyan-700 bg-cyan-900/40 text-cyan-300"
                     : "border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200"
                 }`}
                 style={{ background: filterTab === key ? undefined : "var(--surface-1)" }}
               >
-                {label}
+                <span className="sm:hidden">{short}</span>
+                <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
           </div>
+
+          {/* Search + view toggle */}
           <div className="flex items-center gap-2">
             <input
-              className="w-full rounded-lg border px-3 py-1.5 text-sm text-slate-100 outline-none transition-colors placeholder:text-slate-600 focus:border-cyan-600 sm:w-52"
+              className="flex-1 sm:flex-none sm:w-52 rounded-lg border px-3 py-1.5 text-sm text-slate-100 outline-none transition-colors placeholder:text-slate-600 focus:border-cyan-600"
               style={{ background: "var(--surface-1)", borderColor: "var(--border-default)" }}
-              placeholder="Search UPS, device, location…"
+              placeholder="Search UPS, location…"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
-            {/* View toggle */}
             <div className="flex rounded-lg border border-slate-700 overflow-hidden shrink-0" style={{ background: "var(--surface-1)" }}>
               <button
                 type="button"
@@ -548,21 +533,26 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Empty state */}
+        {/* Content */}
         {filtered.length === 0 ? (
           <div
-            className="rounded-xl border p-12 text-center"
+            className="rounded-xl border p-10 sm:p-14 text-center"
             style={{ background: "var(--surface-1)", borderColor: "var(--border-subtle)" }}
           >
             <Server size={36} className="mx-auto mb-4 text-slate-600" />
             <p className="text-sm font-semibold text-slate-400">
-              {fleetDevices.length === 0 ? "Waiting for UPS telemetry…" : "No devices match the current filter."}
+              {fleetDevices.length === 0
+                ? "Waiting for UPS telemetry…"
+                : "No devices match the current filter."}
             </p>
+            {fleetDevices.length === 0 && (
+              <p className="mt-2 text-xs text-slate-600">Devices appear here when they send MQTT telemetry.</p>
+            )}
           </div>
         ) : (
           <>
             {viewMode === "cards" ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {paginated.map((device) => (
                   <UpsCard
                     key={device.id}
@@ -578,7 +568,12 @@ export default function Home() {
                 className="rounded-xl border overflow-hidden"
                 style={{ background: "var(--surface-1)", borderColor: "var(--border-default)" }}
               >
-                <CompactTable devices={paginated} nowMs={nowMs} alarmsByDevice={alarmsByDevice} offlineThresholdMs={offlineThresholdMs} />
+                <CompactTable
+                  devices={paginated}
+                  nowMs={nowMs}
+                  alarmsByDevice={alarmsByDevice}
+                  offlineThresholdMs={offlineThresholdMs}
+                />
               </section>
             )}
 
