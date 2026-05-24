@@ -2,7 +2,12 @@
  * Push configuration to a connected board via MQTT.
  * The board must be subscribed to ums/devices/{deviceId}/config.
  *
+ * In Docker / production mode (ENABLE_EMBEDDED_BROKER=false) the embedded
+ * broker is not available. This route returns 501 until external MQTT publish
+ * is implemented (firmware does not yet subscribe to config topics).
+ *
  * TODO: track pending config acks via ums/devices/{deviceId}/config/ack
+ * TODO: implement external MQTT publish path for Docker mode
  */
 
 import { NextResponse } from "next/server";
@@ -27,6 +32,22 @@ export async function POST(
 ) {
   const auth = requireRole(request, "admin");
   if (!auth.ok) return auth.response;
+
+  // In production Docker mode the embedded broker is disabled.
+  // External MQTT publish is not yet implemented — return 501 until firmware
+  // subscribes to config topics and external publish path is added.
+  const embeddedEnabled = process.env.ENABLE_EMBEDDED_BROKER === "true";
+  if (!embeddedEnabled) {
+    return NextResponse.json(
+      {
+        error: "Config push via MQTT is not available in external-broker mode.",
+        detail:
+          "ENABLE_EMBEDDED_BROKER=false. Firmware does not yet subscribe to config topics. " +
+          "Use the device's local web UI at http://<device-ip>/ to update calibration settings.",
+      },
+      { status: 501 },
+    );
+  }
 
   const { deviceId } = await params;
   const body = (await request.json()) as ConfigPayload;

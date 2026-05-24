@@ -26,18 +26,30 @@ docker run --rm -i \
   eclipse-mosquitto:2 \
   mosquitto_passwd -c /mosquitto/config/passwords dashboard
 
-# Add device users — one per ESP32 module.
+# Add the CI/certification smoke-test device user.
+# certify.sh publishes as DOCKER-SMOKE-001 — this user must exist in passwords.
+# It uses the same password as the dashboard user (set via MQTT_PASSWORD in .env).
+echo ""
+echo "Creating user: DOCKER-SMOKE-001 (certification smoke-test device)"
+echo "Enter the same password you will use for MQTT_PASSWORD in .env"
+docker run --rm -i \
+  -v "${SCRIPT_DIR}:/mosquitto/config" \
+  eclipse-mosquitto:2 \
+  mosquitto_passwd /mosquitto/config/passwords DOCKER-SMOKE-001
+
+# Add device users — one per ESP32 module deployed in the field.
 # The username MUST match the device_id configured in the board's MQTT settings.
-# Uncomment and repeat for each device, or add them manually later with:
+# Repeat for each device, or add them manually later with:
 #   docker run --rm -i -v "${SCRIPT_DIR}:/mosquitto/config" eclipse-mosquitto:2 \
 #     mosquitto_passwd /mosquitto/config/passwords <device_id>
 #
+# Example:
 # echo ""
-# echo "Adding device user: DEV-COM11-TEST"
+# echo "Adding device user: UMS-3076F5A5AD54"
 # docker run --rm -i \
 #   -v "${SCRIPT_DIR}:/mosquitto/config" \
 #   eclipse-mosquitto:2 \
-#   mosquitto_passwd /mosquitto/config/passwords DEV-COM11-TEST
+#   mosquitto_passwd /mosquitto/config/passwords UMS-3076F5A5AD54
 
 echo ""
 echo "Done. File created: ${PASSWORDS_FILE}"

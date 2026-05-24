@@ -73,9 +73,12 @@
 #define AP_SSID             "UMS-Setup"
 #define AP_PASS             "password123"
 
+// Firmware version — included in MQTT payload and /api/info
+#define FIRMWARE_VERSION    "2.1.0"
+
 // MQTT — topic: ums/devices/{device_id}/data
 #define MQTT_HOST_DEFAULT   "broker.hivemq.com"
-#define MQTT_PORT           1883
+#define MQTT_PORT_DEFAULT   1883
 #define MQTT_PUBLISH_MS     1000UL    // publish every 1 s (matches window)
 #define WIFI_RETRY_MS       30000UL
 #define ENERGY_SAVE_MS      60000UL   // write kWh to NVS every 60 s
@@ -240,6 +243,9 @@ static Preferences  prefs;
 static WebServer          webServer(80);
 static HTTPUpdateServer   httpUpdater;
 static String       mqttHost;
+static uint16_t     mqttPort;
+static String       mqttUser;   // empty = no auth
+static String       mqttPass;
 static String       deviceId;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -490,6 +496,9 @@ void loadDeviceId()
     prefs.begin("device", true);
     deviceId = prefs.getString("id", "");
     mqttHost = prefs.getString("mqttHost", MQTT_HOST_DEFAULT);
+    mqttPort = (uint16_t)prefs.getUShort("mqttPort", MQTT_PORT_DEFAULT);
+    mqttUser = prefs.getString("mqttUser", "");
+    mqttPass = prefs.getString("mqttPass", "");
     prefs.end();
 
     if (deviceId.isEmpty()) {
@@ -606,6 +615,7 @@ String buildDataJson()
     j += F("\"rssi\":"); j += WiFi.RSSI();
     j += F(",\"seq\":"); j += seqNo;
     j += F(",\"ip\":\""); j += WiFi.localIP().toString(); j += '"';
+    j += F(",\"firmware\":\"" FIRMWARE_VERSION "\"");
     j += '}';
 
     return j;
@@ -633,22 +643,45 @@ static bool mqttWriteStr(WiFiClient& c, const String& s)
     return (size_t)c.print(s) == s.length();
 }
 
-static bool mqttConnect(WiFiClient& c, const String& clientId)
+static bool mqttConnect(WiFiClient& c, const String& clientId,
+                        const String& user, const String& pass)
 {
+    // MQTT 3.1.1 CONNECT packet.
+    // Connect flags byte:
+    //   Bit 1 = Clean Session
+    //   Bit 6 = Password Present (when password non-empty)
+    //   Bit 7 = Username Present (when username non-empty)
+    bool hasAuth = (user.length() > 0);
+    uint8_t connectFlags = 0x02;  // clean session
+    if (hasAuth) connectFlags |= 0x40 | 0x80;  // username + password flags
+
+    // Remaining length = fixed header (10) + clientId + optional user/pass
     uint32_t rem = 10 + 2 + clientId.length();
+    if (hasAuth) rem += 2 + user.length() + 2 + pass.length();
+
     if (c.write((uint8_t)0x10) != 1) return false;
     if (!mqttWriteLength(c, rem)) return false;
     if (!mqttWriteStr(c, F("MQTT"))) return false;
-    if (c.write((uint8_t)0x04) != 1) return false;  // protocol level 4
-    if (c.write((uint8_t)0x02) != 1) return false;  // clean session
-    if (c.write((uint8_t)0x00) != 1) return false;  // keepalive MSB
-    if (c.write((uint8_t)0x3C) != 1) return false;  // keepalive 60 s
+    if (c.write((uint8_t)0x04) != 1) return false;      // protocol level 4 (3.1.1)
+    if (c.write((uint8_t)connectFlags) != 1) return false;
+    if (c.write((uint8_t)0x00) != 1) return false;      // keepalive MSB
+    if (c.write((uint8_t)0x3C) != 1) return false;      // keepalive 60 s
     if (!mqttWriteStr(c, clientId)) return false;
+    if (hasAuth) {
+        if (!mqttWriteStr(c, user)) return false;
+        if (!mqttWriteStr(c, pass)) return false;
+    }
 
     unsigned long t = millis();
     while (c.connected() && c.available() < 4 && millis() - t < 3000) delay(5);
     if (c.available() < 4) return false;
-    return c.read() == 0x20 && c.read() == 0x02 && c.read() == 0x00 && c.read() == 0x00;
+    // CONNACK: 0x20 0x02 0x00 0x00 (return code 0 = accepted)
+    uint8_t b0 = c.read(), b1 = c.read(), b2 = c.read(), rc = c.read();
+    if (b0 != 0x20 || b1 != 0x02 || b2 != 0x00 || rc != 0x00) {
+        Serial.printf("[MQTT] CONNACK rejected, return code=%u\n", rc);
+        return false;
+    }
+    return true;
 }
 
 static bool mqttPublish(WiFiClient& c, const String& topic, const String& payload)
@@ -669,14 +702,14 @@ void publishMqttData()
 
     WiFiClient mc;
     mc.setTimeout(3000);
-    if (!mc.connect(mqttHost.c_str(), MQTT_PORT)) {
-        Serial.println(F("MQTT: broker unreachable"));
+    if (!mc.connect(mqttHost.c_str(), mqttPort)) {
+        Serial.printf("[MQTT] broker unreachable (%s:%u)\n", mqttHost.c_str(), mqttPort);
         return;
     }
 
     String clientId = "ums-" + deviceId;
-    if (!mqttConnect(mc, clientId)) {
-        Serial.println(F("MQTT: CONNACK failed"));
+    if (!mqttConnect(mc, clientId, mqttUser, mqttPass)) {
+        Serial.println(F("[MQTT] CONNACK failed — check credentials"));
         mc.stop();
         return;
     }
@@ -762,7 +795,15 @@ void handleRoot()
               "<label>SSID</label><input name='ssid' value='"); page += htmlEscape(wifiSettings.ssid);
     page += F("'><label>Password</label><input name='pass' type='password' value='"); page += htmlEscape(wifiSettings.pass);
     page += F("'><label>MQTT Broker</label><input name='mqttHost' value='"); page += htmlEscape(mqttHost);
-    page += F("'><label>Device ID</label><input name='deviceId' value='"); page += htmlEscape(deviceId);
+    page += F("'><div class='row'>"
+              "<label>MQTT Port<input name='mqttPort' type='number' value='"); page += mqttPort;
+    page += F("'></label>"
+              "<label>MQTT Username<input name='mqttUser' value='"); page += htmlEscape(mqttUser);
+    page += F("'></label></div>"
+              "<label>MQTT Password</label><input name='mqttPass' type='password' placeholder='(unchanged if empty)' value='"); page += htmlEscape(mqttPass);
+    page += F("'><p class='muted'>Leave username blank for anonymous brokers (e.g. HiveMQ public). "
+              "For production Mosquitto, enter the device_id as username and the matching password.</p>"
+              "<label>Device ID</label><input name='deviceId' value='"); page += htmlEscape(deviceId);
     page += F("'><div class='row'>"
               "<label><input type='radio' name='mode' value='dhcp' "); page += wifiSettings.dhcp ? "checked" : "";
     page += F("> Dynamic IP</label>"
@@ -846,14 +887,30 @@ void handleSave()
     newMqttHost.trim();
     if (newMqttHost.length() > 0) mqttHost = newMqttHost;
 
+    String newMqttPortStr = webServer.arg("mqttPort");
+    newMqttPortStr.trim();
+    if (newMqttPortStr.length() > 0) {
+        uint16_t p = (uint16_t)newMqttPortStr.toInt();
+        if (p > 0) mqttPort = p;
+    }
+
+    // Username and password: accept empty string (clears auth)
+    mqttUser = webServer.arg("mqttUser");
+    mqttPass = webServer.arg("mqttPass");
+    mqttUser.trim();
+    // Note: password is not trimmed — spaces may be intentional
+
     String newDevId = webServer.arg("deviceId");
     newDevId.trim();
     if (newDevId.length() > 0) deviceId = newDevId;
 
-    // Save device / mqtt settings
+    // Save device / MQTT settings
     prefs.begin("device", false);
     prefs.putString("id",       deviceId);
     prefs.putString("mqttHost", mqttHost);
+    prefs.putUShort("mqttPort", mqttPort);
+    prefs.putString("mqttUser", mqttUser);
+    prefs.putString("mqttPass", mqttPass);
     prefs.end();
 
     if (!wifiSettings.dhcp) {
@@ -908,10 +965,53 @@ void handleResetEnergy()
     webServer.send(303);
 }
 
+/**
+ * GET /api/info — machine-readable device identity.
+ * Required by the LAN scanner to identify boards on the network.
+ *
+ * Response fields:
+ *   device_id   — NVS-configured or MAC-derived identifier
+ *   firmware    — FIRMWARE_VERSION constant
+ *   mac         — full MAC address (colon-separated)
+ *   ip          — current STA IP (or AP IP if not connected)
+ *   mqtt_host   — configured MQTT broker hostname
+ *   mqtt_port   — configured MQTT broker port
+ *   mqtt_topic  — the topic this device publishes to
+ *   mqtt_auth   — true if username/password auth is configured
+ */
+void handleApiInfo()
+{
+    uint8_t mac[6];
+    WiFi.macAddress(mac);
+    char macStr[18];
+    snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    String ip = (WiFi.status() == WL_CONNECTED)
+                ? WiFi.localIP().toString()
+                : WiFi.softAPIP().toString();
+
+    String topic = "ums/devices/" + deviceId + "/data";
+
+    String j = F("{");
+    j += F("\"device_id\":\"");  j += deviceId; j += F("\",");
+    j += F("\"firmware\":\"" FIRMWARE_VERSION "\",");
+    j += F("\"mac\":\"");        j += macStr;   j += F("\",");
+    j += F("\"ip\":\"");         j += ip;       j += F("\",");
+    j += F("\"mqtt_host\":\"");  j += mqttHost; j += F("\",");
+    j += F("\"mqtt_port\":");    j += mqttPort; j += F(",");
+    j += F("\"mqtt_topic\":\""); j += topic;    j += F("\",");
+    j += F("\"mqtt_auth\":");    j += (mqttUser.length() > 0 ? F("true") : F("false"));
+    j += F("}");
+
+    webServer.send(200, F("application/json"), j);
+}
+
 void setupWebServer()
 {
     webServer.on("/",             HTTP_GET,  handleRoot);
     webServer.on("/data",         HTTP_GET,  handleData);
+    webServer.on("/api/info",     HTTP_GET,  handleApiInfo);
     webServer.on("/save",         HTTP_POST, handleSave);
     webServer.on("/calib",        HTTP_POST, handleCalib);
     webServer.on("/resetenergy",  HTTP_POST, handleResetEnergy);
@@ -972,7 +1072,9 @@ void setup()
     loadDeviceId();
 
     Serial.print(F("Device ID : ")); Serial.println(deviceId);
-    Serial.print(F("MQTT host : ")); Serial.println(mqttHost);
+    Serial.print(F("Firmware  : " FIRMWARE_VERSION "\n"));
+    Serial.printf("MQTT      : %s:%u (auth:%s)\n",
+                  mqttHost.c_str(), mqttPort, mqttUser.length() > 0 ? "yes" : "no");
 
     setupWebServer();
 

@@ -70,6 +70,17 @@ function num(v: unknown, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+/**
+ * Parse a nullable numeric field.
+ * Returns null when the value is JSON null, undefined, or non-finite (NaN/Infinity).
+ * This ensures firmware-published null stays null in the DB instead of becoming 0.
+ */
+function nullableNum(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 function str(v: unknown): string | undefined {
   return typeof v === "string" && v.length > 0 ? v : undefined;
 }
@@ -127,16 +138,16 @@ async function persistTelemetry(deviceId: string, payload: RawPayload, rawJson: 
     ctOut: num(payload.ct_out),
     sInVa: num(payload.s_in_va),
     sOutVa: num(payload.s_out_va),
-    pInW: payload.p_in_w !== undefined ? num(payload.p_in_w) : null,
-    pOutW: payload.p_out_w !== undefined ? num(payload.p_out_w) : null,
-    pfIn: payload.pf_in !== undefined ? num(payload.pf_in) : null,
-    pfOut: payload.pf_out !== undefined ? num(payload.pf_out) : null,
-    eInKwh: payload.e_in_kwh !== undefined ? num(payload.e_in_kwh) : null,
-    eOutKwh: payload.e_out_kwh !== undefined ? num(payload.e_out_kwh) : null,
-    freqIn:  payload.freq_in  !== undefined ? num(payload.freq_in)  : null,
-    freqOut: payload.freq_out !== undefined ? num(payload.freq_out) : null,
-    qInVar:  payload.q_in_var  !== undefined ? num(payload.q_in_var)  : null,
-    qOutVar: payload.q_out_var !== undefined ? num(payload.q_out_var) : null,
+    pInW:    nullableNum(payload.p_in_w),
+    pOutW:   nullableNum(payload.p_out_w),
+    pfIn:    nullableNum(payload.pf_in),
+    pfOut:   nullableNum(payload.pf_out),
+    eInKwh:  nullableNum(payload.e_in_kwh),
+    eOutKwh: nullableNum(payload.e_out_kwh),
+    freqIn:  nullableNum(payload.freq_in),
+    freqOut: nullableNum(payload.freq_out),
+    qInVar:  nullableNum(payload.q_in_var),
+    qOutVar: nullableNum(payload.q_out_var),
     rssi: payload.rssi !== undefined ? Math.round(num(payload.rssi)) : null,
     ip: str(payload.ip),
     firmware: str(payload.firmware),
@@ -193,6 +204,17 @@ async function runAlarmEvaluation(deviceId: string, payload: RawPayload): Promis
       ctOut: num(payload.ct_out),
       sInVa: num(payload.s_in_va),
       sOutVa: num(payload.s_out_va),
+      // Energy analyzer fields — null if firmware does not support or no waveform
+      pInW:    nullableNum(payload.p_in_w),
+      pOutW:   nullableNum(payload.p_out_w),
+      pfIn:    nullableNum(payload.pf_in),
+      pfOut:   nullableNum(payload.pf_out),
+      freqIn:  nullableNum(payload.freq_in),
+      freqOut: nullableNum(payload.freq_out),
+      qInVar:  nullableNum(payload.q_in_var),
+      qOutVar: nullableNum(payload.q_out_var),
+      eInKwh:  nullableNum(payload.e_in_kwh),
+      eOutKwh: nullableNum(payload.e_out_kwh),
     },
     batteryNominalV,
     capacityVa,
