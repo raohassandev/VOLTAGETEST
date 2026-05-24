@@ -16,6 +16,7 @@ export async function GET(request: Request) {
 
   if (isDbEnabled()) {
     const rows = await prisma.telemetryLatest.findMany({
+      where: { device: { active: true } },
       include: { device: { include: { upsUnit: true } } },
     });
 

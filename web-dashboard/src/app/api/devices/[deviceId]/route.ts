@@ -47,14 +47,13 @@ export async function DELETE(
   const device = await prisma.device.findUnique({ where: { deviceId } });
   if (!device) return NextResponse.json({ error: "Device not found." }, { status: 404 });
 
-  // Delete dependent records before device to avoid FK constraint errors
-  await prisma.$transaction([
-    prisma.telemetryLatest.deleteMany({ where: { deviceId } }),
-    prisma.telemetry1m.deleteMany({ where: { deviceId } }),
-    prisma.alarm.deleteMany({ where: { deviceId } }),
-    prisma.auditLog.deleteMany({ where: { entity: "device", entityId: deviceId } }),
-    prisma.device.delete({ where: { deviceId } }),
-  ]);
+  // Delete dependent records in FK order to avoid constraint errors
+  await prisma.telemetryRaw.deleteMany({ where: { deviceId } });
+  await prisma.telemetryLatest.deleteMany({ where: { deviceId } });
+  await prisma.telemetry1m.deleteMany({ where: { deviceId } });
+  await prisma.alarm.deleteMany({ where: { deviceId } });
+  await prisma.auditLog.deleteMany({ where: { entity: "device", entityId: deviceId } });
+  await prisma.device.delete({ where: { deviceId } });
 
   return NextResponse.json({ ok: true, deleted: deviceId });
 }
