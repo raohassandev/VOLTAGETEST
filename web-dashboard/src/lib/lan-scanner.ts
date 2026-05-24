@@ -164,12 +164,20 @@ export async function runLanScan(): Promise<void> {
 
 function getLocalIp(): string {
   const ifaces = networkInterfaces();
+  const candidates: string[] = [];
   for (const iface of Object.values(ifaces)) {
     for (const addr of iface ?? []) {
-      if (addr.family === "IPv4" && !addr.internal) return addr.address;
+      if (addr.family === "IPv4" && !addr.internal) {
+        candidates.push(addr.address);
+      }
     }
   }
-  return "127.0.0.1";
+  // Prefer the IP that has a default-gateway-reachable subnet (192.168.x.x or 10.x.x.x)
+  // over Docker/WSL bridge addresses (172.x.x.x) which have no ARP neighbours.
+  const preferred = candidates.find(
+    (ip) => ip.startsWith("192.168.") || ip.startsWith("10.")
+  );
+  return preferred ?? candidates[0] ?? "127.0.0.1";
 }
 
 // ── Startup ───────────────────────────────────────────────────────────────────
