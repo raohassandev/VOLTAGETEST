@@ -56,7 +56,7 @@ export const defaultInventory: UpsInventoryItem[] = [
   {
     batteryNominalV: 48,
     capacityVa: 3000,
-    deviceId: "UPSMON-001",
+    deviceId: "UMS-DEMO-001",  // no-DB demo mode placeholder — not a real device
     floor: "Ground",
     id: "ups-01",
     location: "Electrical Room",

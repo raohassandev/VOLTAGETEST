@@ -72,9 +72,11 @@ Alarms clear automatically when the value returns to normal for the configured h
 | `s_out_va` | VA | Apparent output power (volt_out × ct_out) |
 | Load % | % | s_out_va / rated capacity VA |
 
-**What is not shown:**
+**Energy analyzer fields (v2.1.0):**
 
-- Active power (W), power factor, energy (kWh) — not measured by this hardware. These fields show `—` in the dashboard. This is correct and expected.
+- Active power (W), power factor, reactive power (VAr), energy (kWh), frequency (Hz) — measured by v2.1.0 firmware.
+- Fields show `—` when the channel has insufficient signal or calibration has not been performed.
+- Accuracy requires reference-meter calibration. See `docs/CALIBRATION_GUIDE.md`.
 
 ---
 

@@ -14,12 +14,19 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient({ log: ["warn", "error"] });
 
-/** Device IDs that are smoke-test / CI artefacts — NOT real field devices. */
+/**
+ * Device IDs that are smoke-test / CI artefacts — NOT real field devices.
+ * PROTECTED devices (real hardware) must never appear here:
+ *   UMS-3076F5A5AD54
+ */
 const TEST_DEVICE_IDS = [
   "DOCKER-SMOKE-001",
   "DEV-COM11-TEST",
   "TEST-DEVICE",
   "TEST-DEVICE-DUMMY",
+  "UPS-SMOKE-001",
+  "SMOKE-TEST-001",
+  "UPS-COM11-TEST",
 ];
 
 const DRY_RUN = process.argv.includes("--dry-run");

@@ -39,10 +39,10 @@ Each ESP32 monitoring unit should be prepared before installation:
 
 Recommended label fields:
 
-- Device ID: `UPSMON-001`
+- Device ID: configured via firmware portal (e.g. `UMS-3076F5A5AD54` or site scheme `UPSMON-B1-01`)
 - MAC address
 - Hardware revision
-- Firmware version
+- Firmware version (v2.1.0)
 - QR code linking to dashboard device record, later phase
 
 ## 4. Electrical Safety And Installation Notes
@@ -86,8 +86,8 @@ Each physical monitoring module and each UPS must be separately identifiable.
 
 Recommended IDs:
 
-- Device ID: `UPSMON-001`, assigned to ESP32 hardware.
-- UPS ID: `UPS-01`, assigned to the UPS asset.
+- Device ID: configured via firmware portal (e.g. `UPSMON-B1-01`), assigned to ESP32 hardware.
+- UPS ID: `UPS-B1-01`, assigned to the UPS asset.
 - Site ID: `SITE-01`, assigned to the building/project.
 
 The dashboard must store:

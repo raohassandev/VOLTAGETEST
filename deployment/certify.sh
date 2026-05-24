@@ -16,9 +16,10 @@ COOKIES="/tmp/ums-cert-cookies.txt"
 BASE_URL="http://localhost:3000"
 
 # Admin password used for login smoke test.
-# Override by setting CERT_ADMIN_PASSWORD in the shell environment or deployment/.env.
-# Matches UPS_AUTH_PASSWORD in deployment/.env (set to your real admin password before running).
-CERT_ADMIN_PASSWORD="${CERT_ADMIN_PASSWORD:-AdminTest123!}"
+# Must be set in the environment before running this script.
+# Example: CERT_ADMIN_PASSWORD=YourActualPassword bash certify.sh
+# Must match UPS_AUTH_PASSWORD in deployment/.env.
+: "${CERT_ADMIN_PASSWORD:?Set CERT_ADMIN_PASSWORD to the current admin password before running certify.sh}"
 
 pass() { echo "  ✅ $1"; }
 fail() { echo "  ❌ FAIL: $1"; exit 1; }
@@ -208,8 +209,9 @@ BACKUP_FILE="/tmp/ums_docker_cert_$(date +%Y%m%d_%H%M%S).dump"
 $COMPOSE exec -T postgres sh -lc 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$BACKUP_FILE"
 [[ -s "$BACKUP_FILE" ]] && pass "backup created: $BACKUP_FILE ($(wc -c < "$BACKUP_FILE") bytes)" || fail "backup empty"
 
-# Create restore test DB
-$COMPOSE exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE IF EXISTS ums_restore_test; CREATE DATABASE ums_restore_test;"'
+# Create restore test DB — use separate exec calls; DROP DATABASE cannot run in a transaction block
+$COMPOSE exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE IF EXISTS ums_restore_test;"'
+$COMPOSE exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d postgres -c "CREATE DATABASE ums_restore_test;"'
 cat "$BACKUP_FILE" | $COMPOSE exec -T postgres sh -lc 'pg_restore -U "$POSTGRES_USER" -d ums_restore_test -Fc'
 pass "restore completed"
 

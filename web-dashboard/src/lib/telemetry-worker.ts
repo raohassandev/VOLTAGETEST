@@ -3,9 +3,14 @@
  * Subscribes to the embedded Aedes broker, ingests telemetry, persists to
  * PostgreSQL, and drives the alarm engine.
  *
- * Supports both payload formats:
- *   v2 (new firmware):  v_in, i_in, p_in_w, q_in_var, f_in_hz, v_batt, …
- *   v1 (legacy):        volt_in, volt_out, volt_dc, ct_in, ct_out, s_out_va, …
+ * Payload format — firmware v2.1.0:
+ *   volt_in, volt_out, volt_dc (calibrated), ct_in, ct_out, s_in_va, s_out_va,
+ *   freq_in, freq_out, p_in_w, p_out_w, pf_in, pf_out, q_in_var, q_out_var,
+ *   e_in_kwh, e_out_kwh, rssi, firmware, seq, ip, mac, free_heap, reset_reason
+ *
+ * NOTE: This is the in-process (embedded-broker) worker. The production/Docker
+ * path uses worker/mqtt-worker.ts with an external Mosquitto broker. Both workers
+ * must be kept aligned with the same payload field names and alarm logic.
  */
 
 import { PrismaClient } from "@prisma/client";

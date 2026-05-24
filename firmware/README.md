@@ -5,7 +5,7 @@
 | Path | Description |
 |------|-------------|
 | `VOLTAGETEST/VOLTAGETEST.ino` | Energy Analyzer firmware — canonical Arduino sketch (ESP32) |
-| `ups_monitor/ups_monitor.ino` | Legacy basic monitor firmware |
+| `../archive/firmware/ups_monitor_legacy/` | Legacy basic monitor firmware (archived — do not flash) |
 
 ## VOLTAGETEST — Energy Analyzer Firmware
 

@@ -40,7 +40,7 @@
 | Unique constraint `deviceId + bucketStart` | ✅ Done |
 | Indexes: `(deviceId, bucketStart)`, `(bucketStart)` | ✅ Done |
 | Fields: avg/min/max for volt_in/out/dc, avg/max for ct_in/out, sInVa/sOutVa, rssiAvg | ✅ Done |
-| No kW / kWh / PF fields | ✅ Correct — not supported by firmware |
+| kW / kWh / PF / Q / Hz energy fields | ✅ Implemented in v2.1.0 firmware and backend |
 
 ### D. Rollup Aggregation Job
 
@@ -158,7 +158,7 @@ Tables present in schema and migration:
 | `/admin/inventory` | ✅ New — full CRUD |
 | `/admin/settings` | ✅ New — retention + offline threshold |
 
-kW / kWh / PF shown as "not supported" — see `docs/MEASUREMENT_LIMITATIONS.md`.
+kW / kWh / PF / Q / Hz implemented in v2.1.0. Accuracy requires reference-meter calibration. See `docs/MEASUREMENT_LIMITATIONS.md`.
 
 ### F. Auth
 

@@ -4,8 +4,6 @@ import { requireApiAuth, requireRole } from "@/lib/api-auth";
 import { prisma, isDbEnabled } from "@/lib/db";
 import { logAudit, requestIp } from "@/lib/audit";
 
-const VOLT_DC_DEFAULT_SCALE = 0.0442;
-
 export async function GET(request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -42,14 +40,10 @@ export async function GET(request: Request,
   const device = unit.devices[0];
   const tl = device?.telemetryLatest;
 
-  // Apply per-device battery calibration before sending to UI
-  let voltDcCalibrated = tl?.voltDc ?? 0;
-  if (tl && device) {
-    const cal = await prisma.calibrationProfile.findUnique({ where: { deviceId: device.deviceId } });
-    const vDcScale  = cal ? cal.vDcScale  : VOLT_DC_DEFAULT_SCALE;
-    const vDcOffset = cal ? cal.vDcOffset : 0;
-    voltDcCalibrated = tl.voltDc * vDcScale + vDcOffset;
-  }
+  // Firmware v2.1.0 publishes volt_dc already calibrated in volts.
+  // Server must NOT re-apply battery scaling. Pass through directly.
+  // If legacy raw-ADC support is needed later, use a separate volt_dc_raw field.
+  const voltDc = tl?.voltDc ?? null;
 
   const rj = tl?.rawJson as Record<string, unknown> | undefined;
   const commissioning = rj
@@ -96,7 +90,7 @@ export async function GET(request: Request,
       ? {
           voltIn: tl.voltIn,
           voltOut: tl.voltOut,
-          voltDc: voltDcCalibrated,
+          voltDc: voltDc,
           ctIn: tl.ctIn,
           ctOut: tl.ctOut,
           sInVa: tl.sInVa,

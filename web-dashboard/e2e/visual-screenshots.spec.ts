@@ -9,8 +9,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { loginAsAdmin, goto } from "./helpers";
 
-const DESKTOP_DIR = path.resolve(__dirname, "../../qa/screenshots/web/desktop");
-const MOBILE_DIR  = path.resolve(__dirname, "../../qa/screenshots/web/mobile");
+const DESKTOP_DIR = path.resolve(__dirname, "../qa/screenshots/web/desktop");
+const MOBILE_DIR  = path.resolve(__dirname, "../qa/screenshots/web/mobile");
 
 function ensureDirs() {
   fs.mkdirSync(DESKTOP_DIR, { recursive: true });

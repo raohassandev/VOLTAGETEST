@@ -37,8 +37,8 @@ const ROUTES: { slug: string; path: string; waitFor?: string; note?: string; act
   },
   { slug: "inventory",      path: "/admin/inventory",        waitFor: "main" },
   { slug: "settings",       path: "/admin/settings",         waitFor: "main" },
-  { slug: "ups-detail-live", path: "/ups/UPS-COM11-TEST",    waitFor: "main", note: "live device" },
-  { slug: "ups-detail-offline", path: "/ups/UPSMON-01",      waitFor: "main", note: "offline device" },
+  { slug: "ups-detail-live", path: "/ups/UMS-3076F5A5AD54",  waitFor: "main", note: "live device" },
+  { slug: "ups-detail-offline", path: "/ups/UPS-OFFLINE-TEST", waitFor: "main", note: "offline device" },
   { slug: "ups-notfound",   path: "/ups/DOES-NOT-EXIST",     waitFor: "main", note: "error state" },
 ];
 

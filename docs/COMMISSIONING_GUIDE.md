@@ -1,15 +1,14 @@
 # Commissioning Guide — UPS Monitoring System
 
-> **⚠️ Version notice:** This guide was written for firmware v0.5.1. Current firmware is **v2.1.0**.
-> For v2.1.0 commissioning, use `docs/FIRMWARE_GUIDE.md`.
-> The canonical firmware file is `firmware/VOLTAGETEST/VOLTAGETEST.ino`.
-> The MQTT topic is now `ums/devices/<device_id>/data` (not `building/.../telemetry`).
+> **v2.1.0 — Updated for current firmware.**
+> Canonical firmware: `firmware/VOLTAGETEST/VOLTAGETEST.ino`
+> MQTT topic: `ums/devices/<device_id>/data`
 
 ---
 
 ## Step 1 — Flash the Firmware
 
-1. Open `firmware/ups_monitor/ups_monitor.ino` in Arduino IDE.
+1. Open `firmware/VOLTAGETEST/VOLTAGETEST.ino` in Arduino IDE.
 2. Install board support: `esp32 by Espressif Systems` via Boards Manager.
 3. Select board: **ESP32 Dev Module** (or your specific variant).
 4. Upload settings: 921600 baud, default partition scheme.
@@ -90,11 +89,11 @@ Static IP fields are hidden when DHCP is selected. They appear automatically whe
 | Port | 1883 (default) |
 | Username | MQTT credential (leave blank if no auth) |
 | Password | MQTT credential — leave blank to keep existing |
-| Topic | `building/site-01/ups/UPSMON-B1-01/telemetry` |
-| Publish Interval | Seconds between payloads (default: 5) |
+| Topic | `ums/devices/UPSMON-B1-01/data` |
+| Publish Interval | 1000 ms (fixed in v2.1.0) |
 
-> **Topic convention:** `building/<site-id>/ups/<device-id>/telemetry`
-> The dashboard MQTT worker subscribes to `building/+/ups/+/telemetry` by default.
+> **Topic convention (v2.1.0):** `ums/devices/<device-id>/data`
+> The dashboard MQTT worker subscribes to `ums/devices/+/data`.
 
 ### 3d. Security
 
@@ -145,7 +144,7 @@ To clear all saved settings and return to defaults:
 
 ## Step 6 — Register in Dashboard
 
-1. Log in to the dashboard at `http://<server>:3000`.
+1. Log in to the dashboard at `http://<server>:3303`.
 2. Navigate to **Inventory** (`/admin/inventory`).
 3. Click **Add UPS** and fill in:
    - **UPS ID:** Must match the `ups_id` set in the portal (e.g., `UPS-B1-F2-01`)
@@ -200,9 +199,9 @@ Repeat Steps 1–8 for each UPS module.
 Naming convention recommendation:
 - Device ID: `UPSMON-<floor>-<sequence>` e.g. `UPSMON-B1-01`
 - UPS ID: `UPS-<floor>-<room>-<sequence>` e.g. `UPS-B1-IT01`
-- Topic: `building/<site-id>/ups/<device-id>/telemetry`
+- Topic: `ums/devices/<device-id>/data`
 
-All devices sharing a site should use the same MQTT broker and the same site-id prefix.
+All devices sharing a site should use the same MQTT broker.
 
 ---
 
@@ -258,9 +257,9 @@ All settings are stored in ESP32 non-volatile storage (NVS / Preferences):
 
 ---
 
-## MQTT Payload Reference (v0.5.1)
+## MQTT Payload Reference (v2.1.0)
 
-Every published message contains:
+Published to `ums/devices/{device_id}/data` every 1000 ms.
 
 ```json
 {
@@ -279,9 +278,19 @@ Every published message contains:
   "ct_out": 3.9,
   "s_in_va": 970.3,
   "s_out_va": 898.7,
+  "freq_in": 50.0,
+  "freq_out": 50.0,
+  "p_in_w": 498.2,
+  "p_out_w": 401.5,
+  "pf_in": 0.937,
+  "pf_out": 0.945,
+  "q_in_var": 182.4,
+  "q_out_var": 145.3,
+  "e_in_kwh": 12.345,
+  "e_out_kwh": 11.802,
   "rssi": -62,
   "ip": "192.168.1.45",
-  "firmware": "0.5.0",
+  "firmware": "2.1.0",
   "uptime_ms": 86400000,
   "seq": 17280,
   "free_heap": 210432,

@@ -807,15 +807,17 @@ void handleRoot()
     page += F(" "); page += WiFi.softAPIP().toString();
     page += F("</p><form method='post' action='/save'>"
               "<label>SSID</label><input name='ssid' value='"); page += htmlEscape(wifiSettings.ssid);
-    page += F("'><label>Password</label><input name='pass' type='password' placeholder='Leave blank to keep existing password'>");
-    page += F("'><label>MQTT Broker</label><input name='mqttHost' value='"); page += htmlEscape(mqttHost);
+    page += F("'><label>Password</label>"
+              "<input name='pass' type='password' placeholder='Leave blank to keep existing password'>"
+              "<label>MQTT Broker</label><input name='mqttHost' value='"); page += htmlEscape(mqttHost);
     page += F("'><div class='row'>"
               "<label>MQTT Port<input name='mqttPort' type='number' value='"); page += mqttPort;
     page += F("'></label>"
               "<label>MQTT Username<input name='mqttUser' value='"); page += htmlEscape(mqttUser);
     page += F("'></label></div>"
-              "<label>MQTT Password</label><input name='mqttPass' type='password' placeholder='Leave blank to keep existing password'>");
-    page += F("'><p class='muted'>Leave username blank for anonymous brokers (e.g. HiveMQ public). "
+              "<label>MQTT Password</label>"
+              "<input name='mqttPass' type='password' placeholder='Leave blank to keep existing password'>"
+              "<p class='muted'>Leave username blank for anonymous brokers (e.g. HiveMQ public). "
               "For production Mosquitto, enter the device_id as username and the matching password.</p>"
               "<label>Device ID</label><input name='deviceId' value='"); page += htmlEscape(deviceId);
     page += F("'><div class='row'>"
