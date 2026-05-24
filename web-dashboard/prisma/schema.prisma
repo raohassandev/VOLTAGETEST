@@ -281,6 +281,22 @@ model DeviceDiscovered {
   @@index([lastSeenAt])
 }
 
+// MQTT broker connections — dashboard worker connects to all enabled brokers
+model MqttBroker {
+  id        String   @id @default(cuid())
+  name      String                        // display name, e.g. "Site A Mosquitto"
+  host      String                        // hostname or IP
+  port      Int      @default(1883)
+  username  String   @default("")
+  password  String   @default("")
+  enabled   Boolean  @default(true)
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([enabled])
+}
+
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String?
