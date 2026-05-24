@@ -6,7 +6,7 @@ import { requireRole } from "@/lib/api-auth";
 import { logAudit, requestIp } from "@/lib/audit";
 
 export async function GET(request: Request) {
-  const auth = requireRole(request, "admin");
+  const auth = requireRole(request, "manufacturer");
   if (!auth.ok) return auth.response;
   if (!isDbEnabled()) return NextResponse.json({ error: "Database not configured." }, { status: 503 });
 
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = requireRole(request, "admin");
+  const auth = requireRole(request, "manufacturer");
   if (!auth.ok) return auth.response;
   if (!isDbEnabled()) return NextResponse.json({ error: "Database not configured." }, { status: 503 });
 

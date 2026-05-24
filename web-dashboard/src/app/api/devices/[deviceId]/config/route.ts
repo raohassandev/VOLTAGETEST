@@ -30,7 +30,7 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ deviceId: string }> },
 ) {
-  const auth = requireRole(request, "admin");
+  const auth = requireRole(request, "manufacturer");
   if (!auth.ok) return auth.response;
 
   // In production Docker mode the embedded broker is disabled.

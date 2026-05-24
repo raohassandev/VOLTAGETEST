@@ -16,6 +16,34 @@
 
 let _handled = false;
 
+/**
+ * Read the role from the ups_user cookie (client-side, same logic as AppShell).
+ * Returns "viewer" if the cookie is absent or unreadable.
+ */
+export function readRoleCookie(): string {
+  if (typeof document === "undefined") return "viewer";
+  const match = document.cookie.match(/(?:^|;\s*)ups_user=([^;]*)/);
+  if (!match) return "viewer";
+  try {
+    const value = decodeURIComponent(match[1]);
+    const payload = value.includes(".") ? value.slice(0, value.lastIndexOf(".")) : value;
+    const parsed = JSON.parse(atob(payload)) as { role?: string };
+    return parsed.role ?? "viewer";
+  } catch {
+    return "viewer";
+  }
+}
+
+/**
+ * Redirect to / if the current user is not manufacturer.
+ * Call once at the top of a manufacturer-only page component.
+ */
+export function guardManufacturer(): void {
+  if (readRoleCookie() !== "manufacturer") {
+    window.location.replace("/");
+  }
+}
+
 /** Fire once: redirect to /welcome?expired=1 after a short delay. */
 export function handleUnauthorized(): void {
   if (_handled) return;

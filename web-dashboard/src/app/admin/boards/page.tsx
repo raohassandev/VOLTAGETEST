@@ -3,7 +3,7 @@
 import { Cpu, ExternalLink, Radio, RefreshCw, Search, Wifi, WifiOff, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
-import { checkUnauthorized } from "@/lib/handle-unauthorized";
+import { checkUnauthorized, guardManufacturer } from "@/lib/handle-unauthorized";
 
 interface Board {
   deviceId: string;
@@ -54,6 +54,7 @@ function CommandBtn({ deviceId }: { deviceId: string }) {
 }
 
 export default function BoardsPage() {
+  guardManufacturer();
   const [boards, setBoards]           = useState<Board[]>([]);
   const [discovered, setDiscovered]   = useState<Discovered[]>([]);
   const [tab, setTab]                 = useState<Tab>("mqtt");

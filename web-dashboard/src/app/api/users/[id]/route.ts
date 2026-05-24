@@ -9,7 +9,7 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = requireRole(request, "admin");
+  const auth = requireRole(request, "manufacturer");
   if (!auth.ok) return auth.response;
   if (!isDbEnabled()) return NextResponse.json({ error: "Database not configured." }, { status: 503 });
 
@@ -45,7 +45,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = requireRole(request, "admin");
+  const auth = requireRole(request, "manufacturer");
   if (!auth.ok) return auth.response;
   if (!isDbEnabled()) return NextResponse.json({ error: "Database not configured." }, { status: 503 });
 

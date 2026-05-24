@@ -48,9 +48,9 @@ const NAV_LINKS: NavLink[] = [
   { key: "alarms",      label: "Alarms",     href: "/alarms",            minRole: "viewer" },
   { key: "inventory",   label: "Inventory",  href: "/admin/inventory",   minRole: "admin" },
   { key: "alarm-rules", label: "Rules",      href: "/admin/alarm-rules", minRole: "admin" },
-  { key: "boards",      label: "Boards",     href: "/admin/boards",      minRole: "admin" },
-  { key: "settings",    label: "Settings",   href: "/admin/settings",    minRole: "admin" },
-  { key: "users",       label: "Users",      href: "/admin/users",       minRole: "admin" },
+  { key: "boards",      label: "Boards",     href: "/admin/boards",      minRole: "manufacturer" },
+  { key: "settings",    label: "Settings",   href: "/admin/settings",    minRole: "manufacturer" },
+  { key: "users",       label: "Users",      href: "/admin/users",       minRole: "manufacturer" },
   { key: "system",      label: "System",     href: "/admin/system",      minRole: "manufacturer" },
 ];
 

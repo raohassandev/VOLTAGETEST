@@ -9,7 +9,7 @@ import { logAudit, requestIp } from "@/lib/audit";
 const settingsFile = "settings.json";
 
 export async function GET(request: Request) {
-  const auth = requireApiAuth(request);
+  const auth = requireRole(request, "manufacturer");
   if (!auth.ok) return auth.response;
 
   if (isDbEnabled()) {
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const auth = requireRole(request, "admin");
+  const auth = requireRole(request, "manufacturer");
   if (!auth.ok) return auth.response;
 
   const body = (await request.json()) as { settings?: Partial<SystemSettings>; offlineThresholdSecs?: number };

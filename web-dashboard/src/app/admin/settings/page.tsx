@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
-import { checkUnauthorized } from "@/lib/handle-unauthorized";
+import { checkUnauthorized, guardManufacturer } from "@/lib/handle-unauthorized";
 
 interface SettingsPayload {
   settings: {
@@ -17,6 +17,7 @@ const inputCls  = "rounded-md border border-slate-600 px-3 py-2 text-sm text-sla
 const inputStyle = { background: "var(--surface-2)" };
 
 export default function SettingsAdminPage() {
+  guardManufacturer();
   const [rawRetentionDays,      setRawRetentionDays]      = useState(30);
   const [rollupRetentionMonths, setRollupRetentionMonths] = useState(12);
   const [alarmRetentionMonths,  setAlarmRetentionMonths]  = useState(24);
