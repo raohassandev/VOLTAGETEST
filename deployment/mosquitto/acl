@@ -3,19 +3,18 @@
 # Device users (username = device_id):
 #   Can publish only to their own telemetry topic.
 #   The %u substitution expands to the connecting client's username.
-#   A device with username DEV-COM11-TEST can publish to:
-#     building/+/ups/DEV-COM11-TEST/telemetry
-#     building/+/ups/DEV-COM11-TEST/status
+#   A device with username UMS-3076F5A5AD54 can publish to:
+#     ums/devices/UMS-3076F5A5AD54/data
 #
-pattern write building/+/ups/%u/telemetry
-pattern write building/+/ups/%u/status
+pattern write ums/devices/%u/data
+pattern write ums/devices/%u/status
 
 # Dashboard / MQTT worker user:
-#   Needs read access to all devices across all sites, and write access
-#   to the command topic so the dashboard can send reboot/reset/OTA commands.
+#   Needs read access to all device telemetry and write access
+#   to command topics so the dashboard can send reboot/reset/OTA commands.
 #   Username must match MQTT_USERNAME in the dashboard .env.
 #
 user dashboard
-topic read building/+/ups/+/telemetry
-topic read building/+/ups/+/status
+topic read ums/devices/+/data
+topic read ums/devices/+/status
 topic write ums/devices/+/command
