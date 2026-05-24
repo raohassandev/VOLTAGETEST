@@ -1,6 +1,6 @@
 "use client";
 
-import { Cpu, ExternalLink, Radio, RefreshCw, Search, Wifi, WifiOff, Zap } from "lucide-react";
+import { Cpu, ExternalLink, Radio, RefreshCw, Search, Trash2, Wifi, WifiOff, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { checkUnauthorized, guardManufacturer } from "@/lib/handle-unauthorized";
@@ -61,6 +61,7 @@ export default function BoardsPage() {
   const [search, setSearch]           = useState("");
   const [loading, setLoading]         = useState(true);
   const [scanning, setScanning]       = useState(false);
+  const [deleting, setDeleting]       = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const esRef = useRef<EventSource | null>(null);
 
@@ -75,6 +76,22 @@ export default function BoardsPage() {
       setLastUpdated(new Date());
     }).catch(() => undefined)
       .finally(() => setLoading(false));
+  }
+
+  async function deleteBoard(deviceId: string) {
+    if (!confirm(`Delete board "${deviceId}" and all its data?\n\nThis cannot be undone. The board will reappear if it reconnects via MQTT.`)) return;
+    setDeleting(deviceId);
+    try {
+      const res = await fetch(`/api/devices/${encodeURIComponent(deviceId)}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { error?: string };
+        alert(`Delete failed: ${err.error ?? res.status}`);
+      } else {
+        loadAll();
+      }
+    } finally {
+      setDeleting(null);
+    }
   }
 
   async function triggerScan() {
@@ -242,6 +259,13 @@ export default function BoardsPage() {
                           <span className="rounded-full bg-slate-700 border border-slate-600 px-2 py-0.5 font-semibold text-slate-300">v{b.firmware}</span>
                         )}
                         <span className="text-slate-600">{timeAgo(b.lastSeenAt)}</span>
+                        <button
+                          onClick={() => deleteBoard(b.deviceId)}
+                          disabled={deleting === b.deviceId}
+                          className="ml-auto rounded bg-red-900/40 border border-red-800 px-2 py-0.5 text-xs font-semibold text-red-400 hover:bg-red-900/70 disabled:opacity-40 transition-colors inline-flex items-center gap-1"
+                        >
+                          <Trash2 size={10} />{deleting === b.deviceId ? "Deleting…" : "Delete"}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -304,6 +328,14 @@ export default function BoardsPage() {
                                   className="rounded bg-cyan-900/50 border border-cyan-800 px-2 py-1 text-xs font-semibold text-cyan-300 hover:bg-cyan-900/70">OTA</a>
                               </>}
                               {b.online && <CommandBtn deviceId={b.deviceId} />}
+                              <button
+                                onClick={() => deleteBoard(b.deviceId)}
+                                disabled={deleting === b.deviceId}
+                                className="rounded bg-red-900/40 border border-red-800 px-2 py-1 text-xs font-semibold text-red-400 hover:bg-red-900/70 disabled:opacity-40 transition-colors"
+                                title="Delete board and all its data"
+                              >
+                                {deleting === b.deviceId ? "…" : <Trash2 size={11} />}
+                              </button>
                             </div>
                           </td>
                         </tr>
