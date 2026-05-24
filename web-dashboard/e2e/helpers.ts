@@ -1,4 +1,4 @@
-import { Page, expect } from "@playwright/test";
+import { Page } from "@playwright/test";
 
 export const ADMIN_USER = process.env.TEST_USER || "admin";
 export const ADMIN_PASS = process.env.TEST_PASS || "UMS@Local2026!";

@@ -18,5 +18,11 @@ CREDENTIALS.md
 .DS_Store
 Thumbs.db
 
-firmware/ups_monitor/build/
+firmware/**/build/
+*.elf
+*.map
+*.hex
 web-dashboard/test-results/
+web-dashboard/playwright-report/
+web-dashboard/e2e/report/
+qa/screenshots/

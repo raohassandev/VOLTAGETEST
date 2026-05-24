@@ -1,6 +1,9 @@
 # Commissioning Guide — UPS Monitoring System
 
-This guide covers setting up a new ESP32 monitoring module (firmware v0.5.1) for a UPS unit and registering it in the dashboard.
+> **⚠️ Version notice:** This guide was written for firmware v0.5.1. Current firmware is **v2.1.0**.
+> For v2.1.0 commissioning, use `docs/FIRMWARE_GUIDE.md`.
+> The canonical firmware file is `firmware/VOLTAGETEST/VOLTAGETEST.ino`.
+> The MQTT topic is now `ums/devices/<device_id>/data` (not `building/.../telemetry`).
 
 ---
 

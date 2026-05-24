@@ -1,9 +1,12 @@
-# Device telemetry topics.
-pattern write building/%u/ups/%u/telemetry
-pattern write building/%u/ups/%u/status
+# Device telemetry topics — v2.1.0 topic scheme: ums/devices/{device_id}/data
+# Each device authenticates with its deviceId as MQTT username.
+pattern write ums/devices/%u/data
 
-# Dashboard/backend user should be given broader read access in production.
+# Dashboard/backend (mqtt-worker) reads all device telemetry.
 user dashboard
-topic read building/+/ups/+/telemetry
-topic read building/+/ups/+/status
+topic read ums/devices/+/data
 
+# Superuser for local dev / certify.sh smoke tests.
+# Remove or restrict in production.
+user DOCKER-SMOKE-001
+topic readwrite #

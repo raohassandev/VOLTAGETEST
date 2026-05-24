@@ -103,7 +103,7 @@ test.describe("API smoke tests", () => {
     expect([501, 404]).toContain(res.status());
   });
 
-  test("unauthenticated GET /api/settings returns 401", async ({ request: _ }) => {
+  test("unauthenticated GET /api/settings returns 401", async () => {
     // Create a fresh context with no cookies using the built-in fetch
     const res = await fetch("http://localhost:3303/api/settings");
     expect(res.status).toBe(401);

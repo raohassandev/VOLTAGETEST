@@ -63,7 +63,8 @@ export default function HistoryPage() {
     }
   }
 
-  useEffect(() => { loadAll(); }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void loadAll(); }, []);
 
   async function triggerPurge() {
     if (!confirm("This will delete raw telemetry and rollup rows older than the configured retention period. Continue?")) return;

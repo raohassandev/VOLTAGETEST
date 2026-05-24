@@ -106,7 +106,7 @@ docker compose logs -f mqtt-worker
 | `MQTT_BROKER_URL` | Yes (worker) | MQTT broker URL, e.g. `mqtt://localhost:1883` |
 | `MQTT_USERNAME` | No | MQTT broker username |
 | `MQTT_PASSWORD` | No | MQTT broker password |
-| `MQTT_TOPIC` | No | MQTT topic filter (default: `building/+/ups/+/telemetry`) |
+| `MQTT_TOPIC` | No | MQTT topic filter (default: `ums/devices/+/data`) |
 | `OFFLINE_THRESHOLD_SECS` | No | Seconds before a device is marked offline (default: `60`) |
 | `ENABLE_EMBEDDED_BROKER` | No | Set `false` in Docker (uses Mosquitto instead of built-in Aedes broker) |
 | `POSTGRES_PASSWORD` | Yes | PostgreSQL password (Docker Compose only) |
@@ -179,16 +179,20 @@ POSTGRES_PASSWORD=yourpassword deployment/scripts/restore.sh deployment/backups/
 
 ## Firmware Flashing
 
-See `firmware/ups_monitor/README.md` for the Arduino IDE compile instructions.
+See `docs/FIRMWARE_GUIDE.md` for the Arduino IDE compile and flash instructions for firmware v2.1.0.
+
+**Canonical firmware path:** `firmware/VOLTAGETEST/VOLTAGETEST.ino`
 
 **Compile command reference (Arduino CLI):**
 ```bash
 arduino-cli compile \
   --fqbn esp32:esp32:esp32 \
-  firmware/ups_monitor/ups_monitor.ino
+  firmware/VOLTAGETEST/VOLTAGETEST.ino
 
 arduino-cli upload \
   --fqbn esp32:esp32:esp32 \
   --port /dev/ttyUSB0 \
-  firmware/ups_monitor/ups_monitor.ino
+  firmware/VOLTAGETEST/VOLTAGETEST.ino
 ```
+
+Pre-compiled OTA binary for v2.1.0: `release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin`

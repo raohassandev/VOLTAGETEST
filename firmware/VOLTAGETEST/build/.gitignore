@@ -1,3 +1,0 @@
-# Keep the flashable binary, ignore large debug artifacts
-*.elf
-*.map
