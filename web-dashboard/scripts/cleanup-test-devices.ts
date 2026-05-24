@@ -61,6 +61,7 @@ async function main() {
       // Delete in dependency order
       await prisma.telemetryRaw.deleteMany({ where: { deviceId } });
       await prisma.telemetryLatest.deleteMany({ where: { deviceId } });
+      await prisma.telemetry1m.deleteMany({ where: { deviceId } });
       // Delete alarm events before alarms (no FK cascade)
       const alarms = await prisma.alarm.findMany({ where: { deviceId }, select: { id: true } });
       if (alarms.length > 0) {
