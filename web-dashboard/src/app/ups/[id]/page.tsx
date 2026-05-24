@@ -419,10 +419,10 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
         <div>
           <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Live measurements</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <MetricCard label="Input Voltage"  value={fmt(telemetry?.voltIn)}  unit="V" warn={(telemetry?.voltIn ?? 230) < 200}  danger={(telemetry?.voltIn ?? 230) < 180} />
-            <MetricCard label="Output Voltage" value={fmt(telemetry?.voltOut)} unit="V" warn={(telemetry?.voltOut ?? 230) < 210} danger={(telemetry?.voltOut ?? 230) < 200} />
+            <MetricCard label="Primary Voltage"  value={fmt(telemetry?.voltIn)}  unit="V" warn={(telemetry?.voltIn ?? 230) < 200}  danger={(telemetry?.voltIn ?? 230) < 180} />
+            <MetricCard label="Secondary Voltage" value={fmt(telemetry?.voltOut)} unit="V" warn={(telemetry?.voltOut ?? 230) < 210} danger={(telemetry?.voltOut ?? 230) < 200} />
             <MetricCard
-              label="Battery DC"
+              label="Battery Voltage"
               value={fmt(voltDcCalibrated)}
               unit="V"
               warn={voltDcCalibrated !== null && voltDcCalibrated < unit.batteryNominalV * 0.917}
@@ -434,10 +434,10 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard label="Input Current"         value={fmt(telemetry?.ctIn)}      unit="A"  />
-          <MetricCard label="Output Current"        value={fmt(telemetry?.ctOut)}     unit="A"  />
-          <MetricCard label="Input Apparent Power"  value={fmt(telemetry?.sInVa, 0)}  unit="VA" />
-          <MetricCard label="Output Apparent Power" value={fmt(telemetry?.sOutVa, 0)} unit="VA" />
+          <MetricCard label="Primary Current"         value={fmt(telemetry?.ctIn)}      unit="A"  />
+          <MetricCard label="Secondary Current"        value={fmt(telemetry?.ctOut)}     unit="A"  />
+          <MetricCard label="Primary Apparent Power"  value={fmt(telemetry?.sInVa, 0)}  unit="VA" />
+          <MetricCard label="Secondary Apparent Power" value={fmt(telemetry?.sOutVa, 0)} unit="VA" />
         </div>
 
         {/* ── Energy analyzer fields ───────────────────────────────────────── */}
@@ -451,61 +451,61 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard
-              label="Active Power In"
+              label="Primary Active Power"
               value={telemetry?.pInW != null ? fmt(telemetry.pInW, 1) : "Not available"}
               unit={telemetry?.pInW != null ? "W" : ""}
               note={telemetry?.pInW == null ? "firmware calibration required" : undefined}
             />
             <MetricCard
-              label="Active Power Out"
+              label="Secondary Active Power"
               value={telemetry?.pOutW != null ? fmt(telemetry.pOutW, 1) : "Not available"}
               unit={telemetry?.pOutW != null ? "W" : ""}
               note={telemetry?.pOutW == null ? "firmware calibration required" : undefined}
             />
             <MetricCard
-              label="Power Factor In"
+              label="Primary Power Factor"
               value={telemetry?.pfIn != null ? fmt(telemetry.pfIn, 3) : "Not available"}
               unit=""
               note={telemetry?.pfIn == null ? "firmware calibration required" : undefined}
             />
             <MetricCard
-              label="Power Factor Out"
+              label="Secondary Power Factor"
               value={telemetry?.pfOut != null ? fmt(telemetry.pfOut, 3) : "Not available"}
               unit=""
               note={telemetry?.pfOut == null ? "firmware calibration required" : undefined}
             />
             <MetricCard
-              label="Frequency In"
+              label="Primary Frequency"
               value={telemetry?.freqIn != null ? fmt(telemetry.freqIn, 1) : "Not available"}
               unit={telemetry?.freqIn != null ? "Hz" : ""}
               note={telemetry?.freqIn == null ? "firmware calibration required" : undefined}
             />
             <MetricCard
-              label="Frequency Out"
+              label="Secondary Frequency"
               value={telemetry?.freqOut != null ? fmt(telemetry.freqOut, 1) : "Not available"}
               unit={telemetry?.freqOut != null ? "Hz" : ""}
               note={telemetry?.freqOut == null ? "firmware calibration required" : undefined}
             />
             <MetricCard
-              label="Reactive Power In"
+              label="Primary Reactive Power"
               value={telemetry?.qInVar != null ? fmt(telemetry.qInVar, 1) : "Not available"}
               unit={telemetry?.qInVar != null ? "VAR" : ""}
               note={telemetry?.qInVar == null ? "firmware calibration required" : undefined}
             />
             <MetricCard
-              label="Reactive Power Out"
+              label="Secondary Reactive Power"
               value={telemetry?.qOutVar != null ? fmt(telemetry.qOutVar, 1) : "Not available"}
               unit={telemetry?.qOutVar != null ? "VAR" : ""}
               note={telemetry?.qOutVar == null ? "firmware calibration required" : undefined}
             />
             <MetricCard
-              label="Energy In"
+              label="Primary Energy"
               value={telemetry?.eInKwh != null ? fmt(telemetry.eInKwh, 3) : "Not available"}
               unit={telemetry?.eInKwh != null ? "kWh" : ""}
               note={telemetry?.eInKwh == null ? "firmware calibration required" : undefined}
             />
             <MetricCard
-              label="Energy Out"
+              label="Secondary Energy"
               value={telemetry?.eOutKwh != null ? fmt(telemetry.eOutKwh, 3) : "Not available"}
               unit={telemetry?.eOutKwh != null ? "kWh" : ""}
               note={telemetry?.eOutKwh == null ? "firmware calibration required" : undefined}

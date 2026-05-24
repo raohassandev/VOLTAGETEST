@@ -413,9 +413,9 @@ export default function SettingsAdminPage() {
                 {boardData && (
                   <>
                     {[
-                      { label: "V-in",  value: boardData.volt_in  != null ? `${boardData.volt_in.toFixed(1)} V` : "—" },
-                      { label: "V-out", value: boardData.volt_out != null ? `${boardData.volt_out.toFixed(1)} V` : "—" },
-                      { label: "V-dc",  value: boardData.volt_dc  != null ? `${boardData.volt_dc.toFixed(2)} V` : "—" },
+                      { label: "Pri. Voltage",  value: boardData.volt_in  != null ? `${boardData.volt_in.toFixed(1)} V` : "—" },
+                      { label: "Sec. Voltage", value: boardData.volt_out != null ? `${boardData.volt_out.toFixed(1)} V` : "—" },
+                      { label: "Battery V",  value: boardData.volt_dc  != null ? `${boardData.volt_dc.toFixed(2)} V` : "—" },
                       { label: "RSSI",  value: boardData.rssi     != null ? `${boardData.rssi} dBm` : "—" },
                     ].map(({ label, value }) => (
                       <div key={label}>

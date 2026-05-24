@@ -244,8 +244,8 @@ function UpsCard({
         style={{ borderColor: "var(--border-subtle)" }}
       >
         {[
-          { label: "In V",  value: formatNumber(Number(device.telemetry.volt_in  ?? 0)) },
-          { label: "Out V", value: formatNumber(Number(device.telemetry.volt_out ?? 0)) },
+          { label: "Pri. V",  value: formatNumber(Number(device.telemetry.volt_in  ?? 0)) },
+          { label: "Sec. V", value: formatNumber(Number(device.telemetry.volt_out ?? 0)) },
           { label: "Bat V", value: voltDcDisplay },
           { label: "Load",  value: loadPct !== null ? `${formatNumber(loadPct)}%` : "--" },
         ].map(({ label, value }, i) => (

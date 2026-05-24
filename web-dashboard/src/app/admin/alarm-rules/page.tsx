@@ -38,11 +38,11 @@ const SCOPE_LABELS: Record<Scope, string> = {
 };
 
 const METRIC_OPTIONS = [
-  { value: "volt_in",       label: "Input Voltage" },
-  { value: "volt_out",      label: "Output Voltage" },
+  { value: "volt_in",       label: "Primary Voltage" },
+  { value: "volt_out",      label: "Secondary Voltage" },
   { value: "volt_dc",       label: "Battery Voltage" },
-  { value: "ct_in",         label: "Input Current" },
-  { value: "ct_out",        label: "Output Current" },
+  { value: "ct_in",         label: "Primary Current" },
+  { value: "ct_out",        label: "Secondary Current" },
   { value: "s_out_va",      label: "Output Apparent Power" },
   { value: "load_percent",  label: "Load %" },
   { value: "p_in_w",        label: "Input Real Power (W)" },
@@ -71,7 +71,7 @@ function scopeId(rule: AlarmRule): string {
 
 const emptyForm = {
   metric: "volt_in",
-  label: "Input Voltage",
+  label: "Primary Voltage",
   scope: "global" as Scope,
   scopeId: "",
   lowCritical: "",

@@ -29,11 +29,11 @@ const DEFAULT_PROFILE: CalibProfile = {
 };
 
 const CHANNELS: { key: keyof CalibProfile; label: string; scaleKey: keyof CalibProfile; offsetKey: keyof CalibProfile }[] = [
-  { key: "vInScale",  label: "Input Voltage (V_in)",    scaleKey: "vInScale",  offsetKey: "vInOffset"  },
-  { key: "vOutScale", label: "Output Voltage (V_out)",  scaleKey: "vOutScale", offsetKey: "vOutOffset" },
+  { key: "vInScale",  label: "Primary Voltage (V_in)",    scaleKey: "vInScale",  offsetKey: "vInOffset"  },
+  { key: "vOutScale", label: "Secondary Voltage (V_out)",  scaleKey: "vOutScale", offsetKey: "vOutOffset" },
   { key: "vDcScale",  label: "Battery Voltage (V_dc)",  scaleKey: "vDcScale",  offsetKey: "vDcOffset"  },
-  { key: "iInScale",  label: "Input Current (I_in)",    scaleKey: "iInScale",  offsetKey: "iInOffset"  },
-  { key: "iOutScale", label: "Output Current (I_out)",  scaleKey: "iOutScale", offsetKey: "iOutOffset" },
+  { key: "iInScale",  label: "Primary Current (I_in)",    scaleKey: "iInScale",  offsetKey: "iInOffset"  },
+  { key: "iOutScale", label: "Secondary Current (I_out)",  scaleKey: "iOutScale", offsetKey: "iOutOffset" },
 ];
 
 function profileToForm(p: Partial<CalibProfile>): Record<string, string> {

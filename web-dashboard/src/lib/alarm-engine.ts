@@ -51,7 +51,7 @@ const DEFAULT_HYSTERESIS_PCT = 2;
 const DEFAULT_THRESHOLDS: ThresholdCheck[] = [
   {
     metric: "volt_in",
-    label: "Input Voltage",
+    label: "Primary Voltage",
     value: 0,
     lowCritical: 180,
     lowWarning: 200,
@@ -62,7 +62,7 @@ const DEFAULT_THRESHOLDS: ThresholdCheck[] = [
   },
   {
     metric: "volt_out",
-    label: "Output Voltage",
+    label: "Secondary Voltage",
     value: 0,
     lowCritical: 200,
     lowWarning: 210,
@@ -73,7 +73,7 @@ const DEFAULT_THRESHOLDS: ThresholdCheck[] = [
   },
   {
     metric: "ct_in",
-    label: "Input Current",
+    label: "Primary Current",
     value: 0,
     highWarning: 28,
     highCritical: 32,
@@ -82,7 +82,7 @@ const DEFAULT_THRESHOLDS: ThresholdCheck[] = [
   },
   {
     metric: "ct_out",
-    label: "Output Current",
+    label: "Secondary Current",
     value: 0,
     highWarning: 28,
     highCritical: 32,
