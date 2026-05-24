@@ -16,6 +16,7 @@ const lbl = "block text-xs font-semibold text-slate-400 mb-1";
 interface SysSettings { rawRetentionDays: number; rollupRetentionMonths: number; alarmRetentionMonths: number; offlineThresholdSecs: number; }
 interface BoardInfo   { device_id: string; firmware: string; mac: string; ip: string; mqtt_host: string; mqtt_port: number; mqtt_topic: string; mqtt_auth: boolean; }
 interface BoardData   { volt_in?: number; volt_out?: number; volt_dc?: number; rssi?: number; seq?: number; }
+interface KnownDevice { deviceId: string; ip: string | null; mac: string | null; firmware: string | null; online: boolean; upsId: string | null; }
 interface MqttBroker  { id: string; name: string; host: string; port: number; username: string; password: string; enabled: boolean; notes: string; }
 
 // ── Section wrapper ───────────────────────────────────────────────────────────
@@ -140,7 +141,8 @@ export default function SettingsAdminPage() {
   const [sysMsg,  setSysMsg]  = useState("");
 
   // ── Board config ─────────────────────────────────────────────────────────
-  const [boardIp,       setBoardIp]       = useState("");
+  const [knownDevices,  setKnownDevices]  = useState<KnownDevice[]>([]);
+  const [selectedDev,   setSelectedDev]   = useState<KnownDevice | null>(null);
   const [boardInfo,     setBoardInfo]     = useState<BoardInfo | null>(null);
   const [boardData,     setBoardData]     = useState<BoardData | null>(null);
   const [boardLoading,  setBoardLoading]  = useState(false);
@@ -162,6 +164,43 @@ export default function SettingsAdminPage() {
   const [brokers,      setBrokers]      = useState<MqttBroker[]>([]);
   const [brokerModal,  setBrokerModal]  = useState<"new" | MqttBroker | null>(null);
   const [brokerLoading, setBrokerLoading] = useState(false);
+
+  // ── Load known devices ───────────────────────────────────────────────────
+  useEffect(() => {
+    fetch("/api/devices", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { devices?: KnownDevice[] }) => setKnownDevices(d.devices ?? [])) // eslint-disable-line react-hooks/set-state-in-effect
+      .catch(() => undefined);
+  }, []);
+
+  // Auto-fetch board info when a device is selected
+  async function selectDevice(dev: KnownDevice) {
+    setSelectedDev(dev);
+    setBoardInfo(null); setBoardData(null); setBoardError(""); setCfgMsg("");
+    if (!dev.ip) { setBoardError("This device has no IP address on record — it may not have connected recently."); return; }
+    setBoardLoading(true);
+    try {
+      const [infoRes, dataRes] = await Promise.all([
+        fetch(`/api/board-proxy?ip=${encodeURIComponent(dev.ip)}&path=api/info`),
+        fetch(`/api/board-proxy?ip=${encodeURIComponent(dev.ip)}&path=data`),
+      ]);
+      if (!infoRes.ok) throw new Error(`Board at ${dev.ip} not reachable`);
+      const info = (await infoRes.json()) as BoardInfo;
+      const data = dataRes.ok ? (await dataRes.json()) as BoardData : null;
+      setBoardInfo(info);
+      setBoardData(data);
+      setCfgMqttHost(info.mqtt_host);
+      setCfgMqttPort(info.mqtt_port);
+      setCfgDeviceId(info.device_id);
+      setCfgMqttUser("");
+    } catch (e) {
+      setBoardError(e instanceof Error ? e.message : "Could not reach board");
+    } finally { setBoardLoading(false); }
+  }
+
+  async function refreshBoard() {
+    if (selectedDev) await selectDevice(selectedDev);
+  }
 
   // ── Load system settings ─────────────────────────────────────────────────
   useEffect(() => {
@@ -195,36 +234,14 @@ export default function SettingsAdminPage() {
     } finally { setSysSaving(false); }
   }
 
-  // ── Fetch board info ─────────────────────────────────────────────────────
-  async function fetchBoard() {
-    if (!boardIp.trim()) return;
-    setBoardLoading(true); setBoardError(""); setBoardInfo(null); setBoardData(null);
-    try {
-      const [infoRes, dataRes] = await Promise.all([
-        fetch(`/api/board-proxy?ip=${encodeURIComponent(boardIp)}&path=api/info`),
-        fetch(`/api/board-proxy?ip=${encodeURIComponent(boardIp)}&path=data`),
-      ]);
-      if (!infoRes.ok) throw new Error("Board not reachable");
-      const info = (await infoRes.json()) as BoardInfo;
-      const data = dataRes.ok ? (await dataRes.json()) as BoardData : null;
-      setBoardInfo(info);
-      setBoardData(data);
-      setCfgMqttHost(info.mqtt_host);
-      setCfgMqttPort(info.mqtt_port);
-      setCfgDeviceId(info.device_id);
-    } catch (e) {
-      setBoardError(e instanceof Error ? e.message : "Could not reach board");
-    } finally { setBoardLoading(false); }
-  }
-
   async function pushBoardConfig() {
-    if (!boardIp || !boardInfo) return;
+    if (!selectedDev?.ip || !boardInfo) return;
     setCfgSaving(true); setCfgMsg("");
     try {
       const res = await fetch("/api/board-config", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ip: boardIp, ssid: cfgSsid, mqttHost: cfgMqttHost, mqttPort: cfgMqttPort,
+          ip: selectedDev.ip, ssid: cfgSsid, mqttHost: cfgMqttHost, mqttPort: cfgMqttPort,
           mqttUser: cfgMqttUser, mqttPass: cfgMqttPass, deviceId: cfgDeviceId,
           mode: cfgMode, staticIp: cfgStaticIp, gw: cfgGw, sn: cfgSn,
         }),
@@ -321,22 +338,58 @@ export default function SettingsAdminPage() {
         </Section>
 
         {/* ── 2. Board Configuration ──────────────────────────────────── */}
-        <Section icon={Router} title="Board Configuration" subtitle="Fetch and push parameters to a board over HTTP" defaultOpen={false}>
+        <Section icon={Router} title="Board Configuration" subtitle="Select a board to view and push parameters" defaultOpen={false}>
           <div className="mt-4 flex flex-col gap-4">
 
-            {/* Board IP lookup */}
+            {/* Device selector */}
             <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Connect to Board</p>
-              <div className="flex gap-2">
-                <input className={inp} value={boardIp} onChange={(e) => setBoardIp(e.target.value)}
-                  placeholder="Board IP (e.g. 192.168.0.100)" onKeyDown={(e) => e.key === "Enter" && fetchBoard()} />
-                <button onClick={fetchBoard} disabled={boardLoading} type="button"
-                  className="flex items-center gap-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 disabled:opacity-50 transition-colors shrink-0">
-                  <RefreshCw size={13} className={boardLoading ? "animate-spin" : ""} />
-                  {boardLoading ? "Fetching…" : "Fetch"}
-                </button>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Select Board</p>
+                {selectedDev && (
+                  <button onClick={refreshBoard} disabled={boardLoading} type="button"
+                    className="flex items-center gap-1 text-xs text-slate-400 hover:text-cyan-300 transition-colors">
+                    <RefreshCw size={11} className={boardLoading ? "animate-spin" : ""} /> Refresh
+                  </button>
+                )}
               </div>
-              {boardError && <p className="mt-2 text-xs text-red-400 font-semibold">{boardError}</p>}
+
+              {knownDevices.length === 0 ? (
+                <p className="text-sm text-slate-500 py-3 text-center">No devices in database yet.</p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {knownDevices.map((dev) => (
+                    <button
+                      key={dev.deviceId}
+                      type="button"
+                      onClick={() => selectDevice(dev)}
+                      className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-all ${
+                        selectedDev?.deviceId === dev.deviceId
+                          ? "border-cyan-600 bg-cyan-900/20 ring-1 ring-cyan-700/40"
+                          : "border-slate-700 hover:border-slate-500 hover:bg-slate-800/40"
+                      }`}
+                    >
+                      <div className={`w-2 h-2 rounded-full shrink-0 ${dev.online ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-slate-600"}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-100 truncate">{dev.deviceId}</p>
+                        <p className="text-xs text-slate-500 font-mono truncate">
+                          {dev.ip ?? "no IP"} {dev.firmware ? `· fw ${dev.firmware}` : ""}
+                        </p>
+                        {dev.upsId && <p className="text-xs text-cyan-500 truncate">{dev.upsId}</p>}
+                      </div>
+                      <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0 ${
+                        dev.online ? "bg-emerald-900/40 text-emerald-400" : "bg-slate-800 text-slate-500"
+                      }`}>{dev.online ? "Online" : "Offline"}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {boardLoading && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-slate-400">
+                  <RefreshCw size={13} className="animate-spin text-cyan-400" /> Connecting to board…
+                </div>
+              )}
+              {boardError && <p className="mt-2 text-xs text-red-400 font-semibold">⚠ {boardError}</p>}
             </div>
 
             {/* Board current status */}
