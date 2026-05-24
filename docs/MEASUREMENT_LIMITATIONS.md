@@ -1,6 +1,6 @@
 # Measurement Limitations
 
-## Current Capability (Firmware v0.4.0)
+## Current Capability (Firmware v2.1.0)
 
 The firmware measures:
 
@@ -59,8 +59,10 @@ The `Telemetry1m` table stores 1-minute aggregates of the raw telemetry stream.
 | `sInVa`, `sOutVa` (apparent power) | avg / max |
 | `rssi` | avg |
 
-**Not in rollup:** `pInW`, `pOutW`, `pfIn`, `pfOut`, `eInKwh`, `eOutKwh`
-These are NULL in raw telemetry and are not aggregated.
+**Also in rollup (nullable — NULL when firmware does not publish):**
+`freqInAvg`, `freqOutAvg`, `pInWAvg/Max`, `pOutWAvg/Max`, `pfInAvg`, `pfOutAvg`, `qInVarAvg`, `qOutVarAvg`, `eInKwhLast`, `eOutKwhLast`
+
+These aggregate to NULL when the firmware returns null values (current default).
 Do not calculate or infer them from VA fields.
 
 ## Calibration

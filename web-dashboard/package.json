@@ -16,7 +16,12 @@
     "db:reset:local": "prisma migrate reset --force && tsx scripts/seed.ts -- --demo",
     "worker:dev": "tsx --watch worker/mqtt-worker.ts",
     "worker:start": "tsx worker/mqtt-worker.ts",
-    "package:build": "next build && node scripts/package.js"
+    "package:build": "next build && node scripts/package.js",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report e2e/report",
+    "db:cleanup-test": "tsx scripts/cleanup-test-devices.ts",
+    "db:cleanup-test:dry": "tsx scripts/cleanup-test-devices.ts --dry-run"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

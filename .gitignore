@@ -19,3 +19,4 @@ CREDENTIALS.md
 Thumbs.db
 
 firmware/ups_monitor/build/
+web-dashboard/test-results/
