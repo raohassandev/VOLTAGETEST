@@ -588,7 +588,7 @@ static void appendFloat(String& s, const char* key, float val, uint8_t decimals 
 String buildDataJson()
 {
     String j;
-    j.reserve(512);
+    j.reserve(600);
     j = '{';
 
     j += '"'; j += F("device_id"); j += F("\":\""); j += deviceId; j += '"';
@@ -690,7 +690,21 @@ static bool mqttPublish(WiFiClient& c, const String& topic, const String& payloa
     if (c.write((uint8_t)0x31) != 1) return false;
     if (!mqttWriteLength(c, rem)) return false;
     if (!mqttWriteStr(c, topic)) return false;
-    return (size_t)c.print(payload) == payload.length();
+
+    // Write payload in chunks — WiFiClient::print() puts data into TCP send buffer
+    // but may return payload.length() before the bytes are actually transmitted.
+    // Use write() loop to ensure all bytes are sent, then flush() before stop().
+    const uint8_t* buf = (const uint8_t*)payload.c_str();
+    size_t remaining = payload.length();
+    while (remaining > 0) {
+        int sent = c.write(buf, remaining);
+        if (sent <= 0) return false;
+        buf       += sent;
+        remaining -= sent;
+    }
+    // Flush ensures the TCP stack transmits all buffered data before we close
+    c.flush();
+    return true;
 }
 
 void publishMqttData()
