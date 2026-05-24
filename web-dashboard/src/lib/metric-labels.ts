@@ -5,44 +5,42 @@
  * name is needed. Field names (volt_in, ct_out, …) are unchanged in the
  * DB, MQTT payloads, and API responses.
  *
- * Electrical convention:
- *   Primary   = mains/input side  (before UPS transformer/inverter)
- *   Secondary = load/output side  (after UPS transformer/inverter)
+ * Convention: Input = mains side (before UPS), Output = load side (after UPS)
  */
 
 export const METRIC_LABEL: Record<string, string> = {
   // ── Voltage ──────────────────────────────────────────────────────────────
-  volt_in:   "Primary Voltage",
-  volt_out:  "Secondary Voltage",
+  volt_in:   "Input Voltage",
+  volt_out:  "Output Voltage",
   volt_dc:   "Battery Voltage",
 
   // ── Current ──────────────────────────────────────────────────────────────
-  ct_in:     "Primary Current",
-  ct_out:    "Secondary Current",
+  ct_in:     "Input Current",
+  ct_out:    "Output Current",
 
   // ── Apparent power ────────────────────────────────────────────────────────
-  s_in_va:   "Primary Apparent Power",
-  s_out_va:  "Secondary Apparent Power",
+  s_in_va:   "Input Apparent Power",
+  s_out_va:  "Output Apparent Power",
 
   // ── Real power ────────────────────────────────────────────────────────────
-  p_in_w:    "Primary Active Power",
-  p_out_w:   "Secondary Active Power",
+  p_in_w:    "Input Active Power",
+  p_out_w:   "Output Active Power",
 
   // ── Power factor ──────────────────────────────────────────────────────────
-  pf_in:     "Primary Power Factor",
-  pf_out:    "Secondary Power Factor",
+  pf_in:     "Input Power Factor",
+  pf_out:    "Output Power Factor",
 
   // ── Reactive power ────────────────────────────────────────────────────────
-  q_in_var:  "Primary Reactive Power",
-  q_out_var: "Secondary Reactive Power",
+  q_in_var:  "Input Reactive Power",
+  q_out_var: "Output Reactive Power",
 
   // ── Energy ────────────────────────────────────────────────────────────────
-  e_in_kwh:  "Primary Energy",
-  e_out_kwh: "Secondary Energy",
+  e_in_kwh:  "Input Energy",
+  e_out_kwh: "Output Energy",
 
   // ── Frequency ─────────────────────────────────────────────────────────────
-  freq_in:   "Primary Frequency",
-  freq_out:  "Secondary Frequency",
+  freq_in:   "Input Frequency",
+  freq_out:  "Output Frequency",
 
   // ── Other ─────────────────────────────────────────────────────────────────
   rssi:      "Signal Strength",
@@ -51,23 +49,23 @@ export const METRIC_LABEL: Record<string, string> = {
 
 /** Short labels for cards/charts where space is limited */
 export const METRIC_LABEL_SHORT: Record<string, string> = {
-  volt_in:   "Pri. Voltage",
-  volt_out:  "Sec. Voltage",
+  volt_in:   "In Voltage",
+  volt_out:  "Out Voltage",
   volt_dc:   "Battery V",
-  ct_in:     "Pri. Current",
-  ct_out:    "Sec. Current",
-  s_in_va:   "Pri. VA",
-  s_out_va:  "Sec. VA",
-  p_in_w:    "Pri. Power",
-  p_out_w:   "Sec. Power",
-  pf_in:     "Pri. PF",
-  pf_out:    "Sec. PF",
-  q_in_var:  "Pri. VAR",
-  q_out_var: "Sec. VAR",
-  e_in_kwh:  "Pri. Energy",
-  e_out_kwh: "Sec. Energy",
-  freq_in:   "Pri. Freq",
-  freq_out:  "Sec. Freq",
+  ct_in:     "In Current",
+  ct_out:    "Out Current",
+  s_in_va:   "In VA",
+  s_out_va:  "Out VA",
+  p_in_w:    "In Power",
+  p_out_w:   "Out Power",
+  pf_in:     "In PF",
+  pf_out:    "Out PF",
+  q_in_var:  "In VAR",
+  q_out_var: "Out VAR",
+  e_in_kwh:  "In Energy",
+  e_out_kwh: "Out Energy",
+  freq_in:   "In Freq",
+  freq_out:  "Out Freq",
   rssi:      "RSSI",
   offline:   "Offline",
 };

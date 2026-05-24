@@ -8,7 +8,7 @@ async function main() {
   console.log(`\n=== ACTIVE ALARMS (${active.length}) ===`);
   for (const a of active) {
     console.log(`  [${a.severity.toUpperCase()}] ${a.deviceId} | ${a.metric} | ${a.message}`);
-    console.log(`    first: ${a.firstSeenAt.toISOString()}  last: ${a.lastSeenAt.toISOString()}  acked: ${a.acknowledged}`);
+    console.log(`    first: ${a.firstSeenAt.toISOString()}  last: ${a.lastSeenAt.toISOString()}  acked: ${a.acknowledgedAt}`);
   }
 
   console.log(`\n=== CLEARED ALARMS (${cleared.length}) ===`);
