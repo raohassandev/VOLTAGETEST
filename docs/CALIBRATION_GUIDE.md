@@ -1,6 +1,10 @@
 # Calibration Guide — UPS Monitoring System
 
-**Firmware:** v0.5.2  
+> **⚠️ Version notice:** Guide written for firmware v0.5.2. Current firmware is **v2.1.0** (`firmware/VOLTAGETEST/VOLTAGETEST.ino`).
+> Calibration coefficients are now stored in NVS on the device and configured via `http://<device-ip>/` (Calibration section).
+> The dashboard admin calibration page (`/admin/calibration`) shows read-only values when embedded broker is disabled.
+
+**Firmware:** v2.1.0 (document partially updated from v0.5.2 — verify steps against current firmware)
 **Applies to:** ESP32 UPS monitoring module
 
 ---

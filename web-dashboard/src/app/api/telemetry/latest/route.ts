@@ -5,9 +5,10 @@ import { prisma, isDbEnabled } from "@/lib/db";
 import { getTelemetryStore, recordTelemetry } from "@/lib/mqtt-ingestion";
 import { normalizeTelemetry, type RawTelemetry } from "@/lib/telemetry-types";
 
-// Default scale applied when no CalibrationProfile exists for a device.
-// Converts raw ADC battery measurement counts to volts (matches worker constant).
-const VOLT_DC_DEFAULT_SCALE = 0.0442;
+// Firmware v2.1.0 publishes volt_dc already calibrated in volts (firmware applies vDcScale/vDcOffset
+// from NVS before publishing). The worker stores the firmware value as-is. This route returns it
+// as-is. No server-side re-calibration.
+// Example: firmware sends 24.4 V → stored as 24.4 → returned as 24.4.
 
 export async function GET(request: Request) {
   const auth = requireApiAuth(request);
@@ -18,26 +19,12 @@ export async function GET(request: Request) {
       include: { device: { include: { upsUnit: true } } },
     });
 
-    // Fetch all calibration profiles in one query
-    const deviceIds = rows.map((r) => r.deviceId);
-    const calProfiles = deviceIds.length
-      ? await prisma.calibrationProfile.findMany({ where: { deviceId: { in: deviceIds } } })
-      : [];
-    const calMap = new Map(calProfiles.map((p) => [p.deviceId, p]));
-
     const latest: Record<string, RawTelemetry> = {};
     for (const row of rows) {
-      const cal = calMap.get(row.deviceId);
-      const vDcScale  = cal ? cal.vDcScale  : VOLT_DC_DEFAULT_SCALE;
-      const vDcOffset = cal ? cal.vDcOffset : 0;
-      const calibrationSource = cal ? "server_profile" : "server_default";
-
       latest[row.deviceId] = {
         volt_in: row.voltIn,
         volt_out: row.voltOut,
-        volt_dc: row.voltDc * vDcScale + vDcOffset, // server-calibrated value
-        volt_dc_raw: row.voltDc,                     // raw ADC count from board
-        volt_dc_calibration_source: calibrationSource,
+        volt_dc: row.voltDc, // firmware-calibrated; no server re-scaling
         ct_in: row.ctIn,
         ct_out: row.ctOut,
         s_in_va: row.sInVa,

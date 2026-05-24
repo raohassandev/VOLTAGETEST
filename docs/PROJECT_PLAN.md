@@ -1,4 +1,8 @@
-# UPS Monitoring System - Professional Project Plan
+# UPS Monitoring System — Project Plan
+
+> **📋 Historical document.** This plan tracks the original development trajectory.
+> Current release is **v2.1.0** on branch `energy-analyzer-integration`.
+> For current architecture see `docs/ARCHITECTURE.md`. For current firmware see `docs/FIRMWARE_GUIDE.md`.
 
 ## 1. Product Goal
 

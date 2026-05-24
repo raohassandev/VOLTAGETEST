@@ -20,9 +20,6 @@ const OFFLINE_CHECK_MS     = 30_000;
 const ROLLUP_MS            = 60_000;
 const CLEANUP_MS           = 24 * 60 * 60 * 1_000;
 
-// When no CalibrationProfile exists, apply this scale to convert raw ADC counts → volts.
-const VOLT_DC_DEFAULT_SCALE = 0.0442;
-
 // ── Payload types ─────────────────────────────────────────────────────────────
 
 /** v2 payload — new ESP32 firmware */
@@ -42,7 +39,7 @@ interface PayloadV2 {
   rssi?: number; ip?: string; fw?: string; mac?: string;
 }
 
-/** v1 payload — legacy firmware, still supported */
+/** v1 payload — legacy firmware and current firmware v2.1.0 field names */
 interface PayloadV1 {
   device_id?: string; ups_id?: string; site_id?: string;
   volt_in?: number;  volt_out?: number; volt_dc?: number;
@@ -50,6 +47,8 @@ interface PayloadV1 {
   s_in_va?: number;  s_out_va?: number;
   p_in_w?: number;   p_out_w?: number;
   pf_in?: number;    pf_out?: number;
+  freq_in?: number;  freq_out?: number;    // v2.1.0 firmware field names
+  q_in_var?: number; q_out_var?: number;
   e_in_kwh?: number; e_out_kwh?: number;
   rssi?: number; ip?: string; firmware?: string; mac?: string; seq?: number;
 }
@@ -102,9 +101,9 @@ function normalise(p: RawPayload) {
     // Energy
     eInKwh:    optNum(p.e_in_kwh),
     eOutKwh:   optNum(p.e_out_kwh),
-    // Frequency (v2 only)
-    freqIn:    optNum(p.f_in_hz),
-    freqOut:   optNum(p.f_out_hz),
+    // Frequency — v2.1.0 firmware: freq_in/freq_out; v2 proto used f_in_hz/f_out_hz
+    freqIn:    optNum(p.freq_in  ?? p.f_in_hz),
+    freqOut:   optNum(p.freq_out ?? p.f_out_hz),
     // Device
     rssi:      p.rssi !== undefined ? Math.round(num(p.rssi)) : null,
     ip:        str(p.ip),
@@ -190,15 +189,9 @@ async function runAlarmEval(
   const { deviceId } = fields;
   if (!deviceId) return;
 
-  const [device, calProfile] = await Promise.all([
-    prisma.device.findUnique({ where: { deviceId }, include: { upsUnit: true } }),
-    prisma.calibrationProfile.findUnique({ where: { deviceId } }),
-  ]);
+  const device = await prisma.device.findUnique({ where: { deviceId }, include: { upsUnit: true } });
 
-  const vDcScale  = calProfile ? calProfile.vDcScale  : VOLT_DC_DEFAULT_SCALE;
-  const vDcOffset = calProfile ? calProfile.vDcOffset : 0;
-  const calibratedVoltDc = fields.voltDc * vDcScale + vDcOffset;
-
+  // Firmware v2.1.0 publishes volt_dc already calibrated in volts — do NOT re-apply calibration.
   await markDeviceOnline(prisma, deviceId);
 
   await evaluateAlarms(
@@ -210,11 +203,21 @@ async function runAlarmEval(
       siteId:    fields.siteId,
       voltIn:    fields.voltIn,
       voltOut:   fields.voltOut,
-      voltDc:    calibratedVoltDc,
+      voltDc:    fields.voltDc,   // firmware-calibrated; no server re-scaling
       ctIn:      fields.ctIn,
       ctOut:     fields.ctOut,
       sInVa:     fields.sInVa,
       sOutVa:    fields.sOutVa,
+      pInW:      fields.pInW,
+      pOutW:     fields.pOutW,
+      pfIn:      fields.pfIn,
+      pfOut:     fields.pfOut,
+      freqIn:    fields.freqIn,
+      freqOut:   fields.freqOut,
+      qInVar:    fields.qInVar,
+      qOutVar:   fields.qOutVar,
+      eInKwh:    fields.eInKwh,
+      eOutKwh:   fields.eOutKwh,
     },
     device?.upsUnit?.batteryNominalV ?? 48,
     device?.upsUnit?.capacityVa ?? 0,

@@ -14,16 +14,28 @@ The firmware measures:
 | Apparent input power (VA) | Vrms × Arms | Combined V/I error |
 | Apparent output power (VA) | Vrms × Arms | Combined V/I error |
 
-## What Is NOT Measured
+## Energy Analyzer Fields (v2.1.0)
 
-| Quantity | Field | Reason |
+Firmware v2.1.0 includes energy-analyzer code and publishes the following fields:
+
+| Quantity | Field | Status |
 |----------|-------|--------|
-| Active (real) power (W) | `p_in_w`, `p_out_w` | Requires time-aligned simultaneous V and I sampling with a true waveform capture, not RMS-only |
-| Power factor | `pf_in`, `pf_out` | PF = P/S; without P there is no PF |
-| Energy (kWh) | `e_in_kwh`, `e_out_kwh` | Integration of active power over time; blocked by the above |
-| Reactive power (VAr) | (none) | Same dependency on waveform |
+| Active input power (W) | `p_in_w` | Published; accuracy requires reference-meter calibration |
+| Active output power (W) | `p_out_w` | Published; accuracy requires reference-meter calibration |
+| Power factor (input) | `pf_in` | Published; accuracy requires reference-meter calibration |
+| Power factor (output) | `pf_out` | Published; accuracy requires reference-meter calibration |
+| Reactive power (VAR) | `q_in_var`, `q_out_var` | Published; accuracy requires reference-meter calibration |
+| Energy (kWh) | `e_in_kwh`, `e_out_kwh` | Published; NVS-persisted; accuracy requires reference-meter calibration |
+| Frequency | `freq_in`, `freq_out` | Published; accuracy depends on zero-crossing detection quality |
 
-These fields are stored as `NULL` in the database. They are displayed as "not supported" in the dashboard.
+**If a value is not valid or not yet calibrated, the firmware publishes `null`.** The UI shows `—` (Not available) for null fields.
+
+### Calibration requirement
+
+Code supports the field. **Production accuracy requires reference-meter calibration** (e.g. Fluke 435 or equivalent power analyser) across the full load range. Without calibration:
+
+- `p_in_w`, `p_out_w`, `pf_in`, `pf_out`, `q_in_var`, `q_out_var`, `e_in_kwh`, `e_out_kwh` may be unreliable.
+- The sequential ADC sampling approach (channels read one at a time) introduces a phase offset between V and I. This is a known limitation. See *Path to Improving PF Accuracy* below.
 
 **Do not infer or estimate these values** from apparent power alone. A UPS load with a non-unity PF (e.g. PF=0.7) would produce a 30% overestimate of active power if simply equating S to P.
 
@@ -36,9 +48,9 @@ The firmware:
 
 True active power P = (1/N) × Σ(v[i] × i[i]) requires that v and i samples are **time-aligned**. The ESP32 ADC reads channels sequentially (not simultaneously), introducing a phase offset between the voltage and current readings. This phase error directly corrupts the power factor calculation and makes P unreliable.
 
-## Path to Enabling Active Power and PF
+## Path to Improving PF Accuracy
 
-To enable P, PF, and kWh in a future firmware version:
+The current sequential ADC approach has a phase limitation. To improve P, PF accuracy:
 
 1. **Hardware change**: Add a dedicated power metering IC (e.g. ADE7953, CS5490) that samples V and I in hardware with sub-microsecond synchronization. OR redesign the ADC sampling to use DMA and interleaved channels on a single ADC unit.
 
@@ -46,7 +58,7 @@ To enable P, PF, and kWh in a future firmware version:
 
 3. **Validation gate**: Compare P and PF readings against a calibrated reference power analyser (e.g. Fluke 435) across the full load range before publishing P/PF fields.
 
-Until these steps are completed and validated, the firmware must **not** publish `p_in_w`, `p_out_w`, `pf_in`, or `pf_out`, and the dashboard must **not** compute or display these quantities.
+Until these steps are completed and validated, treat `p_in_w`, `p_out_w`, `pf_in`, and `pf_out` as indicative only. The firmware publishes them as `null` when not calibrated. The dashboard displays `—` for null values.
 
 ## Telemetry Rollup Fields
 

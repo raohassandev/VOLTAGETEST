@@ -1,6 +1,9 @@
 # UMS Installer Checklist
 
-**Version:** firmware v0.5.2 / Dashboard r01a50b5  
+> **⚠️ Version notice:** Written for firmware v0.5.2. Current firmware is **v2.1.0** (`firmware/VOLTAGETEST/VOLTAGETEST.ino`).
+> MQTT topic is now `ums/devices/<device_id>/data`.
+
+**Version:** firmware v0.5.2 (see v2.1.0 release notes for current version)  
 **Device ID:** ___________________  
 **UPS ID:** ___________________  
 **Site:** ___________________  

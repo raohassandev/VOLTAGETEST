@@ -807,14 +807,14 @@ void handleRoot()
     page += F(" "); page += WiFi.softAPIP().toString();
     page += F("</p><form method='post' action='/save'>"
               "<label>SSID</label><input name='ssid' value='"); page += htmlEscape(wifiSettings.ssid);
-    page += F("'><label>Password</label><input name='pass' type='password' value='"); page += htmlEscape(wifiSettings.pass);
+    page += F("'><label>Password</label><input name='pass' type='password' placeholder='Leave blank to keep existing password'>");
     page += F("'><label>MQTT Broker</label><input name='mqttHost' value='"); page += htmlEscape(mqttHost);
     page += F("'><div class='row'>"
               "<label>MQTT Port<input name='mqttPort' type='number' value='"); page += mqttPort;
     page += F("'></label>"
               "<label>MQTT Username<input name='mqttUser' value='"); page += htmlEscape(mqttUser);
     page += F("'></label></div>"
-              "<label>MQTT Password</label><input name='mqttPass' type='password' placeholder='(unchanged if empty)' value='"); page += htmlEscape(mqttPass);
+              "<label>MQTT Password</label><input name='mqttPass' type='password' placeholder='Leave blank to keep existing password'>");
     page += F("'><p class='muted'>Leave username blank for anonymous brokers (e.g. HiveMQ public). "
               "For production Mosquitto, enter the device_id as username and the matching password.</p>"
               "<label>Device ID</label><input name='deviceId' value='"); page += htmlEscape(deviceId);
@@ -894,7 +894,7 @@ void handleData()
 void handleSave()
 {
     wifiSettings.ssid = webServer.arg("ssid");
-    wifiSettings.pass = webServer.arg("pass");
+    // wifiSettings.pass handled below — blank means "keep existing"
     wifiSettings.dhcp = (webServer.arg("mode") != "static");
 
     String newMqttHost = webServer.arg("mqttHost");
@@ -908,11 +908,16 @@ void handleSave()
         if (p > 0) mqttPort = p;
     }
 
-    // Username and password: accept empty string (clears auth)
+    // Username: empty string clears auth (intentional).
     mqttUser = webServer.arg("mqttUser");
-    mqttPass = webServer.arg("mqttPass");
     mqttUser.trim();
-    // Note: password is not trimmed — spaces may be intentional
+    // Password: blank means "keep existing" — never overwrite with an empty string.
+    // To clear the password, the user must explicitly set username to empty first.
+    String newMqttPass = webServer.arg("mqttPass");
+    if (newMqttPass.length() > 0) mqttPass = newMqttPass;
+    // WiFi password: blank also means "keep existing".
+    String newWifiPass = webServer.arg("pass");
+    if (newWifiPass.length() > 0) wifiSettings.pass = newWifiPass;
 
     String newDevId = webServer.arg("deviceId");
     newDevId.trim();

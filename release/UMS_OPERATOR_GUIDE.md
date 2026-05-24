@@ -1,6 +1,9 @@
 # UMS Operator Guide
 
-**Version:** firmware v0.5.2 / Dashboard r01a50b5
+> **⚠️ Version notice:** This guide was written for firmware v0.5.2. Current firmware is **v2.1.0**.
+> MQTT topic is now `ums/devices/<device_id>/data`. Canonical firmware: `firmware/VOLTAGETEST/VOLTAGETEST.ino`.
+
+**Version:** firmware v0.5.2 / Dashboard r01a50b5 (see v2.1.0 release notes for current version)
 
 ---
 

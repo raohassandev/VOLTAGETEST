@@ -1,6 +1,8 @@
 # UMS Field Test Report
 
-**Template version:** v0.5.2
+> **⚠️ Version notice:** Template written for v0.5.2. Update template header to v2.1.0 before use.
+
+**Template version:** v0.5.2 (update to v2.1.0 before use)
 
 ---
 

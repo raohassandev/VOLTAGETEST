@@ -1,5 +1,8 @@
 # Implementation Status — UPS Monitoring System
 
+> **📋 Historical document.** Status as of branch `professionalization-plan` (2026-05-21).
+> Current release is **v2.1.0** on `energy-analyzer-integration`. See `docs/CLEANUP_AUDIT_REPORT.md` for current status.
+
 **Branch:** `professionalization-plan`
 **Last updated:** 2026-05-21
 

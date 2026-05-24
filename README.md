@@ -1,19 +1,52 @@
-# UPS Management System
+# UPS Management System — v2.1.0
 
-Professional UPS monitoring platform for ESP32-based UPS input, output, battery, and current monitoring.
+Professional UPS monitoring platform for ESP32-based UPS input, output, battery, current, and energy monitoring.
 
-## Project Areas
+## Quick Start
 
-- `docs/` - project planning, architecture, and site-work documentation.
-- `firmware/ups_monitor/` - ESP32 firmware for UPS telemetry.
-- `web-dashboard/` - Next.js dashboard application.
-- `deployment/` - Docker Compose and Mosquitto deployment skeleton.
+```bash
+cd deployment
+cp .env.example .env          # fill in POSTGRES_PASSWORD, UPS_AUTH_TOKEN, MQTT_PASSWORD etc.
+bash setup-passwords.sh       # creates Mosquitto password file
+docker compose up -d --build  # start full stack
+bash certify.sh               # smoke-test
+```
 
-## Current Focus
+Dashboard: `http://localhost:3000`
 
-The project is being converted from a demo into a production-ready system for monitoring approximately 50 UPS units in a large building.
+## Repository Structure
 
-Start with:
+| Path | Purpose |
+|------|---------|
+| `firmware/VOLTAGETEST/` | **Canonical ESP32 firmware v2.1.0** |
+| `web-dashboard/` | Next.js dashboard + API (PostgreSQL, Prisma) |
+| `deployment/` | Docker Compose, Mosquitto ACL, certify.sh |
+| `docs/` | Architecture, firmware guide, MQTT topics, limitations |
+| `release/` | Release notes, operator guide, OTA binary |
+| `archive/firmware/ups_monitor_legacy/` | Old firmware (v0.3–0.5 legacy — do not flash) |
 
-- [Project Plan](docs/PROJECT_PLAN.md)
-- [ESP32 Site Work Plan](docs/ESP32_SITE_WORK_PLAN.md)
+## Firmware
+
+Canonical file: `firmware/VOLTAGETEST/VOLTAGETEST.ino`  
+Version: **v2.1.0**  
+MQTT topic: `ums/devices/<device_id>/data`  
+Pre-built OTA binary: `release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin`
+
+See `docs/FIRMWARE_GUIDE.md` for compile/flash instructions.
+
+## Documentation
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system overview
+- [`docs/FIRMWARE_GUIDE.md`](docs/FIRMWARE_GUIDE.md) — firmware compile/flash/OTA
+- [`docs/MQTT_TOPICS.md`](docs/MQTT_TOPICS.md) — topic scheme, payload format, auth
+- [`docs/MEASUREMENT_LIMITATIONS.md`](docs/MEASUREMENT_LIMITATIONS.md) — accuracy and calibration
+- [`docs/FIXING_GUIDELINES.md`](docs/FIXING_GUIDELINES.md) — rules for code changes
+- [`docs/TESTING_AND_CERTIFICATION.md`](docs/TESTING_AND_CERTIFICATION.md) — test and certify
+
+## Tests
+
+```bash
+cd web-dashboard
+npm run dev          # start dev server (terminal 1)
+npx playwright test  # run 74 e2e tests (terminal 2)
+```

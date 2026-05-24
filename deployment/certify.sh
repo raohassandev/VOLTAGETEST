@@ -15,6 +15,11 @@ COMPOSE="docker compose"
 COOKIES="/tmp/ums-cert-cookies.txt"
 BASE_URL="http://localhost:3000"
 
+# Admin password used for login smoke test.
+# Override by setting CERT_ADMIN_PASSWORD in the shell environment or deployment/.env.
+# Matches UPS_AUTH_PASSWORD in deployment/.env (set to your real admin password before running).
+CERT_ADMIN_PASSWORD="${CERT_ADMIN_PASSWORD:-AdminTest123!}"
+
 pass() { echo "  ✅ $1"; }
 fail() { echo "  ❌ FAIL: $1"; exit 1; }
 step() { echo ""; echo "=== $1 ==="; }
@@ -102,7 +107,7 @@ echo "$WELCOME" | grep -q "200" && pass "/welcome accessible" || fail "/welcome 
 rm -f "$COOKIES"
 LOGIN=$(curl -si -c "$COOKIES" -X POST "$BASE_URL/api/login" \
   --data-urlencode "username=admin" \
-  --data-urlencode "password=AdminTest123!" \
+  --data-urlencode "password=${CERT_ADMIN_PASSWORD}" \
   --data-urlencode "next=/")
 echo "$LOGIN" | head -5
 echo "$LOGIN" | grep -q "303\|302" && pass "login redirected" || fail "login did not redirect"

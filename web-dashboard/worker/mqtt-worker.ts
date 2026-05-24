@@ -163,25 +163,15 @@ async function persistTelemetry(deviceId: string, payload: RawPayload, rawJson: 
   });
 }
 
-// When no CalibrationProfile row exists for a device, apply this scale to convert
-// raw 12-bit ADC counts (≈556 typical) to volts. Matches the frontend defaultConfig.
-const VOLT_DC_DEFAULT_SCALE = 0.0442;
-
 async function runAlarmEvaluation(deviceId: string, payload: RawPayload): Promise<void> {
-  const [device, calProfile] = await Promise.all([
-    prisma.device.findUnique({ where: { deviceId }, include: { upsUnit: true } }),
-    prisma.calibrationProfile.findUnique({ where: { deviceId } }),
-  ]);
+  const device = await prisma.device.findUnique({ where: { deviceId }, include: { upsUnit: true } });
 
   const batteryNominalV = device?.upsUnit?.batteryNominalV ?? 48;
   const capacityVa = device?.upsUnit?.capacityVa ?? 0;
 
-  // Apply volt_dc calibration. Without a CalibrationProfile the firmware sends raw
-  // ADC counts (≈556) because NVS defaults are scale=1/offset=0. Use the known
-  // hardware scale factor so thresholds (derived from batteryNominalV in volts) compare correctly.
-  const vDcScale = calProfile ? calProfile.vDcScale : VOLT_DC_DEFAULT_SCALE;
-  const vDcOffset = calProfile ? calProfile.vDcOffset : 0;
-  const calibratedVoltDc = num(payload.volt_dc) * vDcScale + vDcOffset;
+  // Firmware v2.1.0 publishes volt_dc already calibrated in volts (firmware applies vDcScale/vDcOffset
+  // from NVS before publishing). Do NOT re-apply calibration here — doing so causes double scaling.
+  // Example: firmware sends volt_dc=24.4 V; alarm engine must compare 24.4 V, not 24.4 * 0.0442 ≈ 1.08 V.
 
   // Global fallback debounce/hysteresis — per-rule values from AlarmRule table
   // take precedence inside evaluateAlarms. These are used only when no rule exists.
@@ -199,7 +189,7 @@ async function runAlarmEvaluation(deviceId: string, payload: RawPayload): Promis
       siteId: str(payload.site_id),
       voltIn: num(payload.volt_in),
       voltOut: num(payload.volt_out),
-      voltDc: calibratedVoltDc,
+      voltDc: num(payload.volt_dc),
       ctIn: num(payload.ct_in),
       ctOut: num(payload.ct_out),
       sInVa: num(payload.s_in_va),

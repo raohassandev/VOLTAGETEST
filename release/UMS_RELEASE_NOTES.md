@@ -1,3 +1,45 @@
+# UMS Release Notes
+
+---
+
+## v2.1.0 — 2026-05-24
+
+**Branch:** `energy-analyzer-integration`  
+**Firmware:** `firmware/VOLTAGETEST/VOLTAGETEST.ino`  
+**MQTT topic:** `ums/devices/<device_id>/data`
+
+### What's new
+
+- MQTT 3.1.1 authentication: device connects with username + password (stored in NVS)
+- `/api/info` endpoint on device: returns `device_id`, `firmware`, `mac`, `ip`, `mqtt_host`, `mqtt_topic`, `mqtt_auth`
+- Energy-analyzer fields: `p_in_w`, `p_out_w`, `pf_in`, `pf_out`, `freq_in`, `freq_out`, `q_in_var`, `q_out_var`, `e_in_kwh`, `e_out_kwh` — published as `null` until reference-meter calibration
+- `FIRMWARE_VERSION "2.1.0"` field in every MQTT payload
+- TCP flush fix (write loop + `c.flush()` prevents payload truncation)
+- Null-preserving storage: `null` energy fields stored as NULL in DB, not 0
+- Alarm engine receives all 10 energy fields
+- Docker MQTT topic corrected to `ums/devices/+/data`
+- HTTP 501 on `/api/devices/{id}/config` when embedded broker disabled
+- System sub-pages: System Parameters, History Control, Feature Flags (was "coming soon")
+- 74 Playwright/Chromium e2e tests
+- `scripts/cleanup-test-devices.ts` for pre-handover DB cleanup
+
+### Known remaining work
+
+- Config push via MQTT: firmware does not yet subscribe to `ums/devices/{id}/config`
+- Command subscription: `ums/devices/{id}/command` not yet in firmware
+- Active power / PF accuracy: requires reference-meter calibration; fields publish as `null` until calibrated
+
+### Pre-built OTA binary
+
+`release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin`
+
+---
+
+## v0.5.2 — 2026-05-21 (archived)
+
+> **⚠️ Archived.** This release used the old MQTT topic scheme `building/.../telemetry` and
+> is superseded by v2.1.0. Do not flash v0.5.x firmware to production boards.
+
 # UMS Release Notes — v0.5.2 / Dashboard r01a50b5
 
 **Release date:** 2026-05-21  
