@@ -148,12 +148,12 @@ $backup = "/tmp/ums_docker_cert.dump"
 docker compose exec -T postgres pg_dump -U ups_user -d upsmon -Fc -f $backup
 docker compose exec -T postgres test -s $backup
 if ($LASTEXITCODE -ne 0) { Fail "backup empty" }
-docker compose exec -T postgres psql -U ups_user -d postgres -c 'DROP DATABASE IF EXISTS ums_restore_test;' | Out-Null
+docker compose exec -T postgres psql -U ups_user -d postgres -c 'DROP DATABASE IF EXISTS ums_restore_test;' 2>$null | Out-Null
 docker compose exec -T postgres psql -U ups_user -d postgres -c 'CREATE DATABASE ums_restore_test;' | Out-Null
 docker compose exec -T postgres pg_restore -U ups_user -d ums_restore_test -Fc $backup
 $restored = Psql 'SELECT COUNT(*) FROM "TelemetryRaw";' "ums_restore_test"
 if (($restored -join "`n") -notmatch '[1-9][0-9]*') { Fail "restore verification failed" }
-docker compose exec -T postgres psql -U ups_user -d postgres -c 'DROP DATABASE IF EXISTS ums_restore_test;' | Out-Null
+docker compose exec -T postgres psql -U ups_user -d postgres -c 'DROP DATABASE IF EXISTS ums_restore_test;' 2>$null | Out-Null
 Pass "backup/restore PASS"
 
 Step "10. Clean source package"
