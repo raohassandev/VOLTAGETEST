@@ -68,16 +68,16 @@
 #define MIN_ZC_FOR_FREQ      4
 
 // WiFi / network
-#define DEFAULT_WIFI_SSID   "Rao"
-#define DEFAULT_WIFI_PASS   "password123"
+#define DEFAULT_WIFI_SSID   ""
+#define DEFAULT_WIFI_PASS   ""
 #define AP_SSID             "UMS-Setup"
-#define AP_PASS             "password123"
+#define AP_PASS             "UMSSetup2026"
 
 // Firmware version — included in MQTT payload and /api/info
 #define FIRMWARE_VERSION    "2.1.0"
 
 // MQTT — topic: ums/devices/{device_id}/data
-#define MQTT_HOST_DEFAULT   "broker.hivemq.com"
+#define MQTT_HOST_DEFAULT   "ums-server.local"
 #define MQTT_PORT_DEFAULT   1883
 #define MQTT_PUBLISH_MS     1000UL    // publish every 1 s (matches window)
 #define WIFI_RETRY_MS       30000UL
@@ -810,6 +810,10 @@ void handleRoot()
     page += F("'><label>Password</label>"
               "<input name='pass' type='password' placeholder='Leave blank to keep existing password'>"
               "<label>MQTT Broker</label><input name='mqttHost' value='"); page += htmlEscape(mqttHost);
+    if (mqttHost == F("broker.hivemq.com")) {
+        page += F("'><p class='warn'>Public test broker selected - not production safe.</p><input type='hidden' name='mqttHost' value='");
+        page += htmlEscape(mqttHost);
+    }
     page += F("'><div class='row'>"
               "<label>MQTT Port<input name='mqttPort' type='number' value='"); page += mqttPort;
     page += F("'></label>"

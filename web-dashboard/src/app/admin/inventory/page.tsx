@@ -197,7 +197,10 @@ export default function InventoryAdminPage() {
   const [modalItem, setModalItem] = useState<UpsInventoryItem | null>(null);
   const [userRole, setUserRole] = useState<UserRole>("viewer");
 
-  useEffect(() => { setUserRole(readRole()); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setUserRole(readRole()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   const canEdit = userRole === "admin" || userRole === "manufacturer";
 
   useEffect(() => {

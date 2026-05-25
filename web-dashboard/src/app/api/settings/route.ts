@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireApiAuth, requireRole } from "@/lib/api-auth";
+import { requireRole } from "@/lib/api-auth";
 
 import { prisma, isDbEnabled } from "@/lib/db";
 import { defaultSystemSettings, type SystemSettings } from "@/lib/telemetry";

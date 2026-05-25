@@ -1,169 +1,108 @@
-# UMS Installer Checklist
+# UMS Installer Checklist - v2.1.0
 
-> **⚠️ Version notice:** Written for firmware v0.5.2. Current firmware is **v2.1.0** (`firmware/VOLTAGETEST/VOLTAGETEST.ino`).
-> MQTT topic is now `ums/devices/<device_id>/data`.
+**Firmware:** v2.1.0  
+**Canonical source:** `firmware/VOLTAGETEST/VOLTAGETEST.ino`  
+**OTA binary:** `release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin`  
+**MQTT topic:** `ums/devices/<device_id>/data`  
+**Publish interval:** 1 second
 
-**Version:** firmware v0.5.2 (see v2.1.0 release notes for current version)  
 **Device ID:** ___________________  
 **UPS ID:** ___________________  
 **Site:** ___________________  
 **Date:** ___________________  
 **Installer:** ___________________
 
----
+## 1. Flash Firmware
 
-## 1. Board Flash
+- [ ] Connected ESP32 to PC via USB.
+- [ ] Identified correct COM port.
+- [ ] Built or obtained the v2.1.0 firmware binary.
+- [ ] Flashed with Arduino CLI:
 
-- [ ] Obtained firmware binary `ups_monitor_v0.5.2.bin` or built from source (see `release/firmware/README.md`)
-- [ ] Connected ESP32 to PC via USB
-- [ ] Identified correct COM port
-- [ ] Flashed firmware:
-  ```bash
-  arduino-cli upload -p <COM_PORT> --fqbn esp32:esp32:esp32 firmware/ups_monitor
-  ```
-  Or via OTA at `http://<device-ip>/update` if upgrading an existing device
-- [ ] Serial monitor confirmed boot (921600 baud): `Starting UMS firmware v0.5.2`
-- [ ] AP `UMS-SETUP-<last4MAC>` appeared after first boot
+```bash
+arduino-cli compile --fqbn esp32:esp32:esp32 firmware/VOLTAGETEST
+arduino-cli upload -p <COM_PORT> --fqbn esp32:esp32:esp32 firmware/VOLTAGETEST
+```
 
----
+- [ ] Or uploaded OTA binary through `http://<device-ip>/update`.
+- [ ] Confirmed AP `UMS-SETUP-<last4MAC>` appears on first boot or WiFi failure.
 
-## 2. First-Boot AP Setup
+## 2. First-Boot Setup
 
-- [ ] Connected phone/laptop to `UMS-SETUP-xxxx` with password `UMSSetup2026`
-- [ ] Opened `http://192.168.4.1` — commissioning portal loaded
-- [ ] Confirmed firmware version shown: `0.5.2`
+- [ ] Connected to setup AP.
+- [ ] Opened `http://192.168.4.1`.
+- [ ] Confirmed `/api/info` returns firmware `2.1.0`.
+- [ ] Confirmed `/data` loads and includes `device_id`, `firmware`, voltage fields, and MQTT status fields.
 
----
+## 3. Identity
 
-## 3. Board Identity Configuration (`/config`)
-
-- [ ] Device ID set: `___________________` (unique per ESP32 module)
-- [ ] UPS ID set: `___________________` (unique per UPS unit, matches dashboard registration)
+- [ ] Device ID set: `___________________`
+- [ ] UPS ID set: `___________________`
 - [ ] Site ID set: `___________________`
-- [ ] Building: `___________________`
-- [ ] Floor: `___________________`
-- [ ] Section: `___________________`
-- [ ] Work area: `___________________`
-- [ ] Location (precise): `___________________`
-- [ ] Installer note filled: `___________________`
+- [ ] Building/floor/section/work area/location filled as required.
 
----
+## 4. WiFi
 
-## 4. WiFi Setup
+- [ ] Production WiFi SSID configured.
+- [ ] Production WiFi password set.
+- [ ] DHCP or approved static IP configured.
+- [ ] Setup AP always-on disabled before handover.
+- [ ] Board reachable at `http://<device-ip>/`.
 
-- [ ] WiFi SSID configured: `___________________`
-- [ ] WiFi password set
-- [ ] IP mode selected:
-  - [ ] DHCP (recommended for initial commissioning)
-  - [ ] Static IP: `___________________`
-- [ ] If static: gateway `___________` subnet `___________` DNS `___________`
-- [ ] `Keep setup AP always enabled` — checked only during commissioning, **unchecked before handover**
-- [ ] Saved and rebooted
-- [ ] Board connected to WiFi — confirmed via serial or `/data` endpoint
-- [ ] AP stopped after STA connected (if `setup_ap_always` off) — confirmed
+## 5. MQTT
 
----
+- [ ] Broker host set to LAN/server broker, not a public test broker.
+- [ ] Port set to `1883` unless deployment specifies otherwise.
+- [ ] MQTT username set.
+- [ ] MQTT password set.
+- [ ] `/api/info` shows `mqtt_auth: true`.
+- [ ] `/api/info` shows `mqtt_topic: ums/devices/<device_id>/data`.
+- [ ] Dashboard worker subscribes to `ums/devices/+/data`.
+- [ ] MQTT messages observed in worker logs.
 
-## 5. MQTT Setup
+## 6. Dashboard Inventory
 
-- [ ] Broker host set: `___________________` (LAN IP or hostname, not localhost)
-- [ ] Port set: `1883`
-- [ ] MQTT username set (if broker requires auth)
-- [ ] MQTT password set
-- [ ] Topic set: `building/<site-id>/ups/<device-id>/telemetry`
-  - Full topic: `___________________`
-- [ ] Publish interval set: `5` seconds (or as required)
-- [ ] Saved and rebooted
-- [ ] MQTT publishing confirmed — worker logs show received messages
-
----
-
-## 6. Dashboard Inventory Registration
-
-- [ ] Logged in to dashboard at `http://<server>:3000`
-- [ ] Navigated to **Inventory** (`/admin/inventory`)
-- [ ] Clicked **Add UPS** and filled in:
-  - UPS ID (must match `ups_id` set on board): `___________________`
-  - Device ID (must match `device_id` set on board): `___________________`
-  - Name / Label: `___________________`
-  - Serial number: `___________________`
-  - Site: `___________________`
-  - Location: `___________________`
-  - Capacity VA: `___________________`
-  - Battery nominal V: `___________________`
-- [ ] Saved inventory record
-
----
+- [ ] Logged in to dashboard.
+- [ ] Added UPS inventory record.
+- [ ] UPS ID matches board `ups_id`.
+- [ ] Device ID matches board `device_id`.
+- [ ] Capacity VA and battery nominal voltage are correct.
+- [ ] Physical location and serial number are recorded.
 
 ## 7. Dashboard Verification
 
-- [ ] Device appears in fleet page within 30 seconds
-- [ ] `online` status shown
-- [ ] `volt_in` reading is plausible (~230 VAC nominal)
-- [ ] `volt_out` reading is plausible
-- [ ] `volt_dc` reading matches battery bank voltage
-- [ ] `ct_in` / `ct_out` not zero under load
-- [ ] `rssi` above −75 dBm (lower = weaker signal — consider relocating device or adding AP)
-- [ ] `config_mode: false` shown in commissioning status
-- [ ] `setup_ap_enabled: false` confirmed in commissioning status (after disabling always-on AP)
-- [ ] `firmware: 0.5.2` confirmed
-- [ ] `mqtt_connected: true`
-- [ ] No alarms triggered incorrectly (check `/alarms`)
+- [ ] Device appears online within the configured offline threshold.
+- [ ] UPS detail page opens.
+- [ ] Firmware shows `2.1.0`.
+- [ ] `volt_in`, `volt_out`, `volt_dc`, `ct_in`, and `ct_out` are plausible.
+- [ ] W/PF/kWh/Q/Hz fields show values or `Not available` when signal/calibration is unavailable.
+- [ ] RSSI is acceptable for the site.
+- [ ] No false alarms are active.
+- [ ] LAN scan discovers the board.
 
----
+## 8. Calibration
 
-## 8. OTA Test (optional at commissioning, recommended before handover)
+- [ ] Input voltage calibrated against reference meter.
+- [ ] Output voltage calibrated against reference meter.
+- [ ] Battery voltage calibrated against DMM.
+- [ ] Input/output CT channels calibrated under known load.
+- [ ] W/PF/kWh validated against reference meter where available.
+- [ ] Calibration record filed.
 
-- [ ] Navigated to `http://<device-ip>/update`
-- [ ] Entered OTA password
-- [ ] Uploaded test firmware (or same binary to confirm OTA path works)
-- [ ] Device rebooted and returned with expected firmware version
-- [ ] All settings preserved after OTA
+## 9. Burn-In
 
----
+- [ ] Device ran for at least 2 hours.
+- [ ] `seq` increased continuously.
+- [ ] No unexpected reboots.
+- [ ] Worker and dashboard stayed healthy.
+- [ ] No false alarms.
 
-## 9. Calibration
+## Handover
 
-- [ ] Raw readings compared against reference instrument
-- [ ] Calibration coefficients set if deviation exceeds tolerance (see `docs/CALIBRATION_GUIDE.md`)
-- [ ] Calibration record filled in field test report
-- [ ] Post-calibration readings verified within tolerance
-
-Calibration status: [ ] Not required (within 5% tolerance)  / [ ] Calibrated (see field test report)
-
----
-
-## 10. Burn-In (Minimum 2 Hours)
-
-- [ ] Device left running for 2 hours minimum
-- [ ] No firmware reboots observed
-- [ ] Telemetry `seq` counter increasing throughout
-- [ ] `free_heap` stable (not continuously decreasing)
-- [ ] Worker stayed running
-- [ ] Dashboard remained reachable
-- [ ] No false alarms
-
-Burn-in result: [ ] Pass  /  [ ] Fail — see notes
-
----
-
-## Handover Checklist
-
-- [ ] `setup_ap_always` unchecked (AP off in production mode)
-- [ ] OTA password changed from default
-- [ ] AP password changed from `UMSSetup2026`
-- [ ] Dashboard admin password is production-strength bcrypt hash
-- [ ] MQTT credentials set and non-default
-- [ ] Inventory record complete with serial number and capacity
-- [ ] Field test report filled out and filed
-- [ ] Installer note updated with date and name
-
----
-
-## Notes
-
-_______________________________________________  
-_______________________________________________  
-_______________________________________________
+- [ ] Setup AP disabled unless explicitly required.
+- [ ] OTA password changed from default.
+- [ ] MQTT credentials are non-default.
+- [ ] Dashboard production auth is configured with bcrypt hash and strong token.
+- [ ] Field test report completed.
 
 **Signed off by:** ___________________  **Date:** ___________________

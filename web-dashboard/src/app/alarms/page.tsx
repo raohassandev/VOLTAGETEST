@@ -210,16 +210,12 @@ export default function AlarmsPage() {
   const [loading,     setLoading]     = useState(true);
   const [ackComment,  setAckComment]  = useState("");
   const [ackingId,    setAckingId]    = useState<string | null>(null);
-  const [userRole,    setUserRole]    = useState<UserRole>("viewer");
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [userRole] = useState<UserRole>(() => readRole());
+  const [filtersOpen, setFiltersOpen] = useState(() => {
+    if (typeof sessionStorage === "undefined") return false;
+    return sessionStorage.getItem("alarms_filters_open") === "true";
+  });
   const filterRef = useRef<HTMLDivElement>(null);
-
-  // Restore panel state from sessionStorage
-  useEffect(() => {
-    setUserRole(readRole()); // eslint-disable-line react-hooks/set-state-in-effect
-    const saved = sessionStorage.getItem("alarms_filters_open");
-    if (saved !== null) setFiltersOpen(saved === "true"); // eslint-disable-line react-hooks/set-state-in-effect
-  }, []);
 
   function toggleFilters() {
     setFiltersOpen((v) => {

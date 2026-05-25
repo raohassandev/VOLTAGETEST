@@ -75,4 +75,4 @@ topic read ums/devices/+/data         # dashboard reads all device topics
 ## Legacy Topic (archived)
 
 The old topic scheme (`building/<site>/<ups>/<device>/telemetry`) was used in firmware ≤ v0.5.x.
-It is **no longer supported**. See `archive/firmware/ups_monitor_legacy/LEGACY_NOTICE.md`.
+It is **no longer supported**. Legacy notes are kept under `archive/` for development history only.

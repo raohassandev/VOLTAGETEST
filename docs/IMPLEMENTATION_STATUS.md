@@ -274,7 +274,7 @@ kW / kWh / PF / Q / Hz implemented in v2.1.0. Accuracy requires reference-meter 
 | Identity config saved via POST `/save-config` and persisted across reboot | ✅ |
 | Static IP config saved (192.168.1.50) and loaded correctly after reboot — no crash | ✅ |
 | **OTA verified end-to-end:** uploaded `0.5.1-OTA-TEST` binary, `/data` confirmed version change | ✅ |
-| Official v0.5.2 restored via second OTA upload, `/data` confirmed `firmware: 0.5.2` | ✅ |
+| Historical OTA rollback test restored the then-current legacy firmware and confirmed the reported firmware field | ✅ |
 | **Factory reset confirmed:** NVS cleared, board reboots to `UPSMON-UNASSIGNED` first-boot state | ✅ |
 | After factory reset, AP SSID is `UMS-SETUP-AD54` (fix confirmed on first boot) | ✅ |
 | WiFi STA connectivity test: not fully verified (user WiFi password required) | ⚠️ Requires LAN access |

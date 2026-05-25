@@ -45,5 +45,4 @@ See `docs/FIRMWARE_GUIDE.md` and `docs/MQTT_TOPICS.md` for full reference.
 
 ---
 
-> **Legacy firmware** (`firmware/ups_monitor/` — v0.3–0.5) is archived under
-> `archive/firmware/ups_monitor_legacy/`. Do not flash.
+> Legacy monitor firmware is archived under `archive/` for development history only. Do not flash it for v2.1.0 deployments.

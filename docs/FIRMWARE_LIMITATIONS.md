@@ -1,116 +1,80 @@
-# Firmware Limitations — UPS Monitoring System
+# Firmware Limitations - UPS Monitoring System
 
 **Firmware version:** v2.1.0  
-**Hardware:** ESP32 (bare-metal Arduino, single core task model)  
-**Last updated:** 2026-05-24
+**Canonical source:** `firmware/VOLTAGETEST/VOLTAGETEST.ino`  
+**Last updated:** 2026-05-25
 
----
+## Config Push
 
-## 1. Config Push (MQTT) — Not Supported
+Remote config push over MQTT is not supported in firmware v2.1.0.
 
-The dashboard has a *Push Config* feature that publishes calibration settings over MQTT to the device.
+- Firmware does not subscribe to `ums/devices/{deviceId}/config`.
+- In external-broker/Docker mode, `/api/devices/{deviceId}/config` returns HTTP 501.
+- Calibration, WiFi, MQTT, and identity changes must be made through the board local web UI at `http://<device-ip>/config`.
 
-**Current status:** Disabled in Docker/production mode.
+## Command Subscription
 
-- The firmware does **not** subscribe to `ums/devices/{deviceId}/config`
-- Config changes must be made via the device's local web UI at `http://<device-ip>/`
-- The `/api/devices/{deviceId}/config` API returns **HTTP 501** when `ENABLE_EMBEDDED_BROKER=false`
+Remote command topics are not supported in firmware v2.1.0.
 
-**To enable in a future version:**
-1. Add `mqttClient.subscribe("ums/devices/" + deviceId + "/config")` in firmware
-2. Parse incoming JSON config payload and write to NVS
-3. Publish ACK to `ums/devices/{deviceId}/config/ack`
-4. Set `ENABLE_EMBEDDED_BROKER=false` and implement the external MQTT publish path in the route
+- Firmware does not subscribe to `ums/devices/{deviceId}/command`.
+- Remote reset, relay control, and mode-change commands must remain disabled until firmware support is added.
 
----
+## Energy Analyzer Accuracy
 
-## 2. Command Subscription — Not Supported
+Firmware v2.1.0 implements real power, power factor, reactive power, frequency, and kWh fields:
 
-The device **does not** subscribe to the command topic `ums/devices/{deviceId}/command`.
+- `p_in_w`, `p_out_w`
+- `pf_in`, `pf_out`
+- `q_in_var`, `q_out_var`
+- `freq_in`, `freq_out`
+- `e_in_kwh`, `e_out_kwh`
 
-- The Boards page shows a **"Commands disabled"** badge next to each device
-- Remote reset, relay control, and mode-change commands are not functional
-- Firmware must subscribe to the command topic and implement handlers before this is enabled
+These fields are not guaranteed accurate until the voltage and current channels are calibrated with reference instruments. If waveform quality is insufficient or calibration is not complete, the firmware may publish `null`.
 
----
+Current measurement limitations:
 
-## 3. Active Power, Power Factor, Energy (kWh) — Not Available
+- Phase correction values are stored in NVS but not yet applied to active/reactive power calculations.
+- Reactive power sign is unsigned because phase direction is not yet certified.
+- ESP32 ADC timing and sensor phase shift affect PF and W accuracy.
+- Frequency depends on stable zero-crossing detection.
 
-Fields `p_in_w`, `p_out_w`, `pf_in`, `pf_out`, `e_in_kwh`, `e_out_kwh` are always **null**.
+## Energy Counter Persistence
 
-Root cause: The ESP32 ADC reads voltage and current channels **sequentially**, not simultaneously.
-True active power (P = Σ v[i]×i[i] / N) requires time-aligned samples — the sequential ADC
-introduces a phase offset that corrupts the calculation.
+Energy counters are stored in NVS periodically.
 
-These fields are stored as `NULL` in the database and shown as *"Not available — firmware calibration required"* in the UPS detail page.
+- A sudden power loss can lose up to 60 seconds of accumulated energy.
+- Counters survive normal reboot and OTA.
+- Use `/resetenergy` only during commissioning or after an approved maintenance reset.
 
-See `docs/MEASUREMENT_LIMITATIONS.md` for the full technical explanation and the path to enabling these fields.
+## OTA Rollback
 
----
+The ESP32 Arduino OTA partition scheme may roll back if a new image fails early boot.
 
-## 4. Frequency Measurement — Depends on Zero-Crossing Signal Quality
+- Verify the `firmware` field in `/api/info`, `/data`, and dashboard telemetry after OTA.
+- If rollback is detected, reflash via USB or upload the correct v2.1.0 binary again.
 
-Fields `freq_in` and `freq_out` are derived from zero-crossing detection on the AC waveform.
+## Calibration Persistence
 
-- Correct readings require a valid AC-coupled signal reaching the ADC mid-scale
-- If the ADC signal never crosses the detection threshold (e.g. offset miscalibrated), the firmware returns `null`
-- **Fix:** Use the calibration page to adjust `vInOffset` / `vOutOffset` until the waveform crosses zero
+Calibration coefficients are stored in NVS.
 
----
+- NVS survives OTA and power cycles.
+- Recalibrate when the board, sensors, CTs, transformer, divider, UPS, or battery bank changes.
 
-## 5. OTA Rollback
+## Web UI Responsiveness
 
-The ESP32 uses the Arduino framework dual-partition OTA scheme.
+The sampler and web server share the Arduino loop.
 
-- If new firmware crashes on first boot, the bootloader automatically rolls back to the previous partition
-- A crash on boot results in the old firmware running silently — the dashboard will show the old firmware version in `/api/info`
-- To detect rollback: compare `firmware` field in MQTT payload against expected version
-- **Recovery:** Re-flash via USB with `arduino-cli` targeting the correct COM port
+- During sampling/publish windows, board web pages may respond slowly.
+- Use local web UI changes during commissioning windows, not during critical monitoring events.
 
----
-
-## 6. MQTT Reconnect Behavior
-
-The firmware connects once per `publishMqttData()` call, publishes one message, and disconnects.
-
-- There is no persistent MQTT connection between publish intervals
-- A new TCP connection + MQTT CONNECT is opened every publish cycle (default 10 s)
-- QoS 1 PUBACK is awaited but on timeout (1000 ms) the firmware continues silently
-- **Impact:** Very brief network outages between publish cycles are invisible; only sustained outages show as offline in the dashboard
-
----
-
-## 7. NVS Calibration Persistence
-
-Calibration coefficients are stored in NVS under the `cal` namespace.
-
-- NVS survives OTA firmware updates and power cycles
-- NVS is **not** cleared by factory reset unless the `cal` partition is explicitly erased
-- If a device is redeployed to a different hardware installation, old calibration values may carry over — always re-calibrate when hardware is changed
-
----
-
-## 8. Single Sampler Task — Blocking Delays
-
-The ADC sampler runs in `loop()` using `delay()` between samples.
-
-- During sampling (`sampleAndPublish()`), the web server is not responsive
-- Long publish windows (default 10 s) may cause the browser-based config page to time out
-- **Mitigation:** Reduce `REPORTING_INTERVAL_MS` in config or split sampling into a FreeRTOS task
-
----
-
-## Summary Table
+## Summary
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Config push via MQTT | ❌ Not supported | Use local web UI |
-| Remote commands | ❌ Not supported | Firmware must subscribe to command topic |
-| Active power (W) | ❌ Not available | Requires simultaneous V+I sampling |
-| Power factor | ❌ Not available | Requires active power |
-| Energy (kWh) | ❌ Not available | Requires active power integration |
-| Frequency measurement | ⚠️ Conditional | Requires correct AC offset calibration |
-| OTA update | ✅ Supported | HTTP multipart or raw binary; rollback on crash |
-| Calibration via NVS | ✅ Supported | Persists across OTA and power cycles |
-| MQTT authentication | ✅ Supported | Username + password from NVS (firmware v2.1.0+) |
-| /api/info endpoint | ✅ Supported | Returns device metadata for LAN scanner |
+| MQTT telemetry | Supported | Publishes to `ums/devices/{device_id}/data` every 1 second |
+| MQTT auth | Supported | Username/password from board config |
+| `/api/info` | Supported | Used by LAN scanner |
+| OTA update | Supported | Verify firmware after upload |
+| W/PF/kWh/Q/Hz | Implemented | Requires reference-meter calibration |
+| Config push via MQTT | Not supported | Use board local web UI |
+| Remote commands | Not supported | Firmware subscription needed |

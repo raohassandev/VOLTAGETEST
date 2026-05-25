@@ -12,7 +12,7 @@
 
 Issues found:
 - Root `VOLTAGETEST.ino` (1059 lines) — stale, different from canonical (1175 lines)
-- `firmware/ups_monitor/` — legacy firmware, old topic scheme, still in active tree
+- legacy monitor firmware — old topic scheme, previously still in active tree
 - `firmware/VOLTAGETEST/build/` and `firmware/build/` — compiled binaries committed to git (16 files)
 - `deployment/mosquitto/acl.example` — referenced old `building/.../telemetry` topics
 - `docs/COMMISSIONING_GUIDE.md`, `docs/DEPLOYMENT_GUIDE.md` — referenced old firmware path and topic
@@ -35,10 +35,10 @@ Issues found:
 
 | From | To | Reason |
 |------|----|--------|
-| `firmware/ups_monitor/ups_monitor.ino` | `archive/firmware/ups_monitor_legacy/ups_monitor.ino` | Legacy firmware — old topic scheme |
-| `firmware/ups_monitor/README.md` | `archive/firmware/ups_monitor_legacy/README.md` | Accompanying readme |
+| legacy monitor sketch | archived legacy monitor sketch | Legacy firmware — old topic scheme |
+| legacy monitor readme | archived legacy monitor readme | Accompanying readme |
 
-Added `archive/firmware/ups_monitor_legacy/LEGACY_NOTICE.md` to document why it was archived.
+Added an archived legacy notice to document why it was retired.
 
 ---
 
@@ -53,7 +53,7 @@ Added `archive/firmware/ups_monitor_legacy/LEGACY_NOTICE.md` to document why it 
 | `docs/FIXING_GUIDELINES.md` | Rules for making changes — naming, MQTT, null handling, git |
 | `docs/TESTING_AND_CERTIFICATION.md` | How to run tests, Docker cert, DB cleanup, visual screenshots |
 | `docs/CLEANUP_AUDIT_REPORT.md` | This file |
-| `archive/firmware/ups_monitor_legacy/LEGACY_NOTICE.md` | Legacy firmware deprecation notice |
+| archived legacy notice | Legacy firmware deprecation notice |
 | `web-dashboard/e2e/visual-screenshots.spec.ts` | Playwright visual screenshot spec (desktop + mobile) |
 
 ---
@@ -84,7 +84,7 @@ No other `.ino` files exist in the active tree.
 
 ## Old Topic Search Result
 
-Remaining references to `building/.../ups` or `UPSMON`:
+Remaining references to retired legacy topics or old device IDs:
 
 - `docs/COMMISSIONING_GUIDE.md` — present but now preceded by a version notice; content is accurate for the version it describes (v0.5.1)
 - `docs/DEPLOYMENT_GUIDE.md` — MQTT_TOPIC default updated to `ums/devices/+/data`

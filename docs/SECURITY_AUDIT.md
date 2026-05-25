@@ -1,74 +1,61 @@
-# Security Audit — UPS Monitoring System
+# Security Audit - UPS Monitoring System
 
-**Date:** 2026-05-24  
+**Date:** 2026-05-25  
 **Branch:** `energy-analyzer-integration`  
-**Commit:** `f23da25` (P0 fixes)  
-**Command:** `npm audit --omit=dev` (production dependencies only)
+**Command:** `npm audit --omit=dev --json`  
+**Log:** `docs/audit/logs/2026-05-25/npm-audit.log`
 
----
+## Summary
 
-## Audit Output
+Current production dependency audit reports:
 
-```
-postcss  <8.5.10
-Severity: moderate
-PostCSS has XSS via Unescaped </style> in its CSS Stringify Output
-Advisory: https://github.com/advisories/GHSA-qx2v-qp2m-jg93
-Fix available via `npm audit fix --force` — would install next@9.3.3 (breaking change)
-Path: node_modules/next/node_modules/postcss → node_modules/next
-
-uuid  <11.1.1
-Severity: moderate
-uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided
-Advisory: https://github.com/advisories/GHSA-w5hq-g745-h8pq
-Fix available via `npm audit fix --force` — would install aedes@0.44.0 (breaking change)
-Path: node_modules/hyperid/node_modules/uuid → node_modules/hyperid → node_modules/aedes
-
-5 moderate severity vulnerabilities
+```text
+5 moderate vulnerabilities
+0 high
+0 critical
 ```
 
-One vulnerability was fixed in this release cycle (`ws` — updated via `npm audit fix`).
+Known chains:
 
----
+- `next -> postcss`
+- `aedes -> hyperid -> uuid`
 
-## Vulnerability Analysis
-
-### 1. `postcss` (moderate) — XSS via `</style>` in CSS stringify output
+## `postcss` via `next`
 
 | Field | Detail |
 |-------|--------|
-| Package | `postcss < 8.5.10` (nested inside `next`) |
 | Severity | Moderate |
-| Exploit surface | **Build-time only** — postcss processes CSS during `npm run build`, not at runtime |
-| Runtime exposure | None — postcss is not called from API routes or user input paths |
-| Fix | Requires `next@9.3.3` which is a **major breaking downgrade** from current Next.js 15 |
-| Decision | **Deferred** — build-time only, no runtime XSS exposure in this application. Monitor for a next.js patch release. |
+| Advisory | `postcss <8.5.10` CSS stringify XSS advisory |
+| Path | `node_modules/next/node_modules/postcss` |
+| Exposure | Build-time CSS processing. The app does not expose server-side user CSS processing. |
+| Current fix offered by npm | `next@9.3.3`, which is a breaking downgrade from the current Next 16 line. |
+| Decision | Defer forced fix; track Next.js patch releases and re-audit before release tagging. |
 
-### 2. `uuid` (moderate) — Missing buffer bounds check in v3/v5/v6
+## `uuid` via `aedes`
 
 | Field | Detail |
 |-------|--------|
-| Package | `uuid < 11.1.1` inside `hyperid` inside `aedes` |
 | Severity | Moderate |
-| Exploit surface | `aedes` is the embedded MQTT broker — only used when `ENABLE_EMBEDDED_BROKER=true` |
-| Production exposure | In Docker deployment (`ENABLE_EMBEDDED_BROKER=false`), `aedes` is not loaded |
-| Fix | Requires `aedes@0.44.0` which changes aedes API surface — integration risk untested |
-| Decision | **Deferred** — broker not enabled in production Docker. Track aedes 0.44.0 changelog; upgrade in next sprint. |
+| Advisory | `uuid <11.1.1` buffer bounds check advisory |
+| Path | `aedes -> hyperid -> uuid` |
+| Exposure | Embedded Aedes broker path only. Production Docker uses Mosquitto with `ENABLE_EMBEDDED_BROKER=false`. |
+| Current fix offered by npm | `aedes@0.44.0`, a breaking major-version change. |
+| Decision | Defer until Aedes compatibility can be tested; production deployment does not load embedded broker. |
 
----
+## Production Controls
 
-## Risk Decision
+- Production Docker uses Mosquitto, not the embedded broker.
+- Startup now rejects missing or placeholder production secrets.
+- Production startup requires `UPS_AUTH_PASSWORD_HASH`, `UPS_AUTH_TOKEN`, and `DATABASE_URL`.
+- Plaintext `UPS_AUTH_PASSWORD` is rejected in production.
 
-Both vulnerabilities are:
-- **Moderate severity** (not critical/high)
-- **Build-time or conditionally disabled code paths**
-- **Require breaking major-version changes** to fix
+## Upgrade Plan
 
-Neither is exploitable in the standard production Docker deployment where:
-- `ENABLE_EMBEDDED_BROKER=false`
-- Users do not supply CSS input to the server
+1. Re-run `npm audit --omit=dev --json` before merge/tag.
+2. Track the Next.js/PostCSS fix path without downgrading Next.
+3. Test an Aedes upgrade in a dev-only branch before enabling embedded broker in any deployment.
+4. Treat any future high/critical vulnerability as a release blocker.
 
-**Conclusion: Safe to ship.** Upgrade plan:
-1. Monitor Next.js for a postcss patch that doesn't require downgrade.
-2. Test `aedes@0.44.0` API compatibility before upgrading.
-3. Re-audit before v2.2.0 release.
+## Ship Decision
+
+The current vulnerabilities are moderate and either build-time or disabled in production Docker. They are acceptable only if the final release decision remains backed by passing lint/build/Playwright and Docker certification evidence.

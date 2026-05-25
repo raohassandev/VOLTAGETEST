@@ -39,6 +39,7 @@ export function readRoleCookie(): string {
  * Call once at the top of a manufacturer-only page component.
  */
 export function guardManufacturer(): void {
+  if (typeof window === "undefined") return;
   if (readRoleCookie() !== "manufacturer") {
     window.location.replace("/");
   }

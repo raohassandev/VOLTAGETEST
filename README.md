@@ -23,7 +23,7 @@ Dashboard: `http://localhost:3000`
 | `deployment/` | Docker Compose, Mosquitto ACL, certify.sh |
 | `docs/` | Architecture, firmware guide, MQTT topics, limitations |
 | `release/` | Release notes, operator guide, OTA binary |
-| `archive/firmware/ups_monitor_legacy/` | Old firmware (v0.3–0.5 legacy — do not flash) |
+| `archive/firmware/legacy-monitor/` | Archived legacy firmware notes — do not flash for v2.1.0 |
 
 ## Firmware
 

@@ -163,13 +163,13 @@ export default function SettingsAdminPage() {
   // ── MQTT brokers ─────────────────────────────────────────────────────────
   const [brokers,      setBrokers]      = useState<MqttBroker[]>([]);
   const [brokerModal,  setBrokerModal]  = useState<"new" | MqttBroker | null>(null);
-  const [brokerLoading, setBrokerLoading] = useState(false);
+  const [brokerLoading, setBrokerLoading] = useState(true);
 
   // ── Load known devices ───────────────────────────────────────────────────
   useEffect(() => {
     fetch("/api/devices", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d: { devices?: KnownDevice[] }) => setKnownDevices(d.devices ?? [])) // eslint-disable-line react-hooks/set-state-in-effect
+      .then((d: { devices?: KnownDevice[] }) => setKnownDevices(d.devices ?? []))
       .catch(() => undefined);
   }, []);
 
@@ -207,7 +207,7 @@ export default function SettingsAdminPage() {
     fetch("/api/settings", { cache: "no-store" })
       .then((r) => { if (checkUnauthorized(r)) throw new Error("401"); return r.json(); })
       .then((d: { settings?: Partial<SysSettings>; offlineThresholdSecs?: number }) => {
-        setSys({ // eslint-disable-line react-hooks/set-state-in-effect
+        setSys({
           rawRetentionDays:      d.settings?.rawRetentionDays      ?? 30,
           rollupRetentionMonths: d.settings?.rollupRetentionMonths ?? 12,
           alarmRetentionMonths:  d.settings?.alarmRetentionMonths  ?? 24,
@@ -218,10 +218,9 @@ export default function SettingsAdminPage() {
 
   // ── Load MQTT brokers ────────────────────────────────────────────────────
   useEffect(() => {
-    setBrokerLoading(true);
     fetch("/api/mqtt-brokers", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d: { brokers?: MqttBroker[] }) => setBrokers(d.brokers ?? [])) // eslint-disable-line react-hooks/set-state-in-effect
+      .then((d: { brokers?: MqttBroker[] }) => setBrokers(d.brokers ?? []))
       .catch(() => undefined)
       .finally(() => setBrokerLoading(false));
   }, []);
@@ -431,7 +430,10 @@ export default function SettingsAdminPage() {
             {/* Config form */}
             {boardInfo && (
               <div className="flex flex-col gap-4">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Push New Configuration</p>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Board Configuration</p>
+                <div className="rounded-lg border border-amber-800 bg-amber-900/20 p-3 text-xs font-semibold text-amber-300">
+                  Remote config push is not supported in firmware v2.1.0 or production external-broker mode. Use the board local web UI at http://&lt;device-ip&gt;/config.
+                </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
@@ -499,9 +501,10 @@ export default function SettingsAdminPage() {
                 </div>
 
                 <div className="flex items-center gap-3 pt-1">
-                  <button onClick={pushBoardConfig} disabled={cfgSaving} type="button"
+                  <button onClick={pushBoardConfig} disabled type="button"
+                    title="Remote config push is not supported in firmware v2.1.0 / production external-broker mode."
                     className="flex items-center gap-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition-colors">
-                    <Save size={14} />{cfgSaving ? "Pushing…" : "Push Config to Board"}
+                    <Save size={14} />{cfgSaving ? "Pushing..." : "Config Push Unsupported"}
                   </button>
                   {cfgMsg && (
                     <span className={`text-sm font-semibold flex items-center gap-1 ${cfgMsg.startsWith("✓") ? "text-emerald-400" : "text-red-400"}`}>

@@ -16,12 +16,14 @@ test.describe("Admin Inventory", () => {
   });
 
   test("Add UPS form is present", async ({ page }) => {
+    await page.getByRole("button", { name: /add ups/i }).click();
     await expect(page.getByPlaceholder(/e\.g\. UPS/i)).toBeVisible();
   });
 
   test("Save button disabled when UPS ID is empty", async ({ page }) => {
     // Button has disabled={saving || !form.upsId} — on fresh load upsId is empty
-    const saveBtn = page.getByRole("button", { name: /save|add/i }).first();
+    await page.getByRole("button", { name: /add ups/i }).click();
+    const saveBtn = page.getByRole("button", { name: /add ups/i }).last();
     await expect(saveBtn).toBeDisabled();
   });
 

@@ -1,6 +1,6 @@
 # Calibration Guide — UPS Monitoring System
 
-> **⚠️ Version notice:** Guide written for firmware v0.5.2. Current firmware is **v2.1.0** (`firmware/VOLTAGETEST/VOLTAGETEST.ino`).
+> **Version:** Guide applies to firmware **v2.1.0** (`firmware/VOLTAGETEST/VOLTAGETEST.ino`).
 > Calibration coefficients are now stored in NVS on the device and configured via `http://<device-ip>/` (Calibration section).
 > The dashboard admin calibration page (`/admin/calibration`) shows read-only values when embedded broker is disabled.
 

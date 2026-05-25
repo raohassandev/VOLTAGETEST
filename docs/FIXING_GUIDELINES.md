@@ -7,7 +7,7 @@ Rules for engineers making changes to this repository.
 ## Firmware
 
 - **Do not edit the root directory.** The canonical firmware is `firmware/VOLTAGETEST/VOLTAGETEST.ino`.
-- **Do not use the legacy firmware.** `archive/firmware/ups_monitor_legacy/` is archived and must not be flashed.
+- **Do not use legacy firmware.** Archived monitor sketches must not be flashed for v2.1.0 deployments.
 - **Do not change the MQTT topic.** Active topic is `ums/devices/<device_id>/data`. The old `building/.../telemetry` scheme is retired.
 
 ## Telemetry / Data Integrity

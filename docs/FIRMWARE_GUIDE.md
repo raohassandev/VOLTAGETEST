@@ -6,7 +6,7 @@
 firmware/VOLTAGETEST/VOLTAGETEST.ino
 ```
 
-Do not flash any other `.ino` file. The legacy `firmware/ups_monitor/ups_monitor.ino` is archived and must not be used.
+Do not flash any other `.ino` file. Archived legacy monitor sketches must not be used for v2.1.0 deployments.
 
 ---
 

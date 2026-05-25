@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: upsmon
       POSTGRES_USER: ups_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-db-password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -36,14 +36,14 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://ups_user:${POSTGRES_PASSWORD:-change-this-db-password}@postgres:5432/upsmon
+      DATABASE_URL: postgresql://ups_user:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/upsmon
       UPS_AUTH_USERNAME: ${UPS_AUTH_USERNAME:-admin}
-      UPS_AUTH_PASSWORD_HASH: ${UPS_AUTH_PASSWORD_HASH:-}
+      UPS_AUTH_PASSWORD_HASH: ${UPS_AUTH_PASSWORD_HASH:?Set UPS_AUTH_PASSWORD_HASH}
       UPS_AUTH_PASSWORD: ${UPS_AUTH_PASSWORD:-}
-      UPS_AUTH_TOKEN: ${UPS_AUTH_TOKEN:-replace-with-a-long-random-session-token}
+      UPS_AUTH_TOKEN: ${UPS_AUTH_TOKEN:?Set UPS_AUTH_TOKEN}
       MQTT_BROKER_URL: mqtt://mosquitto:1883
       MQTT_USERNAME: ${MQTT_USERNAME:-dashboard}
-      MQTT_PASSWORD: ${MQTT_PASSWORD:-change-this-mqtt-password}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?Set MQTT_PASSWORD}
       MQTT_TOPIC: ${MQTT_TOPIC:-ums/devices/+/data}
       NODE_ENV: production
       ENABLE_EMBEDDED_BROKER: "false"
@@ -68,10 +68,10 @@ services:
       mosquitto:
         condition: service_started
     environment:
-      DATABASE_URL: postgresql://ups_user:${POSTGRES_PASSWORD:-change-this-db-password}@postgres:5432/upsmon
+      DATABASE_URL: postgresql://ups_user:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/upsmon
       MQTT_BROKER_URL: mqtt://mosquitto:1883
       MQTT_USERNAME: ${MQTT_USERNAME:-dashboard}
-      MQTT_PASSWORD: ${MQTT_PASSWORD:-change-this-mqtt-password}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?Set MQTT_PASSWORD}
       MQTT_TOPIC: ${MQTT_TOPIC:-ums/devices/+/data}
       OFFLINE_THRESHOLD_SECS: ${OFFLINE_THRESHOLD_SECS:-60}
     restart: unless-stopped
