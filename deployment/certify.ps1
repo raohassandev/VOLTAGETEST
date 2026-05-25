@@ -9,7 +9,10 @@ $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 function Pass($Message) { Write-Host "PASS: $Message" }
 function Step($Message) { Write-Host ""; Write-Host "=== $Message ===" }
 function Fail($Message) { throw "FAIL: $Message" }
-function Compose([string[]]$Args) { & docker compose @Args }
+function Compose([string[]]$ComposeArgs) {
+  & docker compose @ComposeArgs
+  if ($LASTEXITCODE -ne 0) { Fail "docker compose $($ComposeArgs -join ' ') failed" }
+}
 function Psql([string]$Sql, [string]$Db = "upsmon") {
   $Sql | docker compose exec -T postgres psql -U ups_user -d $Db -t
 }
