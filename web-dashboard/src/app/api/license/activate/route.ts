@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import type { Prisma } from "@prisma/client";
 import { requireRole } from "@/lib/api-auth";
 import { prisma, isDbEnabled } from "@/lib/db";
 import { logAudit, requestIp } from "@/lib/audit";
@@ -31,7 +30,7 @@ export async function POST(request: Request) {
         siteName: payload.siteName ?? null,
         plan: payload.plan ?? "basic",
         maxUps: payload.maxUps,
-        features: payload.features as Prisma.InputJsonValue,
+        features: payload.features as never,
         validFrom: new Date(payload.validFrom),
         validUntil: payload.validUntil ? new Date(payload.validUntil) : null,
         graceDays: payload.graceDays ?? 30,
@@ -39,7 +38,7 @@ export async function POST(request: Request) {
         fingerprintVersion: payload.fingerprintVersion ?? "v1",
         payloadB64: envelope.payload,
         signatureB64: envelope.signature,
-        rawLicense: envelope as unknown as Prisma.InputJsonValue,
+        rawLicense: envelope as never,
         status: "active",
         lastVerifiedAt: new Date(),
         clockLastSeenAt: new Date(),
@@ -51,7 +50,7 @@ export async function POST(request: Request) {
         siteName: payload.siteName ?? null,
         plan: payload.plan ?? "basic",
         maxUps: payload.maxUps,
-        features: payload.features as Prisma.InputJsonValue,
+        features: payload.features as never,
         validFrom: new Date(payload.validFrom),
         validUntil: payload.validUntil ? new Date(payload.validUntil) : null,
         graceDays: payload.graceDays ?? 30,
@@ -59,7 +58,7 @@ export async function POST(request: Request) {
         fingerprintVersion: payload.fingerprintVersion ?? "v1",
         payloadB64: envelope.payload,
         signatureB64: envelope.signature,
-        rawLicense: envelope as unknown as Prisma.InputJsonValue,
+        rawLicense: envelope as never,
         status: "active",
         lastVerifiedAt: new Date(),
         clockLastSeenAt: new Date(),

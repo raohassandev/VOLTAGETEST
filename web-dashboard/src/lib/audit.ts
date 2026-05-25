@@ -22,7 +22,7 @@ export async function logAudit(params: AuditParams): Promise<void> {
         action: params.action,
         entity: params.entity ?? null,
         entityId: params.entityId ?? null,
-        data: params.data !== undefined ? (params.data as import("@prisma/client").Prisma.JsonObject) : undefined,
+        data: params.data !== undefined ? (params.data as never) : undefined,
         ip: params.ip ?? null,
       },
     });
