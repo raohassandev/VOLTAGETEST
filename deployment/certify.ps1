@@ -114,7 +114,9 @@ $sysHealth = curl.exe -s -b $CookieFile "$BaseUrl/api/system/health"
 $sysHealth | Write-Host
 if ($sysHealth -notmatch '"db":"connected"') { Fail "authenticated system health failed" }
 $roleBody = "{""role"":""manufacturer"",""password"":""$($env:CERT_ADMIN_PASSWORD)""}"
-$roleSelect = curl.exe -s -b $CookieFile -c $CookieFile -H "Content-Type: application/json" -X POST "$BaseUrl/api/role-select" --data $roleBody
+$roleBodyFile = Join-Path $env:TEMP "ums-cert-role.json"
+Set-Content -LiteralPath $roleBodyFile -Value $roleBody -NoNewline -Encoding UTF8
+$roleSelect = curl.exe -s -b $CookieFile -c $CookieFile -H "Content-Type: application/json" -X POST "$BaseUrl/api/role-select" --data-binary "@$roleBodyFile"
 if ($roleSelect -notmatch '"ok":true') { Fail "manufacturer role select failed" }
 Pass "auth flow PASS"
 
