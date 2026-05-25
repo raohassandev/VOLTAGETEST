@@ -12,6 +12,14 @@
 **Date:** ___________________  
 **Installer:** ___________________
 
+## Licensing
+
+- [ ] `UMS_LICENSE_ENFORCEMENT=enabled` is set in production.
+- [ ] `UMS_LICENSE_PUBLIC_KEY_PEM` contains only the Automatrix public key.
+- [ ] Private signing keys are not present on the UMS server.
+- [ ] Machine code from `Admin > License` was provided to Automatrix.
+- [ ] Activation JSON was installed and seat count matches the active UPS plan.
+
 ## 1. Flash Firmware
 
 - [ ] Connected ESP32 to PC via USB.

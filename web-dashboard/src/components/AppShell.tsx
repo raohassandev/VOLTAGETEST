@@ -26,6 +26,7 @@ export type NavItem =
   | "inventory"
   | "alarm-rules"
   | "boards"
+  | "license"
   | "settings"
   | "users"
   | "system"
@@ -49,6 +50,7 @@ const NAV_LINKS: NavLink[] = [
   { key: "inventory",   label: "Inventory",  href: "/admin/inventory",   minRole: "admin" },
   { key: "alarm-rules", label: "Rules",      href: "/admin/alarm-rules", minRole: "admin" },
   { key: "boards",      label: "Boards",     href: "/admin/boards",      minRole: "manufacturer" },
+  { key: "license",     label: "License",    href: "/admin/license",     minRole: "manufacturer" },
   { key: "settings",    label: "Settings",   href: "/admin/settings",    minRole: "manufacturer" },
   { key: "users",       label: "Users",      href: "/admin/users",       minRole: "manufacturer" },
   { key: "system",      label: "System",     href: "/admin/system",      minRole: "manufacturer" },

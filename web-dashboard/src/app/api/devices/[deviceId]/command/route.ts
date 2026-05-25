@@ -10,6 +10,8 @@ import { NextResponse } from "next/server";
 import mqtt from "mqtt";
 import { requireRole } from "@/lib/api-auth";
 import { getBroker } from "@/lib/broker";
+import { prisma, isDbEnabled } from "@/lib/db";
+import { requireFeature } from "@/lib/license/enforce";
 
 type Command = "reboot" | "reset-energy" | "ota";
 
@@ -30,6 +32,10 @@ export async function POST(
 
   if (!["reboot", "reset-energy", "ota"].includes(body.cmd)) {
     return NextResponse.json({ error: "Invalid command" }, { status: 400 });
+  }
+  if (body.cmd === "ota" && isDbEnabled()) {
+    const licenseBlock = await requireFeature(prisma, "ota");
+    if (licenseBlock) return licenseBlock;
   }
 
   const topic   = `ums/devices/${deviceId}/command`;

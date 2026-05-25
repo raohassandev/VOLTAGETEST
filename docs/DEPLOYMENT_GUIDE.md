@@ -32,6 +32,16 @@ MQTT_USERNAME=dashboard
 MQTT_PASSWORD=change-this-mqtt-password
 ```
 
+Commercial deployments also require offline licensing:
+
+```env
+UMS_LICENSE_ENFORCEMENT=enabled
+UMS_LICENSE_PATH=/app/data/license/ums-license.json
+UMS_LICENSE_PUBLIC_KEY_PEM="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+```
+
+After first login, open `/admin/license`, copy the machine code, and install the Automatrix activation JSON.
+
 **Generate bcrypt hash:**
 ```bash
 node -e "const b=require('bcryptjs'); b.hash('YourPassword123',12).then(console.log)"

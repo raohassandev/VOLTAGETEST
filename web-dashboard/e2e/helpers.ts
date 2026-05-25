@@ -17,6 +17,7 @@ export async function loginAsAdmin(page: Page): Promise<void> {
   await page.getByRole("button", { name: /sign in/i }).click();
   // Server redirects to / or /welcome; wait for navigation to leave /login
   await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 10_000 });
+  await page.request.post("/api/role-select", { data: { role: "manufacturer", password: ADMIN_PASS } });
 }
 
 /**

@@ -7,6 +7,8 @@
  */
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
+import { prisma, isDbEnabled } from "@/lib/db";
+import { requireFeature } from "@/lib/license/enforce";
 
 interface BoardSavePayload {
   ip: string;           // board IP to send config to
@@ -26,6 +28,10 @@ interface BoardSavePayload {
 export async function POST(request: Request) {
   const auth = requireRole(request, "manufacturer");
   if (!auth.ok) return auth.response;
+  if (isDbEnabled()) {
+    const licenseBlock = await requireFeature(prisma, "board_config");
+    if (licenseBlock) return licenseBlock;
+  }
 
   const body = (await request.json()) as BoardSavePayload;
   if (!body.ip || !body.mqttHost)

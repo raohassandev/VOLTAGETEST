@@ -220,6 +220,48 @@ model SystemSettings {
   updatedAt             DateTime @updatedAt
 }
 
+model SystemLicense {
+  id                 String    @id @default("active")
+  licenseId          String    @unique
+  customerName       String
+  resellerName       String?
+  siteName           String?
+  plan               String    @default("basic")
+  maxUps             Int
+  features           Json
+  validFrom          DateTime
+  validUntil         DateTime?
+  graceDays          Int       @default(30)
+  machineCode        String
+  fingerprintVersion String    @default("v1")
+  payloadB64         String
+  signatureB64       String
+  rawLicense         Json
+  status             String    @default("active")
+  installedAt        DateTime  @default(now())
+  lastVerifiedAt     DateTime?
+  clockLastSeenAt    DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model LicenseSeat {
+  id                String    @id @default(cuid())
+  seatNo            Int
+  upsId             String    @unique
+  deviceId          String?
+  status            String    @default("active")
+  assignedAt        DateTime  @default(now())
+  assignedBy        String?
+  releasedAt        DateTime?
+  releaseEligibleAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status])
+  @@index([deviceId])
+}
+
 model Telemetry1m {
   id          String   @id @default(cuid())
   deviceId    String

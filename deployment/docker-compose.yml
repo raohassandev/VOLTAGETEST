@@ -47,6 +47,9 @@ services:
       MQTT_TOPIC: ${MQTT_TOPIC:-ums/devices/+/data}
       NODE_ENV: production
       ENABLE_EMBEDDED_BROKER: "false"
+      UMS_LICENSE_ENFORCEMENT: "enabled"
+      UMS_LICENSE_PATH: /app/data/license/ums-license.json
+      UMS_LICENSE_PUBLIC_KEY_PEM: ${UMS_LICENSE_PUBLIC_KEY_PEM:?Set UMS_LICENSE_PUBLIC_KEY_PEM}
     ports:
       - "3000:3000"
     volumes:

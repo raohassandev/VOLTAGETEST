@@ -1,0 +1,177 @@
+﻿## docker compose down -v --remove-orphans
+docker : failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is 
+correct and if the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file 
+specified.
+At line:4 char:141
++ ... ans'; $psOut += (docker compose down -v --remove-orphans 2>&1 | Out-S ...
++                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (failed to conne...file specified.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+## docker compose config
+name: deployment
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 1883
+        published: "1883"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\Working\Hadi Engineering\UPS Management System\deployment\mosquitto\mosquitto.conf
+        target: /mosquitto/config/mosquitto.conf
+        read_only: true
+        bind: {}
+      - type: bind
+        source: D:\Working\Hadi Engineering\UPS Management System\deployment\mosquitto\passwords
+        target: /mosquitto/config/passwords
+        read_only: true
+        bind: {}
+      - type: bind
+        source: D:\Working\Hadi Engineering\UPS Management System\deployment\mosquitto\acl
+        target: /mosquitto/config/acl
+        read_only: true
+        bind: {}
+      - type: volume
+        source: mosquitto_data
+        target: /mosquitto/data
+        volume: {}
+      - type: volume
+        source: mosquitto_log
+        target: /mosquitto/log
+        volume: {}
+  mqtt-worker:
+    build:
+      context: D:\Working\Hadi Engineering\UPS Management System\web-dashboard
+      dockerfile: Dockerfile.worker
+    depends_on:
+      mosquitto:
+        condition: service_started
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+    environment:
+      DATABASE_URL: postgresql://ups_user:<redacted>@postgres:5432/upsmon
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      MQTT_PASSWORD: <redacted>
+      MQTT_TOPIC: ums/devices/+/data
+      MQTT_USERNAME: dashboard
+      OFFLINE_THRESHOLD_SECS: "60"
+    networks:
+      default: null
+    restart: unless-stopped
+  postgres:
+    environment:
+      POSTGRES_DB: upsmon
+      POSTGRES_PASSWORD: <redacted>
+      POSTGRES_USER: ups_user
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ups_user -d upsmon
+      timeout: 5s
+      interval: 10s
+      retries: 5
+    image: postgres:16-alpine
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 5432
+        published: "5432"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: postgres_data
+        target: /var/lib/postgresql/data
+        volume: {}
+  web:
+    build:
+      context: D:\Working\Hadi Engineering\UPS Management System\web-dashboard
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+    environment:
+      DATABASE_URL: postgresql://ups_user:<redacted>@postgres:5432/upsmon
+      ENABLE_EMBEDDED_BROKER: "false"
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      MQTT_PASSWORD: <redacted>
+      MQTT_TOPIC: ums/devices/+/data
+      MQTT_USERNAME: dashboard
+      NODE_ENV: production
+      UMS_LICENSE_ENFORCEMENT: enabled
+      UMS_LICENSE_PATH: /app/data/license/ums-license.json
+      UMS_LICENSE_PUBLIC_KEY_PEM: |-
+        -----BEGIN PUBLIC KEY-----
+        MCowBQYDK2VwAyEA5NJ3jqCG33mX4J2liK5tbNvoTQUonYYgc0kvkcK4DSo=
+        -----END PUBLIC KEY-----
+      UPS_AUTH_PASSWORD: ""
+      UPS_AUTH_PASSWORD_HASH: <redacted>
+      UPS_AUTH_TOKEN: <redacted>
+      UPS_AUTH_USERNAME: admin
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -qO- http://127.0.0.1:3000/api/health || exit 1
+      timeout: 10s
+      interval: 30s
+      retries: 3
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 3000
+        published: "3000"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: web_data
+        target: /app/data
+        volume: {}
+networks:
+  default:
+    name: deployment_default
+volumes:
+  mosquitto_data:
+    name: deployment_mosquitto_data
+  mosquitto_log:
+    name: deployment_mosquitto_log
+  postgres_data:
+    name: deployment_postgres_data
+  web_data:
+    name: deployment_web_data
+
+## docker compose up -d --build
+docker : unable to get image 'eclipse-mosquitto:2': failed to connect to the docker API at 
+npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct and if the daemon is running: open 
+//./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+At line:4 char:348
++ ...  up -d --build'; $psOut += (docker compose up -d --build 2>&1 | Out-S ...
++                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (unable to get i...file specified.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+## docker compose ps
+docker : failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is 
+correct and if the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file 
+specified.
+At line:4 char:442
++ ...  += '## docker compose ps'; $psOut += (docker compose ps 2>&1 | Out-S ...
++                                            ~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (failed to conne...file specified.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+

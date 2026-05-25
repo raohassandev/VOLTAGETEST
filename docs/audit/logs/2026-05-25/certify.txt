@@ -1,0 +1,9 @@
+﻿## CERT_ADMIN_PASSWORD=<redacted> bash certify.sh
+bash : <3>WSL (11 - Relay) ERROR: CreateProcessCommon:818: execvpe(/bin/bash) failed: No such file or directory
+At line:2 char:113
++ ... RD=<redacted> bash certify.sh'; $out += (bash certify.sh 2>&1 | Out-S ...
++                                              ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (<3>WSL (11 - Re...le or directory:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+

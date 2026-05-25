@@ -4,6 +4,7 @@ import { requireApiAuth } from "@/lib/api-auth";
 import { prisma, isDbEnabled } from "@/lib/db";
 import { getTelemetryStore } from "@/lib/mqtt-ingestion";
 import type { RawTelemetry } from "@/lib/telemetry-types";
+import { requireFeature } from "@/lib/license/enforce";
 
 // Firmware v2.1.0 publishes volt_dc already calibrated in volts.
 // Worker stores the firmware value as-is. This route returns it as-is.
@@ -12,6 +13,10 @@ const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 export async function GET(request: Request) {
   const auth = requireApiAuth(request);
   if (!auth.ok) return auth.response;
+  if (isDbEnabled()) {
+    const licenseBlock = await requireFeature(prisma, "history");
+    if (licenseBlock) return licenseBlock;
+  }
 
   const { searchParams } = new URL(request.url);
   const deviceId = searchParams.get("deviceId") ?? searchParams.get("device_id");

@@ -5,6 +5,7 @@ import { prisma, isDbEnabled } from "@/lib/db";
 import { defaultInventory, type UpsInventoryItem } from "@/lib/telemetry";
 import { readJsonFile, writeJsonFile } from "@/lib/server-store";
 import { logAudit, requestIp } from "@/lib/audit";
+import { releaseLicenseSeat, requireCanAddUps, syncLicenseSeat } from "@/lib/license/enforce";
 
 const inventoryFile = "inventory.json";
 
@@ -56,6 +57,18 @@ export async function PUT(request: Request) {
   }));
 
   if (isDbEnabled()) {
+    const existingActive = await prisma.upsUnit.findMany({
+      where: { active: true },
+      select: { upsId: true },
+    });
+    const existingIds = new Set(existingActive.map((u) => u.upsId));
+    const incomingIds = new Set(normalized.map((item) => item.upsId).filter(Boolean));
+    const additionalCount = [...incomingIds].filter((upsId) => !existingIds.has(upsId)).length;
+    if (additionalCount > 0) {
+      const licenseBlock = await requireCanAddUps(prisma, additionalCount);
+      if (licenseBlock) return licenseBlock;
+    }
+
     for (const item of normalized) {
       if (!item.upsId) continue;
       const unit = await prisma.upsUnit.upsert({
@@ -79,6 +92,7 @@ export async function PUT(request: Request) {
           active: true,
         },
       });
+      await syncLicenseSeat(prisma, item.upsId, item.deviceId, auth.user.username);
 
       if (item.deviceId) {
         await prisma.device.upsert({
@@ -122,6 +136,15 @@ export async function POST(request: Request) {
   }
 
   if (isDbEnabled()) {
+    const existing = await prisma.upsUnit.findUnique({
+      where: { upsId: body.upsId },
+      select: { active: true },
+    });
+    if (!existing?.active) {
+      const licenseBlock = await requireCanAddUps(prisma, 1);
+      if (licenseBlock) return licenseBlock;
+    }
+
     const unit = await prisma.upsUnit.upsert({
       where: { upsId: body.upsId },
       create: {
@@ -143,6 +166,7 @@ export async function POST(request: Request) {
         active: true,
       },
     });
+    await syncLicenseSeat(prisma, body.upsId, body.deviceId, auth.user.username);
 
     if (body.deviceId) {
       await prisma.device.upsert({
@@ -190,6 +214,7 @@ export async function DELETE(request: Request) {
       where: { upsId },
       data: { active: false },
     });
+    await releaseLicenseSeat(prisma, upsId);
     await logAudit({ userId: auth.user.username, action: "inventory.delete", entity: "UpsUnit", entityId: unit.id, data: { upsId }, ip: requestIp(request) });
     return NextResponse.json({ ok: true });
   }

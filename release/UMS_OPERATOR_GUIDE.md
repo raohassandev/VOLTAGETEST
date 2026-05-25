@@ -2,6 +2,10 @@
 
 The UPS Management System monitors ESP32 UPS boards running firmware v2.1.0. Boards publish telemetry every 1 second to:
 
+## License Activation
+
+Commercial deployments require an offline signed license. A manufacturer user can open `Admin > License`, copy the machine code, and paste the activation JSON supplied by Automatrix. One active UPS consumes one license seat. Existing monitoring and alarms continue after expiry, but adding UPS units and gated features require a valid active license.
+
 ```text
 ums/devices/<device_id>/data
 ```

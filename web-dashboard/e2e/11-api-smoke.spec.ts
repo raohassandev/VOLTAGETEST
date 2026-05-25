@@ -18,6 +18,10 @@ async function login(request: import("@playwright/test").APIRequestContext): Pro
   });
   // Login redirects (302) or returns 200 — both mean success
   expect([200, 302, 303]).toContain(res.status());
+  const roleRes = await request.post("/api/role-select", {
+    data: { role: "manufacturer", password: ADMIN_PASS },
+  });
+  expect(roleRes.status()).toBe(200);
 }
 
 test.describe("API smoke tests", () => {

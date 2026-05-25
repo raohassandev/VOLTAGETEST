@@ -13,6 +13,8 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/api-auth";
 import { getBroker } from "@/lib/broker";
+import { prisma, isDbEnabled } from "@/lib/db";
+import { requireFeature } from "@/lib/license/enforce";
 
 interface ConfigPayload {
   reportingIntervalMs?: number;
@@ -32,6 +34,10 @@ export async function POST(
 ) {
   const auth = requireRole(request, "manufacturer");
   if (!auth.ok) return auth.response;
+  if (isDbEnabled()) {
+    const licenseBlock = await requireFeature(prisma, "board_config");
+    if (licenseBlock) return licenseBlock;
+  }
 
   // In production Docker mode the embedded broker is disabled.
   // External MQTT publish is not yet implemented — return 501 until firmware
