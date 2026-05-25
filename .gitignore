@@ -14,6 +14,8 @@ deployment/mosquitto/passwords
 deployment/backups/
 
 CREDENTIALS.md
+.claude/
+settings.local.json
 
 .DS_Store
 Thumbs.db

@@ -12,6 +12,8 @@ param(
   [string]$DbUser      = "ums_user",
   [string]$DbPass      = "",
   [string]$AdminPass   = "",
+  [string]$LicensePublicKeyPem = "",
+  [string]$LicensePublicKeyPath = "",
   [string]$MqttPort    = "1883",
   [string]$HttpPort    = "3303"
 )
@@ -48,6 +50,19 @@ Log "Node.js: $NodeExe"
 Log "Generating auth token..."
 $AuthToken = [System.Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
 
+if (-not $LicensePublicKeyPem -and $LicensePublicKeyPath) {
+  if (-not (Test-Path $LicensePublicKeyPath)) {
+    Log "ERROR: license public key file not found: $LicensePublicKeyPath"
+    exit 1
+  }
+  $LicensePublicKeyPem = Get-Content -Raw -LiteralPath $LicensePublicKeyPath
+}
+if (-not $LicensePublicKeyPem) {
+  Log "ERROR: UMS license public key is required. Installer cannot start the production service without UMS_LICENSE_PUBLIC_KEY_PEM."
+  exit 1
+}
+$LicensePublicKeyEnv = ($LicensePublicKeyPem.Trim() -replace "`r?`n", "\n")
+
 # ── 3. Hash admin password with bcrypt (using bundled Node) ───────────────
 Log "Hashing admin password..."
 $HashScript = @"
@@ -72,6 +87,7 @@ $EnvContent = @"
 DATABASE_URL=$DatabaseUrl
 UPS_AUTH_TOKEN=$AuthToken
 UPS_AUTH_PASSWORD_HASH=$AdminHash
+UMS_LICENSE_PUBLIC_KEY_PEM=$LicensePublicKeyEnv
 MQTT_PORT=$MqttPort
 PORT=$HttpPort
 NODE_ENV=production
@@ -113,6 +129,7 @@ $ServiceName = "UMSDashboard"
     "DATABASE_URL=$DatabaseUrl" `
     "UPS_AUTH_TOKEN=$AuthToken" `
     "UPS_AUTH_PASSWORD_HASH=$AdminHash" `
+    "UMS_LICENSE_PUBLIC_KEY_PEM=$LicensePublicKeyEnv" `
     "PORT=$HttpPort" `
     "MQTT_PORT=$MqttPort" `
     "NODE_ENV=production"

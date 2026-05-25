@@ -87,6 +87,9 @@ var
   MqttPortEdit:   TEdit;
   HttpPortEdit:   TEdit;
 
+  LicensePage:    TWizardPage;
+  LicenseKeyMemo: TMemo;
+
 { ---- Wizard page creation ---- }
 
 procedure InitializeWizard;
@@ -172,8 +175,23 @@ begin
   AdminPass2Edit.Left := 140; AdminPass2Edit.Top := 34;
   AdminPass2Edit.Width := 240; AdminPass2Edit.PasswordChar := '*';
 
-  { Page 3 — Ports }
-  PortsPage := CreateCustomPage(AdminPassPage.ID, 'Ports',
+  { Page 3 — License public key }
+  LicensePage := CreateCustomPage(AdminPassPage.ID, 'License Public Key',
+    'Paste the Automatrix Ed25519 public key for offline license verification.');
+
+  Lbl := TLabel.Create(LicensePage);
+  Lbl.Parent  := LicensePage.Surface;
+  Lbl.Caption := 'UMS_LICENSE_PUBLIC_KEY_PEM:';
+  Lbl.Left := 0; Lbl.Top := 8;
+
+  LicenseKeyMemo := TMemo.Create(LicensePage);
+  LicenseKeyMemo.Parent := LicensePage.Surface;
+  LicenseKeyMemo.Left := 0; LicenseKeyMemo.Top := 30;
+  LicenseKeyMemo.Width := 410; LicenseKeyMemo.Height := 110;
+  LicenseKeyMemo.ScrollBars := ssVertical;
+
+  { Page 4 — Ports }
+  PortsPage := CreateCustomPage(LicensePage.ID, 'Ports',
     'Configure the network ports used by UMS.');
 
   Lbl := TLabel.Create(PortsPage);
@@ -234,6 +252,16 @@ begin
       Exit;
     end;
   end;
+
+  if CurPageID = LicensePage.ID then
+  begin
+    if Pos('BEGIN PUBLIC KEY', LicenseKeyMemo.Text) = 0 then
+    begin
+      MsgBox('Paste the Automatrix Ed25519 public key PEM before continuing.', mbError, MB_OK);
+      Result := False;
+      Exit;
+    end;
+  end;
 end;
 
 { ---- Post-install: call PowerShell setup script ---- }
@@ -251,11 +279,13 @@ begin
       ' -InstallDir "%s"' +
       ' -DbHost "%s" -DbPort "%s" -DbName "%s" -DbUser "%s" -DbPass "%s"' +
       ' -AdminPass "%s"' +
+      ' -LicensePublicKeyPem "%s"' +
       ' -MqttPort "%s" -HttpPort "%s"',
       [ExpandConstant('{app}'), ExpandConstant('{app}'),
        DbHostEdit.Text, DbPortEdit.Text, DbNameEdit.Text,
        DbUserEdit.Text, DbPassEdit.Text,
        AdminPassEdit.Text,
+       LicenseKeyMemo.Text,
        MqttPortEdit.Text, HttpPortEdit.Text]);
 
     if not Exec(Cmd, Args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then

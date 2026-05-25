@@ -6,6 +6,7 @@
 - Node.js 24 LTS (`node-v24.15.0-x64.msi`) placed in `installer/tools/`
 - [NSSM 2.24](https://nssm.cc/download) (`nssm.exe` 64-bit) placed in `installer/tools/`
 - PostgreSQL 16 already installed on the target machine (or run `setup-db.ps1` first)
+- Automatrix Ed25519 public license key PEM. Do not use a private signing key.
 
 ## Build the installer
 
@@ -25,15 +26,16 @@ Output: `installer\dist\UMS-Setup-2.1.0.exe`
 |------|--------|
 | PostgreSQL connection | Host, Port, Database name, DB Username, DB Password |
 | Admin password | Password + confirm (min 8 chars) |
+| License public key | `UMS_LICENSE_PUBLIC_KEY_PEM` Automatrix public key PEM |
 | Ports | MQTT port (default 1883), Dashboard port (default 3303) |
 
 ## What the installer does
 
 1. Copies app bundle to `C:\Program Files\UMS\app\`
-2. Writes `.env` with DB connection string, auth token, and bcrypt-hashed admin password
+2. Writes `.env` with DB connection string, auth token, bcrypt-hashed admin password, and license public key
 3. Runs `prisma migrate deploy` (falls back to `prisma db push` if needed)
 4. Seeds the database with demo data
-5. Installs UMS as a Windows auto-start service via NSSM
+5. Installs UMS as a Windows auto-start service via NSSM, including `UMS_LICENSE_PUBLIC_KEY_PEM` in `AppEnvironmentExtra`
 6. Opens firewall rules for MQTT (1883) and HTTP (3303)
 7. Starts the service
 

@@ -16,6 +16,8 @@ param(
   [string]$DbUser    = "ums_user",
   [string]$DbPass    = "ums_password",
   [string]$AdminPass = "UMS@Local2026!",
+  [string]$LicensePublicKeyPem = "",
+  [string]$LicensePublicKeyPath = "",
   [string]$MqttPort  = "1883",
   [string]$HttpPort  = "3303"
 )
@@ -48,6 +50,13 @@ Ok "npm install done."
 # ── Generate auth token ────────────────────────────────────────────────────
 $AuthToken = [System.Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
 
+if (-not $LicensePublicKeyPem -and $LicensePublicKeyPath) {
+  if (-not (Test-Path $LicensePublicKeyPath)) { Err "License public key file not found: $LicensePublicKeyPath" }
+  $LicensePublicKeyPem = Get-Content -Raw -LiteralPath $LicensePublicKeyPath
+}
+if (-not $LicensePublicKeyPem) { Err "UMS license public key is required. Pass -LicensePublicKeyPath or -LicensePublicKeyPem." }
+$LicensePublicKeyEnv = ($LicensePublicKeyPem.Trim() -replace "`r?`n", "\n")
+
 # ── Hash admin password ────────────────────────────────────────────────────
 Log "Hashing admin password..."
 $AdminHash = & $NodeExe -e "const b=require('./node_modules/bcryptjs');process.stdout.write(b.hashSync('$AdminPass',12));" 2>&1
@@ -60,6 +69,7 @@ $DatabaseUrl = "postgresql://${DbUser}:${DbPass}@${DbHost}:${DbPort}/${DbName}"
 DATABASE_URL=$DatabaseUrl
 UPS_AUTH_TOKEN=$AuthToken
 UPS_AUTH_PASSWORD_HASH=$AdminHash
+UMS_LICENSE_PUBLIC_KEY_PEM=$LicensePublicKeyEnv
 MQTT_PORT=$MqttPort
 PORT=$HttpPort
 NODE_ENV=production
@@ -91,6 +101,7 @@ $ServiceName = "UMSDashboard"
     "DATABASE_URL=$DatabaseUrl" `
     "UPS_AUTH_TOKEN=$AuthToken" `
     "UPS_AUTH_PASSWORD_HASH=$AdminHash" `
+    "UMS_LICENSE_PUBLIC_KEY_PEM=$LicensePublicKeyEnv" `
     "PORT=$HttpPort" `
     "MQTT_PORT=$MqttPort" `
     "NODE_ENV=production"
