@@ -13,8 +13,14 @@ function Pass($Message) { Write-Host "PASS: $Message" }
 function Step($Message) { Write-Host ""; Write-Host "=== $Message ===" }
 function Fail($Message) { throw "FAIL: $Message" }
 function Compose([string[]]$ComposeArgs) {
-  & docker compose @ComposeArgs 2>&1 | ForEach-Object { Write-Host $_ }
-  if ($LASTEXITCODE -ne 0) { Fail "docker compose $($ComposeArgs -join ' ') failed" }
+  $oldErrorActionPreference = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    & docker compose @ComposeArgs 2>&1 | ForEach-Object { Write-Host $_ }
+    if ($LASTEXITCODE -ne 0) { Fail "docker compose $($ComposeArgs -join ' ') failed" }
+  } finally {
+    $ErrorActionPreference = $oldErrorActionPreference
+  }
 }
 function Psql([string]$Sql, [string]$Db = "upsmon") {
   $Sql | docker compose exec -T postgres psql -U ups_user -d $Db -t
