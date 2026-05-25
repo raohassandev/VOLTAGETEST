@@ -1,42 +1,5 @@
-﻿## docker compose config -q
-
-## docker compose ps
-NAME                       IMAGE                    COMMAND                  SERVICE       CREATED              STATUS                        PORTS
+﻿NAME                       IMAGE                    COMMAND                  SERVICE       CREATED              STATUS                        PORTS
 deployment-mosquitto-1     eclipse-mosquitto:2      "/docker-entrypoint.…"   mosquitto     About a minute ago   Up About a minute             0.0.0.0:1883->1883/tcp, [::]:1883->1883/tcp
-deployment-mqtt-worker-1   deployment-mqtt-worker   "docker-entrypoint.s…"   mqtt-worker   About a minute ago   Up About a minute             
+deployment-mqtt-worker-1   deployment-mqtt-worker   "docker-entrypoint.s…"   mqtt-worker   About a minute ago   Up 57 seconds                 
 deployment-postgres-1      postgres:16-alpine       "docker-entrypoint.s…"   postgres      About a minute ago   Up About a minute (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
-deployment-web-1           deployment-web           "docker-entrypoint.s…"   web           About a minute ago   Up About a minute (healthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
-
-## docker compose logs --tail=80 web
-web-1  | Environment variables loaded from .env
-web-1  | Prisma schema loaded from prisma/schema.prisma
-web-1  | Datasource "db": PostgreSQL database "upsmon", schema "public" at "postgres:5432"
-web-1  | 
-web-1  | 5 migrations found in prisma/migrations
-web-1  | 
-web-1  | Applying migration `20260520000000_init`
-web-1  | Applying migration `20260523000001_v2_fields`
-web-1  | Applying migration `20260523120000_add_telemetry1m_energy_fields`
-web-1  | Applying migration `20260524000000_add_mqtt_broker`
-web-1  | Applying migration `20260525000000_add_licensing`
-web-1  | 
-web-1  | The following migration(s) have been applied:
-web-1  | 
-web-1  | migrations/
-web-1  |   └─ 20260520000000_init/
-web-1  |     └─ migration.sql
-web-1  |   └─ 20260523000001_v2_fields/
-web-1  |     └─ migration.sql
-web-1  |   └─ 20260523120000_add_telemetry1m_energy_fields/
-web-1  |     └─ migration.sql
-web-1  |   └─ 20260524000000_add_mqtt_broker/
-web-1  |     └─ migration.sql
-web-1  |   └─ 20260525000000_add_licensing/
-web-1  |     └─ migration.sql
-web-1  |       
-web-1  | All migrations have been successfully applied.
-web-1  | ▲ Next.js 16.2.6
-web-1  | - Local:         http://localhost:3000
-web-1  | - Network:       http://0.0.0.0:3000
-web-1  | ✓ Ready in 0ms
-
+deployment-web-1           deployment-web           "docker-entrypoint.s…"   web           About a minute ago   Up 57 seconds (healthy)       0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
