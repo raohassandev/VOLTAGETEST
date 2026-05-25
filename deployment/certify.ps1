@@ -113,6 +113,7 @@ if (($login -join "`n") -notmatch "303|302") { Fail "login did not redirect" }
 $sysHealth = curl.exe -s -b $CookieFile "$BaseUrl/api/system/health"
 $sysHealth | Write-Host
 if ($sysHealth -notmatch '"db":"connected"') { Fail "authenticated system health failed" }
+curl.exe -s -b $CookieFile -c $CookieFile -H "Content-Type: application/json" -X POST "$BaseUrl/api/role-select" --data "{`"role`":`"manufacturer`",`"password`":`"$env:CERT_ADMIN_PASSWORD`"}" | Out-Null
 Pass "auth flow PASS"
 
 Step "7. Licensing API routes"
