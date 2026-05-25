@@ -1,9 +1,342 @@
-﻿## CERT_ADMIN_PASSWORD=<redacted> bash certify.sh
-bash : <3>WSL (11 - Relay) ERROR: CreateProcessCommon:818: execvpe(/bin/bash) failed: No such file or directory
-At line:2 char:113
-+ ... RD=<redacted> bash certify.sh'; $out += (bash certify.sh 2>&1 | Out-S ...
-+                                              ~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (<3>WSL (11 - Re...le or directory:String) [], RemoteException
+﻿
+=== 1. Repo state ===
+c14c091
+c14c091 implement offline signed licensing
+d480c34 fix release audit blockers and add evidence logs
+87c9608 fix ups detail device routing and add QA artifacts
+PASS: 1. Repo state
+
+=== 2. Prerequisites ===
+.env present
+mosquitto/passwords present
+.env not committed
+PASS: 2. Prerequisites
+
+=== 3. Fresh stack ===
+docker :  Container deployment-mqtt-worker-1 Stopping 
+At line:22 char:50
++ ...  { Add-Line (Native { docker compose down -v --remove-orphans }).Text ...
++                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Container depl...ker-1 Stopping :String) [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
  
+ Container deployment-web-1 Stopping 
+ Container deployment-web-1 Stopped 
+ Container deployment-web-1 Removing 
+ Container deployment-web-1 Removed 
+ Container deployment-mqtt-worker-1 Stopped 
+ Container deployment-mqtt-worker-1 Removing 
+ Container deployment-mqtt-worker-1 Removed 
+ Container deployment-mosquitto-1 Stopping 
+ Container deployment-postgres-1 Stopping 
+ Container deployment-mosquitto-1 Stopped 
+ Container deployment-mosquitto-1 Removing 
+ Container deployment-mosquitto-1 Removed 
+ Container deployment-postgres-1 Stopped 
+ Container deployment-postgres-1 Removing 
+ Container deployment-postgres-1 Removed 
+ Volume deployment_postgres_data Removing 
+ Volume deployment_web_data Removing 
+ Volume deployment_mosquitto_data Removing 
+ Volume deployment_mosquitto_log Removing 
+ Network deployment_default Removing 
+ Volume deployment_web_data Removed 
+ Volume deployment_postgres_data Removed 
+ Volume deployment_mosquitto_data Removed 
+ Volume deployment_mosquitto_log Removed 
+ Network deployment_default Removed 
+
+
+docker :  Image deployment-web Building 
+At line:22 char:197
++ ... MustNative 'docker compose up' { docker compose up -d --build }; for( ...
++                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Image deployment-web Building :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ Image deployment-mqtt-worker Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.11kB done
+#1 DONE 0.0s
+
+#2 [web internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.55kB done
+#2 DONE 0.0s
+
+#3 [mqtt-worker internal] load build definition from Dockerfile.worker
+#3 transferring dockerfile: 586B done
+#3 DONE 0.0s
+
+#4 [auth] library/node:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#5 [mqtt-worker internal] load metadata for docker.io/library/node:22-alpine
+#5 DONE 1.2s
+
+#6 [mqtt-worker internal] load .dockerignore
+#6 transferring context: 149B done
+#6 DONE 0.0s
+
+#7 [mqtt-worker deps 1/5] FROM docker.io/library/node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920
+#7 resolve docker.io/library/node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920 0.0s done
+#7 DONE 0.0s
+
+#8 [mqtt-worker internal] load build context
+#8 transferring context: 1.20kB 0.0s done
+#8 DONE 0.0s
+
+#9 [mqtt-worker runner  9/10] COPY tsconfig.json ./
+#9 CACHED
+
+#10 [mqtt-worker runner  8/10] COPY package*.json ./
+#10 CACHED
+
+#11 [mqtt-worker runner  6/10] COPY worker ./worker
+#11 CACHED
+
+#12 [mqtt-worker deps 4/5] COPY package*.json ./
+#12 CACHED
+
+#13 [mqtt-worker deps 2/5] WORKDIR /app
+#13 CACHED
+
+#14 [mqtt-worker deps 3/5] RUN apk add --no-cache openssl
+#14 CACHED
+
+#15 [mqtt-worker runner  4/10] COPY --from=deps /app/node_modules ./node_modules
+#15 CACHED
+
+#16 [mqtt-worker deps 5/5] RUN npm ci
+#16 CACHED
+
+#17 [mqtt-worker runner  5/10] COPY prisma ./prisma
+#17 CACHED
+
+#18 [mqtt-worker runner  7/10] COPY src/lib/alarm-engine.ts ./src/lib/alarm-engine.ts
+#18 CACHED
+
+#19 [mqtt-worker runner 10/10] RUN node_modules/.bin/prisma generate
+#19 CACHED
+
+#20 [mqtt-worker] exporting to image
+#20 exporting layers done
+#20 ...
+
+#21 [web internal] load build context
+#21 transferring context: 1.71MB 0.1s done
+#21 DONE 0.1s
+
+#22 [web deps 5/5] RUN npm ci
+#22 CACHED
+
+#23 [web runner 7/9] COPY --from=builder /app/prisma ./prisma
+#23 CACHED
+
+#24 [web runner 4/9] COPY --from=builder /app/.next/standalone ./
+#24 CACHED
+
+#25 [web runner 5/9] COPY --from=builder /app/.next/static ./.next/static
+#25 CACHED
+
+#26 [web deps 4/5] COPY package*.json ./
+#26 CACHED
+
+#27 [web runner 8/9] COPY --from=deps /app/node_modules/@prisma ./node_modules/@prisma
+#27 CACHED
+
+#13 [web deps 2/5] WORKDIR /app
+#13 CACHED
+
+#28 [web runner 3/9] RUN apk add --no-cache openssl
+#28 CACHED
+
+#29 [web builder 4/6] COPY --from=deps /app/node_modules ./node_modules
+#29 CACHED
+
+#30 [web runner 6/9] COPY --from=builder /app/public ./public
+#30 CACHED
+
+#31 [web builder 5/6] COPY . .
+#31 CACHED
+
+#32 [web builder 6/6] RUN npm run db:generate && npm run build
+#32 CACHED
+
+#14 [web deps 3/5] RUN apk add --no-cache openssl
+#14 CACHED
+
+#33 [web runner 9/9] COPY --from=deps /app/node_modules/prisma ./node_modules/prisma
+#33 CACHED
+
+#20 [mqtt-worker] exporting to image
+#20 exporting manifest sha256:918c1e6e690fcf0583dd6695a614798f6bbaa30d5bb80f710a4d4db326ebbbff done
+#20 exporting config sha256:feda59465b5cd6f397c6027870103bcb0c486cad211c9f60008a89ed8bc6823b done
+#20 exporting attestation manifest sha256:d5fd5ebcb15683773b45e5a4ee441056c5be848d1e9f6e6b17a7b7be9bb1a4ee 0.0s done
+#20 exporting manifest list sha256:42bb2227298940fcb64d274c04337b22f51500a3c469d16932a812e35a953c73 0.0s done
+#20 naming to docker.io/library/deployment-mqtt-worker:latest done
+#20 unpacking to docker.io/library/deployment-mqtt-worker:latest 0.0s done
+#20 DONE 0.1s
+
+#34 [web] exporting to image
+#34 exporting layers done
+#34 exporting manifest sha256:04221be68b1beb061a2e8905d682521866de1d2f9c68e6e77d7ee1b561568ab8 done
+#34 exporting config sha256:b36590070efe4cff63626d1fccd0f17860225f21a57030d8809845f52dc30d3e done
+#34 exporting attestation manifest sha256:c7248e7ce410bfdf6a719be3ee3c9d76eb24edcca6f028f331a96eadcb3f1ca5 0.0s done
+#34 exporting manifest list sha256:5ec479b66cb743b9b0ac7e9e0e7600059c1dd77a290cd343af4fbd8cff23e491 0.0s done
+#34 naming to docker.io/library/deployment-web:latest done
+#34 unpacking to docker.io/library/deployment-web:latest done
+#34 DONE 0.1s
+
+#35 [mqtt-worker] resolving provenance for metadata file
+#35 DONE 0.0s
+
+#36 [web] resolving provenance for metadata file
+#36 DONE 0.0s
+ Image deployment-mqtt-worker Built 
+ Image deployment-web Built 
+ Network deployment_default Creating 
+ Network deployment_default Created 
+ Volume deployment_web_data Creating 
+ Volume deployment_web_data Created 
+ Volume deployment_postgres_data Creating 
+ Volume deployment_postgres_data Created 
+ Volume deployment_mosquitto_data Creating 
+ Volume deployment_mosquitto_data Created 
+ Volume deployment_mosquitto_log Creating 
+ Volume deployment_mosquitto_log Created 
+ Container deployment-mosquitto-1 Creating 
+ Container deployment-postgres-1 Creating 
+ Container deployment-mosquitto-1 Created 
+ Container deployment-postgres-1 Created 
+ Container deployment-web-1 Creating 
+ Container deployment-mqtt-worker-1 Creating 
+ Container deployment-mqtt-worker-1 Created 
+ Container deployment-web-1 Created 
+ Container deployment-postgres-1 Starting 
+ Container deployment-mosquitto-1 Starting 
+ Container deployment-postgres-1 Started 
+ Container deployment-postgres-1 Waiting 
+ Container deployment-mosquitto-1 Started 
+ Container deployment-postgres-1 Waiting 
+ Container deployment-postgres-1 Healthy 
+ Container deployment-web-1 Starting 
+ Container deployment-postgres-1 Healthy 
+ Container deployment-mqtt-worker-1 Starting 
+ Container deployment-web-1 Started 
+ Container deployment-mqtt-worker-1 Started 
+
+web container healthy
+PASS: 3. Fresh stack
+
+=== 4. Container status ===
+NAME                       IMAGE                    COMMAND                  SERVICE       CREATED          STATUS                    PORTS
+deployment-mosquitto-1     eclipse-mosquitto:2      "/docker-entrypoint.…"   mosquitto     43 seconds ago   Up 43 seconds             0.0.0.0:1883->1883/tcp, [::]:1883->1883/tcp
+deployment-mqtt-worker-1   deployment-mqtt-worker   "docker-entrypoint.s…"   mqtt-worker   43 seconds ago   Up 32 seconds             
+deployment-postgres-1      postgres:16-alpine       "docker-entrypoint.s…"   postgres      43 seconds ago   Up 43 seconds (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+deployment-web-1           deployment-web           "docker-entrypoint.s…"   web           43 seconds ago   Up 32 seconds (healthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+
+postgres running
+mosquitto running
+web running
+mqtt-worker running
+PASS: 4. Container status
+
+=== 5. DB migrations ===
+ 20260520000000_init
+ 20260523000001_v2_fields
+ 20260523120000_add_telemetry1m_energy_fields
+ 20260524000000_add_mqtt_broker
+ 20260525000000_add_licensing
+
+
+migration 20260520000000_init present
+migration 20260523000001_v2_fields present
+migration 20260523120000_add_telemetry1m_energy_fields present
+migration 20260524000000_add_mqtt_broker present
+migration 20260525000000_add_licensing present
+ Alarm
+ AlarmEvent
+ AlarmRule
+ AuditLog
+ CalibrationProfile
+ Device
+ DeviceDiscovered
+ LicenseSeat
+ MqttBroker
+ Site
+ SystemLicense
+ SystemSettings
+ Telemetry1m
+ TelemetryLatest
+ TelemetryRaw
+ UpsUnit
+ User
+ _prisma_migrations
+
+
+table TelemetryRaw exists
+table TelemetryLatest exists
+table Alarm exists
+table AlarmEvent exists
+table AuditLog exists
+table UpsUnit exists
+table Device exists
+table SystemLicense exists
+table LicenseSeat exists
+PASS: 5. DB migrations
+
+=== 6. /api/health ===
+{"status":"ok","uptime":33}
+
+/api/health returns ok and minimal
+PASS: 6. /api/health
+
+=== 7. Auth ===
+/ unauth status: 307
+HTTP/1.1 303 See Other
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+location: http://0.0.0.0:3000/
+set-cookie: ups_session=<redacted>; Path=/; Expires=Tue, 26 May 2026 05:28:53 GMT; Max-Age=43200; Secure; HttpOnly; SameSite=lax
+set-cookie: ups_user=<redacted>; Path=/; Expires=Tue, 26 May 2026 05:28:53 GMT; Max-Age=43200; Secure; SameSite=lax
+{"status":"ok","uptime":34,"dbEnabled":true,"db":"connected","lastTelemetryAt":null,"settingsLastUpdated":null,"mqttBrokerUrl":"mqtt://mosquitto:1883","mqttBrokerReachable":true}
+
+auth flow passed
+PASS: 7. Auth
+
+=== 8. External MQTT smoke ===
+
+MQTT message published
+PASS: 8. External MQTT smoke
+
+=== 9. DB telemetry verification ===
+TelemetryRaw:  DOCKER-SMOKE-001 |    230 |     50 |      50 |  498 |   400 | 0.94 |  0.95 |    180 |     140 |   12.3 |    11.8
+
+
+TelemetryLatest:  DOCKER-SMOKE-001 |    230 |     50
+
+
+PASS: 9. DB telemetry verification
+
+=== 10. Dashboard/API ===
+/api/telemetry/latest shows smoke device; no auto PUT detected
+PASS: 10. Dashboard/API
+
+=== 11. Security: POST /api/telemetry/latest ===
+POST status 403
+PASS: 11. Security: POST /api/telemetry/latest
+
+=== 12. UPS PATCH audit ===
+No UPS units in DB yet - skipping PATCH audit check
+PASS: 12. UPS PATCH audit
+
+=== 13. Backup / restore ===
+backup created: C:\Users\Mubasher\AppData\Local\Temp\ums_docker_cert_20260525_222858.dump
+Restored TelemetryRaw count:      1
+
+
+restore completed
+PASS: 13. Backup / restore
+
+ALL CERTIFICATION STEPS PASSED
+Runtime certification passed for this test environment.
 
