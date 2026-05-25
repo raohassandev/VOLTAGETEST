@@ -4,6 +4,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
+  $PSNativeCommandUseErrorActionPreference = $false
+}
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 
 function Pass($Message) { Write-Host "PASS: $Message" }
