@@ -17,10 +17,18 @@ export async function GET(request: Request,
   const { id } = await params;
 
   const unit = await prisma.upsUnit.findFirst({
-    where: { OR: [{ id }, { upsId: id }], active: true },
+    where: {
+      active: true,
+      OR: [
+        { id },
+        { upsId: id },
+        { devices: { some: { deviceId: id, active: true } } },
+      ],
+    },
     include: {
       devices: {
         where: { active: true },
+        orderBy: { updatedAt: "desc" },
         include: {
           telemetryLatest: true,
           alarms: { where: { state: "active" }, orderBy: { firstSeenAt: "desc" } },
@@ -34,10 +42,90 @@ export async function GET(request: Request,
   });
 
   if (!unit) {
-    return NextResponse.json({ error: "UPS not found." }, { status: 404 });
+    const device = await prisma.device.findFirst({
+      where: { deviceId: id, active: true },
+      include: {
+        telemetryLatest: true,
+        alarms: { orderBy: { firstSeenAt: "desc" }, take: 100 },
+      },
+    });
+
+    if (!device) {
+      return NextResponse.json({ error: "UPS not found." }, { status: 404 });
+    }
+
+    const tl = device.telemetryLatest;
+    const rj = tl?.rawJson as Record<string, unknown> | undefined;
+    const commissioning = rj
+      ? {
+          seq: typeof rj.seq === "number" ? rj.seq : null,
+          freeHeap: typeof rj.free_heap === "number" ? rj.free_heap : null,
+          resetReason: typeof rj.reset_reason === "string" ? rj.reset_reason || null : null,
+          mqttConnected: typeof rj.mqtt_connected === "boolean" ? rj.mqtt_connected : null,
+          wifiMode: typeof rj.wifi_mode === "string" ? rj.wifi_mode || null : null,
+          configMode: typeof rj.config_mode === "boolean" ? rj.config_mode : null,
+          setupApEnabled: typeof rj.setup_ap_enabled === "boolean" ? rj.setup_ap_enabled : null,
+          building: typeof rj.building === "string" ? rj.building || null : null,
+          floor: typeof rj.floor === "string" ? rj.floor || null : null,
+          section: typeof rj.section === "string" ? rj.section || null : null,
+          workArea: typeof rj.work_area === "string" ? rj.work_area || null : null,
+          location: typeof rj.location === "string" ? rj.location || null : null,
+        }
+      : null;
+
+    return NextResponse.json({
+      unit: {
+        id: device.id,
+        upsId: tl?.upsId ?? device.deviceId,
+        name: "",
+        serial: "",
+        floor: "",
+        location: "",
+        capacityVa: 0,
+        batteryNominalV: 48,
+        notes: "",
+      },
+      device: {
+        id: device.id,
+        deviceId: device.deviceId,
+        ip: device.ip,
+        mac: device.mac,
+        firmware: device.firmware,
+        online: device.online,
+        lastSeenAt: device.lastSeenAt?.toISOString() ?? null,
+      },
+      telemetry: tl
+        ? {
+            voltIn: tl.voltIn,
+            voltOut: tl.voltOut,
+            voltDc: tl.voltDc,
+            ctIn: tl.ctIn,
+            ctOut: tl.ctOut,
+            sInVa: tl.sInVa,
+            sOutVa: tl.sOutVa,
+            rssi: tl.rssi,
+            firmware: tl.firmware,
+            receivedAt: tl.receivedAt.toISOString(),
+            loadPct: null,
+            pInW: tl.pInW ?? null,
+            pOutW: tl.pOutW ?? null,
+            pfIn: tl.pfIn ?? null,
+            pfOut: tl.pfOut ?? null,
+            eInKwh: tl.eInKwh ?? null,
+            eOutKwh: tl.eOutKwh ?? null,
+            freqIn: tl.freqIn ?? null,
+            freqOut: tl.freqOut ?? null,
+            qInVar: tl.qInVar ?? null,
+            qOutVar: tl.qOutVar ?? null,
+          }
+        : null,
+      commissioning,
+      activeAlarms: device.alarms.filter((alarm) => alarm.state === "active"),
+      alarmHistory: device.alarms,
+    });
   }
 
-  const device = unit.devices[0];
+  const device = unit.devices.find((item) => item.deviceId === id) ?? unit.devices[0];
   const tl = device?.telemetryLatest;
 
   // Firmware v2.1.0 publishes volt_dc already calibrated in volts.

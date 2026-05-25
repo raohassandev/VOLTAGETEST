@@ -33,6 +33,7 @@ interface UpsDetail {
     notes: string;
   };
   device: {
+    id: string;
     deviceId: string;
     ip: string | null;
     mac: string | null;
@@ -320,7 +321,7 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
   }
 
   async function saveNotes() {
-    if (!detail) return;
+    if (!detail || !canSaveNotes) return;
     setNotesSaving(true);
     await fetch(`/api/ups/${detail.unit.id}`, {
       method: "PATCH",
@@ -356,6 +357,7 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
   const online = device?.online ?? false;
   const loadPct = telemetry?.loadPct;
   const voltDcCalibrated = telemetry ? telemetry.voltDc : null;
+  const canSaveNotes = Boolean(device && unit.id !== device.id);
 
   // shared section style
   const sectionStyle = { background: "var(--surface-1)", borderColor: "var(--border-default)" };
@@ -670,10 +672,11 @@ export default function UpsDetailPage({ params }: { params: Promise<{ id: string
           <button
             className="mt-2 rounded-md bg-cyan-700 hover:bg-cyan-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-colors"
             onClick={saveNotes}
-            disabled={notesSaving}
+            disabled={notesSaving || !canSaveNotes}
+            title={canSaveNotes ? undefined : "Assign this board to a UPS inventory record before saving notes."}
             type="button"
           >
-            {notesSaving ? "Saving…" : "Save notes"}
+            {notesSaving ? "Saving…" : canSaveNotes ? "Save notes" : "Assign UPS to enable notes"}
           </button>
         </section>
 
