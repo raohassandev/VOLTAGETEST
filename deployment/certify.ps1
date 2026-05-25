@@ -144,12 +144,13 @@ Pass "MQTT telemetry smoke PASS"
 Pass "DB telemetry verification PASS"
 
 Step "9. Backup and restore"
-$backup = Join-Path $env:TEMP ("ums_docker_cert_{0}.dump" -f (Get-Date -Format "yyyyMMdd_HHmmss"))
-docker compose exec -T postgres pg_dump -U ups_user -d upsmon -Fc | Set-Content -Encoding Byte $backup
-if ((Get-Item $backup).Length -le 0) { Fail "backup empty" }
+$backup = "/tmp/ums_docker_cert.dump"
+docker compose exec -T postgres pg_dump -U ups_user -d upsmon -Fc -f $backup
+docker compose exec -T postgres test -s $backup
+if ($LASTEXITCODE -ne 0) { Fail "backup empty" }
 docker compose exec -T postgres psql -U ups_user -d postgres -c 'DROP DATABASE IF EXISTS ums_restore_test;' | Out-Null
 docker compose exec -T postgres psql -U ups_user -d postgres -c 'CREATE DATABASE ums_restore_test;' | Out-Null
-Get-Content -Encoding Byte $backup | docker compose exec -T postgres pg_restore -U ups_user -d ums_restore_test -Fc
+docker compose exec -T postgres pg_restore -U ups_user -d ums_restore_test -Fc $backup
 $restored = Psql 'SELECT COUNT(*) FROM "TelemetryRaw";' "ums_restore_test"
 if (($restored -join "`n") -notmatch '[1-9][0-9]*') { Fail "restore verification failed" }
 docker compose exec -T postgres psql -U ups_user -d postgres -c 'DROP DATABASE IF EXISTS ums_restore_test;' | Out-Null
