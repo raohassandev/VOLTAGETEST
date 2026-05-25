@@ -16,8 +16,10 @@ function Compose([string[]]$ComposeArgs) {
   $oldErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
   try {
-    & docker compose @ComposeArgs 2>&1 | ForEach-Object { Write-Host $_ }
+    $output = & docker compose @ComposeArgs 2>&1
+    $output | ForEach-Object { Write-Host $_ }
     if ($LASTEXITCODE -ne 0) { Fail "docker compose $($ComposeArgs -join ' ') failed" }
+    return $output
   } finally {
     $ErrorActionPreference = $oldErrorActionPreference
   }
