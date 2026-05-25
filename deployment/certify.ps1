@@ -109,7 +109,7 @@ try {
 Remove-Item -LiteralPath $CookieFile -Force -ErrorAction SilentlyContinue
 $login = curl.exe -s -i -c $CookieFile -X POST "$BaseUrl/api/login" --data-urlencode "username=admin" --data-urlencode "password=$env:CERT_ADMIN_PASSWORD" --data-urlencode "next=/"
 $login | Select-Object -First 5 | Out-Host
-if ($login -notmatch "303|302") { Fail "login did not redirect" }
+if (($login -join "`n") -notmatch "303|302") { Fail "login did not redirect" }
 $sysHealth = curl.exe -s -b $CookieFile "$BaseUrl/api/system/health"
 $sysHealth | Write-Host
 if ($sysHealth -notmatch '"db":"connected"') { Fail "authenticated system health failed" }
