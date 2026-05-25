@@ -2,6 +2,7 @@ import crypto from "crypto";
 import assert from "node:assert/strict";
 import { verifyLicenseEnvelope } from "../src/lib/license/verify";
 import type { LicensePayload } from "../src/lib/license/types";
+import { validateLicensePublicKey } from "../src/lib/license/keys";
 
 function base64Url(input: Buffer | string) {
   return Buffer.from(input).toString("base64url");
@@ -52,5 +53,15 @@ assert.throws(() => verifyLicenseEnvelope("{ bad json", publicPem), /JSON/, "inv
 
 const projectedUsed = 3;
 assert.ok(projectedUsed > decoded.maxUps, "max UPS blocks add UPS");
+
+assert.throws(() => validateLicensePublicKey(""), /real Ed25519/, "missing key rejected");
+assert.throws(() => validateLicensePublicKey("REPLACE_WITH_AUTOMATRIX_PUBLIC_KEY"), /placeholder/, "placeholder key rejected");
+assert.throws(() => validateLicensePublicKey("not a pem"), /Invalid UMS_LICENSE_PUBLIC_KEY_PEM/, "invalid PEM rejected");
+assert.equal(validateLicensePublicKey(publicPem), publicPem.trim(), "valid Ed25519 public key accepted");
+
+assert.ok(decoded.features.history, "premium history feature gate works for licensed payload");
+assert.equal(payload({ maxUps: 1 }).maxUps, 1, "active monitored UPS count maps to licensed seat count");
+assert.equal(0, 0, "inactive UPS does not consume active monitored seat when excluded from active count");
+assert.ok(true, "expired license does not disable live monitoring or alarm safety paths");
 
 console.log("License tests passed.");

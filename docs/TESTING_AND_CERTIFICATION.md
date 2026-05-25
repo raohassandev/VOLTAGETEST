@@ -1,112 +1,63 @@
-# Testing and Certification Guide — UMS
+# Testing And Certification Guide - VOLTAGETEST / UMS v2.1.0
 
----
+This guide describes the current release verification path. Historical audit reports and old RC evidence must not be used as final release proof.
 
-## Automated Tests (Playwright / Chromium)
-
-### Run all tests
+## Web Dashboard Checks
 
 ```bash
 cd web-dashboard
-npm run dev          # terminal 1 — start dev server on :3303
-npx playwright test  # terminal 2 — run all 74 tests
+npm ci
+npm run db:generate
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run license:test
+npx playwright test
+npm audit --omit=dev
 ```
-
-### Test files
-
-| File | Tests | Coverage |
-|------|-------|----------|
-| `e2e/01-auth.spec.ts` | 5 | Login page, wrong creds, successful login, unauth redirect, logout |
-| `e2e/02-dashboard.spec.ts` | 4 | Stat cards, nav, search, no JS errors |
-| `e2e/03-alarms.spec.ts` | 4 | Heading, filter tabs, empty state, no JS errors |
-| `e2e/04-admin-settings.spec.ts` | 3 | Renders, save button, no JS errors |
-| `e2e/05-admin-boards.spec.ts` | 5 | Heading, tabs, scan, search, no JS errors |
-| `e2e/06-admin-inventory.spec.ts` | 4 | Heading, form, save disabled, no JS errors |
-| `e2e/07-admin-alarm-rules.spec.ts` | 4 | Heading, form reveal, save button, no JS errors |
-| `e2e/08-admin-calibration.spec.ts` | 3 | Heading, device selector, no JS errors |
-| `e2e/09-admin-users.spec.ts` | 5 | Heading, admin listed, Add user form, create disabled, no JS errors |
-| `e2e/10-system-pages.spec.ts` | 19 | System index, params save, history counts/purge, feature flags |
-| `e2e/11-api-smoke.spec.ts` | 18 | All GET routes → 200, stats, settings CRUD, purge, config 501, unauth 401 |
-
-### Expected result
-
-```
-74 passed  0 failed
-```
-
----
 
 ## Docker Certification
 
+Run on a real Docker/WSL/Linux environment:
+
 ```bash
 cd deployment
-docker compose down --remove-orphans
+docker compose down -v --remove-orphans
+docker compose config
 docker compose up -d --build
-docker compose ps
-bash certify.sh
+CERT_ADMIN_PASSWORD=<actual-admin-password> UMS_LICENSE_PUBLIC_KEY_PEM="$(cat public-key.pem)" bash certify.sh
 ```
 
-Expected:
+Final proof files:
 
+- `docs/audit/logs/2026-05-25/certify.txt`
+- `docs/audit/logs/2026-05-25/docker-compose-ps.txt`
+
+`certify.txt` must include the final certified commit hash, `git status --short`, migration/table checks, MQTT smoke proof, DB telemetry proof, backup/restore proof, clean source package inspection, and the final line:
+
+```text
+ALL CERTIFICATION STEPS PASSED
 ```
-postgres healthy
-mosquitto up
-mqtt-worker up
-web healthy
-certify.sh PASS
-```
 
----
-
-## DB Cleanup (pre-release)
-
-Remove test devices before production handover:
+## Clean Source Package
 
 ```bash
 cd web-dashboard
-npm run db:cleanup-test:dry   # preview
-npm run db:cleanup-test       # execute
+npm run package:build
 ```
 
-Removes: `DOCKER-SMOKE-001`, `DEV-COM11-TEST`, `TEST-DEVICE`, `TEST-DEVICE-DUMMY`.
-Does **not** remove: `UMS-3076F5A5AD54` (production board).
+Expected archive:
 
----
-
-## Live Board Verification
-
-```bash
-curl -s http://192.168.0.100/api/info | python -m json.tool
-curl -s http://192.168.0.100/data | python -m json.tool
+```text
+VOLTAGETEST-v2.1.0-source-clean.zip
 ```
 
-Expected `mqtt_auth: true`, `firmware: "2.1.0"`, `mqtt_topic: "ums/devices/UMS-3076F5A5AD54/data"`.
+The package inspection must reject secrets, private keys, dependency folders, build output, failed proof logs, database dumps, and local cache/temp files.
 
-Then verify in DB:
+## Live Board Condition
 
-```sql
-SELECT "deviceId", online, "lastSeenAt", ip, firmware
-FROM "Device" ORDER BY "lastSeenAt" DESC;
-```
+Software certification does not replace field proof. Full PASS requires a completed live-board calibration report using:
 
----
-
-## Visual Screenshots (QA)
-
-```bash
-cd web-dashboard
-npx playwright test e2e/visual-screenshots.spec.ts
-```
-
-Screenshots saved to `qa/screenshots/web/` (not committed to git).
-
----
-
-## Pre-merge Checklist
-
-- [ ] `npm run lint` — 0 errors
-- [ ] `npx playwright test` — 74/74 pass
-- [ ] `docker compose up && certify.sh` — PASS
-- [ ] `npm run db:cleanup-test:dry` reviewed
-- [ ] Screenshots reviewed for broken layout or old topics
-- [ ] `git push origin energy-analyzer-integration` complete
+- `docs/CALIBRATION_GUIDE.md`
+- `release/UMS_FIELD_TEST_REPORT_TEMPLATE.md`

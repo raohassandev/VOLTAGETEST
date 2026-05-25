@@ -3,7 +3,7 @@
 ; Compile with: iscc setup.iss
 
 #define MyAppName      "UPS Management System"
-#define MyAppVersion   "1.0.0"
+#define MyAppVersion   "2.1.0"
 #define MyAppPublisher "Hadi Engineering"
 #define MyAppURL       "http://ums.local:3303"
 #define MyAppExeName   "ums-service.exe"

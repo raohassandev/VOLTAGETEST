@@ -17,7 +17,7 @@ npm run package:build
 iscc installer\setup.iss
 ```
 
-Output: `installer\dist\UMS-Setup-1.0.0.exe`
+Output: `installer\dist\UMS-Setup-2.1.0.exe`
 
 ## Installer wizard pages
 

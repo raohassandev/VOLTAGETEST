@@ -1,10 +1,11 @@
 {
   "name": "ups-monitoring-system",
-  "version": "0.2.0",
+  "version": "2.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --port 3303",
     "build": "next build",
+    "typecheck": "tsc --noEmit",
     "start": "next start --port 3303",
     "start:prod": "node .next/standalone/server.js",
     "lint": "eslint",
@@ -16,7 +17,7 @@
     "db:reset:local": "prisma migrate reset --force && tsx scripts/seed.ts -- --demo",
     "worker:dev": "tsx --watch worker/mqtt-worker.ts",
     "worker:start": "tsx worker/mqtt-worker.ts",
-    "package:build": "next build && node scripts/package.js",
+    "package:build": "npm run build && node scripts/package.js",
     "test": "playwright test",
     "license:test": "tsx scripts/test-license.ts",
     "test:ui": "playwright test --ui",

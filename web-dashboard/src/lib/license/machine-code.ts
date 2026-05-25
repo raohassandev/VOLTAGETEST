@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import os from "os";
 import fs from "fs";
 import path from "path";
 
@@ -35,8 +34,7 @@ export function getMachineCode() {
   const material = [
     "ums-license-v1",
     readOrCreateInstallationId(),
-    os.hostname(),
-    process.env.UMS_HOST_FINGERPRINT || "",
+    process.env.UMS_HOST_FINGERPRINT?.trim() || "",
   ].join("|");
   const digest = crypto.createHash("sha256").update(material).digest("hex").toUpperCase();
   return `AMX-UMS-${digest.slice(0, 4)}-${digest.slice(4, 8)}-${digest.slice(8, 12)}`;

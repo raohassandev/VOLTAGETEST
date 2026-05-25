@@ -59,7 +59,7 @@ $DatabaseUrl = "postgresql://${DbUser}:${DbPass}@${DbHost}:${DbPort}/${DbName}"
 @"
 DATABASE_URL=$DatabaseUrl
 UPS_AUTH_TOKEN=$AuthToken
-ADMIN_PASSWORD_HASH=$AdminHash
+UPS_AUTH_PASSWORD_HASH=$AdminHash
 MQTT_PORT=$MqttPort
 PORT=$HttpPort
 NODE_ENV=production
@@ -90,7 +90,7 @@ $ServiceName = "UMSDashboard"
 & $NssmExe set $ServiceName AppEnvironmentExtra `
     "DATABASE_URL=$DatabaseUrl" `
     "UPS_AUTH_TOKEN=$AuthToken" `
-    "ADMIN_PASSWORD_HASH=$AdminHash" `
+    "UPS_AUTH_PASSWORD_HASH=$AdminHash" `
     "PORT=$HttpPort" `
     "MQTT_PORT=$MqttPort" `
     "NODE_ENV=production"
@@ -121,5 +121,5 @@ Write-Host ""
 Write-Host "  UMS installed successfully." -ForegroundColor Green
 Write-Host "  Dashboard : http://localhost:$HttpPort" -ForegroundColor White
 Write-Host "  MQTT      : mqtt://localhost:$MqttPort" -ForegroundColor White
-Write-Host "  Admin pass: $AdminPass" -ForegroundColor Yellow
+Write-Host "  Admin password was set during installation." -ForegroundColor Yellow
 Write-Host ""

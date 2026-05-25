@@ -1,195 +1,119 @@
-# UMS Field Test Report
+# VOLTAGETEST / UMS v2.1.0 Field Test Report
 
-> **⚠️ Version notice:** Template written for v0.5.2. Update template header to v2.1.0 before use.
+Use one report per physical UPS/device installation. Attach screenshots and meter photos to the release evidence folder for the tested site.
 
-**Template version:** v0.5.2 (update to v2.1.0 before use)
-
----
-
-## Device Identity
+## Identity
 
 | Field | Value |
 |-------|-------|
-| UPS ID | |
-| Device ID | |
-| MAC address | |
+| Site/customer | |
+| Physical UPS/device model | |
+| UPS serial/asset tag | |
+| UMS board/device ID | |
+| Board MAC address | |
 | Firmware version | |
-| Board serial / label | |
-| Test date | |
+| Dashboard version | v2.1.0 |
+| Test date/time | |
 | Tested by | |
-| Site | |
-| Building | |
-| Floor | |
-| Section | |
-| Work area | |
-| Location (precise) | |
 
----
-
-## Network Status
+## Energy Analyzer And Wiring
 
 | Field | Value |
 |-------|-------|
-| IP address | |
-| IP mode (DHCP / Static) | |
-| WiFi SSID | |
-| WiFi RSSI (dBm) | |
-| RSSI acceptable? (> −75 dBm) | Yes / No |
-| wifi_mode | STA / AP / AP+STA |
-| mqtt_connected | true / false |
-| config_mode | false ✓ / true ✗ |
-| setup_ap_enabled | false ✓ / true (check if intended) |
+| Energy analyzer model | |
+| CT ratio | |
+| PT ratio | |
+| Wiring verification completed | Pass / Fail |
+| Input/output phase wiring verified | Pass / Fail |
+| CT direction verified | Pass / Fail |
+| Earth/neutral wiring reviewed | Pass / Fail |
 
----
-
-## Firmware Health
+## Communication Settings
 
 | Field | Value |
 |-------|-------|
-| seq (sequence counter) | |
-| free_heap (bytes) | |
-| reset_reason | |
-| uptime at time of test | |
+| WiFi SSID / RSSI | |
+| MQTT broker host/port | |
+| MQTT topic | |
+| MQTT username/device ID | |
+| Modbus enabled | Yes / No / N/A |
+| Modbus address | |
+| Modbus baud/parity/stop bits | |
+| Register read proof attached | Yes / No / N/A |
 
----
+## Measurement Proof
 
-## Measurement Readings vs. Reference
+| Measurement | Dashboard | External meter/analyzer | Error % | Pass |
+|-------------|-----------|-------------------------|---------|------|
+| Input voltage | | | | |
+| Output voltage | | | | |
+| Battery/DC voltage | | | | |
+| Input current | | | | |
+| Output current | | | | |
+| Input active power | | | | |
+| Output active power | | | | |
+| Input power factor | | | | |
+| Output power factor | | | | |
+| Input energy kWh | | | | |
+| Output energy kWh | | | | |
 
-Record dashboard value and reference instrument reading for each channel.
+## Calibration
 
-### Voltage
+| Parameter | Before | Scale | Offset | After |
+|-----------|--------|-------|--------|-------|
+| V-In | | | | |
+| V-Out | | | | |
+| V-Batt | | | | |
+| I-In | | | | |
+| I-Out | | | | |
+| Active power scale/offset | | | | |
+| Energy scale/offset | | | | |
 
-| Channel | Dashboard (V) | Reference DMM (V) | Error (%) | Pass? |
-|---------|--------------|------------------|-----------|-------|
-| volt_in | | | | |
-| volt_out | | | | |
-| volt_dc | | | | |
+Reference meter/analyzer model: ____________________
+Reference calibration date: ____________________
 
-Tolerance: ±2% voltage, ±1% battery DC
+## Alarm And Telemetry Proof
 
-### Current
+| Check | Evidence | Pass |
+|-------|----------|------|
+| Alarm input proof | | |
+| MQTT telemetry proof | | |
+| DB persistence proof | | |
+| Dashboard value proof | | |
+| TelemetryLatest updated | | |
+| TelemetryRaw row captured | | |
+| Existing monitoring continued during license edge checks | | |
 
-Apply a known steady load for current measurements.
+## Screenshots And Attachments
 
-| Channel | Dashboard (A) | Reference Clamp (A) | Error (%) | Pass? |
-|---------|--------------|---------------------|-----------|-------|
-| ct_in | | | | |
-| ct_out | | | | |
+| Attachment | Present |
+|------------|---------|
+| Before calibration dashboard screenshot | Yes / No |
+| After calibration dashboard screenshot | Yes / No |
+| External meter/analyzer photo | Yes / No |
+| MQTT publish/worker proof | Yes / No |
+| Database persistence proof | Yes / No |
+| Alarm proof screenshot | Yes / No |
 
-Tolerance: ±5% current
+## Result
 
-### Apparent Power
+| Category | Pass / Fail | Notes |
+|----------|-------------|-------|
+| Wiring | | |
+| Communication | | |
+| Register read proof | | |
+| Measurement accuracy | | |
+| Calibration | | |
+| Alarms | | |
+| MQTT telemetry | | |
+| Database persistence | | |
+| Dashboard values | | |
+| Overall field result | | |
 
-| Channel | Dashboard (VA) | Expected (VA) | Error (%) | Pass? |
-|---------|---------------|--------------|-----------|-------|
-| s_in_va | | | | |
-| s_out_va | | | | |
+## Sign-Off
 
-Expected VA = reference V × reference A (for test load)
+Installer: ____________________ Date: ____________________
 
----
+Reviewer: ____________________ Date: ____________________
 
-## Calibration Values Applied
-
-| Parameter | Scale | Offset |
-|-----------|-------|--------|
-| V-In | | |
-| V-Out | | |
-| V-Batt | | |
-| I-In | | |
-| I-Out | | |
-| AC Zero | | n/a |
-
-Reference instrument: _________________  
-Last calibration date of reference instrument: _________________
-
-Calibration status: [ ] Not required  /  [ ] Calibrated  /  [ ] Unable to calibrate (see notes)
-
----
-
-## MQTT Status
-
-| Check | Result |
-|-------|--------|
-| Worker receiving messages | Yes / No |
-| Telemetry visible in dashboard | Yes / No |
-| Device shows online in fleet page | Yes / No |
-| TelemetryRaw rows increasing | Yes / No |
-| TelemetryLatest updated | Yes / No |
-
----
-
-## Alarm Status
-
-| Check | Result |
-|-------|--------|
-| No false alarms at time of test | Yes / No |
-| Alarm rules reviewed and appropriate | Yes / No |
-| Active alarms at time of test | None / List: |
-
----
-
-## Tests Performed
-
-| Test | Result | Notes |
-|------|--------|-------|
-| Board powered on — AP appeared | Pass / Fail | |
-| WiFi connected (STA) | Pass / Fail | |
-| AP off after STA connected | Pass / Fail | |
-| `/data` endpoint accessible | Pass / Fail | |
-| MQTT publishing confirmed | Pass / Fail | |
-| Dashboard shows live telemetry | Pass / Fail | |
-| OTA upload test | Pass / Fail / Skipped | |
-| Factory reset test | Pass / Fail / Skipped | |
-| Alarm triggers at threshold | Pass / Fail / Skipped | |
-| Burn-in duration | hours | |
-
----
-
-## Burn-In Log (2-hour minimum)
-
-| Time | seq | free_heap | RSSI | volt_in | volt_dc | Alarms | Worker | Notes |
-|------|-----|----------|------|---------|---------|--------|--------|-------|
-| T+0 | | | | | | | | |
-| T+15 min | | | | | | | | |
-| T+30 min | | | | | | | | |
-| T+45 min | | | | | | | | |
-| T+60 min | | | | | | | | |
-| T+75 min | | | | | | | | |
-| T+90 min | | | | | | | | |
-| T+105 min | | | | | | | | |
-| T+120 min | | | | | | | | |
-
-Burn-in result: [ ] Pass (no crashes, seq increasing, heap stable)  /  [ ] Fail
-
----
-
-## Overall Result
-
-| Category | Pass / Fail |
-|----------|------------|
-| Identity configured | |
-| Network stable | |
-| MQTT publishing | |
-| Measurements within tolerance | |
-| Dashboard live | |
-| Alarms correct | |
-| Burn-in | |
-| **Overall** | |
-
----
-
-## Notes and Issues
-
-_______________________________________________  
-_______________________________________________  
-_______________________________________________  
-_______________________________________________
-
----
-
-## Sign-off
-
-**Installer:** ___________________  **Date:** ___________________
-
-**Reviewed by:** ___________________  **Date:** ___________________
+Customer/site representative: ____________________ Date: ____________________

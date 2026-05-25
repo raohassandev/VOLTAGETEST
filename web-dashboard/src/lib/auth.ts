@@ -69,10 +69,7 @@ export async function verifyCredentials(username: string, password: string): Pro
     return { ok, username: config.username, role: "admin" };
   }
 
-  if (config.password) {
-    if (isProduction) {
-      console.error("[auth] Production: plain-text UPS_AUTH_PASSWORD is set — use UPS_AUTH_PASSWORD_HASH instead.");
-    }
+  if (config.password && !isProduction) {
     return { ok: safeEqual(password, config.password), username: config.username, role: "admin" };
   }
 

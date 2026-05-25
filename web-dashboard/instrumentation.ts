@@ -18,6 +18,7 @@ const PLACEHOLDER_VALUES = new Set([
   "CHANGE_THIS_MQTT_PASSWORD",
   "replacethiswithyourrealbcrypthash",
   "REPLACE_THIS_WITH_YOUR_REAL_BCRYPT_HASH",
+  "REPLACE_WITH_AUTOMATRIX_PUBLIC_KEY",
 ]);
 
 const SECRET_ENV_NAMES = [
@@ -27,9 +28,30 @@ const SECRET_ENV_NAMES = [
   "UPS_AUTH_PASSWORD",
   "UPS_AUTH_PASSWORD_HASH",
   "MQTT_PASSWORD",
+  "UMS_LICENSE_PUBLIC_KEY_PEM",
 ];
 
-function validateStartupSecrets() {
+async function validateStartupLicensePublicKey(publicKeyPem: string) {
+  const normalized = publicKeyPem.trim();
+  if (!normalized || normalized.includes("REPLACE_WITH") || normalized.includes("...")) {
+    throw new Error("[license] FATAL: UMS_LICENSE_PUBLIC_KEY_PEM must be a real Ed25519 public key, not a placeholder.");
+  }
+
+  const loadCrypto = Function("return import('node:crypto')") as () => Promise<typeof import("node:crypto")>;
+  const crypto = await loadCrypto();
+  let key: import("node:crypto").KeyObject;
+  try {
+    key = crypto.createPublicKey(normalized);
+  } catch (error) {
+    throw new Error(`[license] FATAL: invalid UMS_LICENSE_PUBLIC_KEY_PEM: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  const details = key.asymmetricKeyDetails as { namedCurve?: string } | undefined;
+  if (key.asymmetricKeyType !== "ed25519" && details?.namedCurve !== "ed25519") {
+    throw new Error("[license] FATAL: UMS_LICENSE_PUBLIC_KEY_PEM must be an Ed25519 public key.");
+  }
+}
+
+async function validateStartupSecrets() {
   const isProduction = process.env.NODE_ENV === "production";
 
   if (isProduction) {
@@ -51,6 +73,10 @@ function validateStartupSecrets() {
     if (!process.env.DATABASE_URL) {
       throw new Error("[startup] FATAL: DATABASE_URL must be set in production.");
     }
+    if (!process.env.UMS_LICENSE_PUBLIC_KEY_PEM) {
+      throw new Error("[license] FATAL: UMS_LICENSE_PUBLIC_KEY_PEM must be set in production.");
+    }
+    await validateStartupLicensePublicKey(process.env.UMS_LICENSE_PUBLIC_KEY_PEM.replace(/\\n/g, "\n"));
     if (process.env.MQTT_USERNAME && !process.env.MQTT_PASSWORD) {
       throw new Error("[startup] FATAL: MQTT_PASSWORD must be set when MQTT_USERNAME is set.");
     }
@@ -68,7 +94,7 @@ function validateStartupSecrets() {
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
-  validateStartupSecrets();
+  await validateStartupSecrets();
 
   if (!process.env.DATABASE_URL) {
     console.warn("[startup] DATABASE_URL not set - background services disabled.");

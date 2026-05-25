@@ -4,8 +4,8 @@
 > Calibration coefficients are now stored in NVS on the device and configured via `http://<device-ip>/` (Calibration section).
 > The dashboard admin calibration page (`/admin/calibration`) shows read-only values when embedded broker is disabled.
 
-**Firmware:** v2.1.0 (document partially updated from v0.5.2 — verify steps against current firmware)
-**Applies to:** ESP32 UPS monitoring module
+**Firmware:** v2.1.0
+**Applies to:** ESP32 UPS monitoring module and supported external energy analyzer inputs
 
 ---
 
@@ -64,18 +64,11 @@ Calibration is stored in ESP32 NVS (`cal` namespace) and survives power cycles a
 
 ---
 
-## What Cannot Be Calibrated (Not Supported)
+## Energy Analyzer Verification
 
-The following quantities are **not measured** and must not be inferred:
+When an external energy analyzer is installed, record its model, CT/PT ratio, Modbus address, communication settings, and register read proof in the field test report. Verify active power, power factor, reactive power, and kWh against the analyzer or a calibrated external meter before release sign-off.
 
-| Quantity | Status |
-|----------|--------|
-| Active power (W) | Not measured — ADC samples V and I separately, no time-aligned product |
-| Power factor | Not measured — requires active power |
-| Energy (kWh) | Not measured — requires active power integration |
-| Reactive power (VAr) | Not measured |
-
-These fields are stored as NULL in the database. Do not enter fabricated values into calibration coefficients to simulate these quantities.
+Do not fabricate power or energy values. If a board installation does not include a supported analyzer/source for these fields, leave unavailable fields unset and document the limitation in the field test report.
 
 ---
 
