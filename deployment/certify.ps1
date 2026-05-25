@@ -27,6 +27,7 @@ function Compose([string[]]$ComposeArgs) {
 function Psql([string]$Sql, [string]$Db = "upsmon") {
   $Sql | docker compose exec -T postgres psql -U ups_user -d $Db -t
 }
+$CookieFile = Join-Path $env:TEMP "ums-cert-cookies.txt"
 
 if (-not $env:CERT_ADMIN_PASSWORD) { Fail "Set CERT_ADMIN_PASSWORD before running certify.ps1" }
 if (-not $env:UMS_LICENSE_PUBLIC_KEY_PEM) { Fail "Set UMS_LICENSE_PUBLIC_KEY_PEM before running certify.ps1" }
@@ -105,23 +106,20 @@ try {
 } catch {
   if ($_.Exception.Response.StatusCode.value__ -ne 401) { Fail "unauth system health expected 401" }
 }
-$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
-$login = Invoke-WebRequest -UseBasicParsing -WebSession $session -Method Post "$BaseUrl/api/login" -Body @{
-  username = "admin"
-  password = $env:CERT_ADMIN_PASSWORD
-  next = "/"
-} -MaximumRedirection 0 -ErrorAction SilentlyContinue
-if ($login.StatusCode -notin @(302, 303)) { Fail "login did not redirect" }
-$sysHealth = Invoke-RestMethod -WebSession $session "$BaseUrl/api/system/health"
-$sysHealth | ConvertTo-Json -Compress | Write-Host
-if ($sysHealth.db -ne "connected") { Fail "authenticated system health failed" }
+Remove-Item -LiteralPath $CookieFile -Force -ErrorAction SilentlyContinue
+$login = curl.exe -s -i -c $CookieFile -X POST "$BaseUrl/api/login" --data-urlencode "username=admin" --data-urlencode "password=$env:CERT_ADMIN_PASSWORD" --data-urlencode "next=/"
+$login | Select-Object -First 5 | Out-Host
+if ($login -notmatch "303|302") { Fail "login did not redirect" }
+$sysHealth = curl.exe -s -b $CookieFile "$BaseUrl/api/system/health"
+$sysHealth | Write-Host
+if ($sysHealth -notmatch '"db":"connected"') { Fail "authenticated system health failed" }
 Pass "auth flow PASS"
 
 Step "7. Licensing API routes"
-$licenseStatus = Invoke-RestMethod -WebSession $session "$BaseUrl/api/license/status"
-if (-not $licenseStatus.machineCode) { Fail "license status route failed" }
-$machine = Invoke-RestMethod -WebSession $session "$BaseUrl/api/license/machine-code"
-if (-not $machine.machineCode) { Fail "license machine-code route failed" }
+$licenseStatus = curl.exe -s -b $CookieFile "$BaseUrl/api/license/status"
+if ($licenseStatus -notmatch '"machineCode"') { Fail "license status route failed" }
+$machine = curl.exe -s -b $CookieFile "$BaseUrl/api/license/machine-code"
+if ($machine -notmatch '"machineCode"') { Fail "license machine-code route failed" }
 if (-not (Select-String -Path "$Root/web-dashboard/src/app/api/inventory/*" -Pattern "requireCanAddUps" -Quiet)) {
   Fail "UPS add enforcement path missing"
 }
