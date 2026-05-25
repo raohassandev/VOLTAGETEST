@@ -3,7 +3,7 @@ param(
   [string]$ArchiveName = "VOLTAGETEST-v2.1.0-source-clean.zip"
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
   $PSNativeCommandUseErrorActionPreference = $false
 }
