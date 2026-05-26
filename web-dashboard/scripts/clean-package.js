@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require("node:fs");
+const { execFileSync } = require("node:child_process");
 
-const FORBIDDEN = /\.(env)$|CREDENTIALS|passwords$|failed-attempts|backups|node_modules|\.next|playwright-report|test-results|\.err\.log$|\.elf$|\.map$|tsconfig\.tsbuildinfo|firmware\/.*\/build|private.*key|ed25519-private|\.git\/|(^|\/)\.claude\/|settings\.local\.json/i;
+const FORBIDDEN = /\.(env)$|CREDENTIALS|passwords$|failed-attempts|(^|\/)(docs\/archive|docs\/audit)\/|backups|node_modules|\.next\/cache|playwright-report|test-results|\.err\.log$|\.elf$|\.map$|tsconfig\.tsbuildinfo|firmware\/.*\/build|private.*key|ed25519-private|\.git\/|(^|\/)\.claude\/|settings\.local\.json/i;
 
 function listZipEntries(zipPath) {
   const buf = fs.readFileSync(zipPath);
@@ -37,4 +38,20 @@ function inspectZip(zipPath) {
   return entries.filter((entry) => FORBIDDEN.test(entry));
 }
 
-module.exports = { FORBIDDEN, inspectZip, listZipEntries };
+function listTarEntries(archivePath) {
+  return execFileSync("tar", ["-tzf", archivePath], { encoding: "utf8" })
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((entry) => entry.replace(/\\/g, "/"));
+}
+
+function inspectArtifact(archivePath) {
+  const lower = archivePath.toLowerCase();
+  if (lower.endsWith(".zip")) return inspectZip(archivePath);
+  if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz")) {
+    return listTarEntries(archivePath).filter((entry) => FORBIDDEN.test(entry));
+  }
+  throw new Error(`Unsupported artifact type: ${archivePath}`);
+}
+
+module.exports = { FORBIDDEN, inspectArtifact, inspectZip, listTarEntries, listZipEntries };

@@ -1,52 +1,34 @@
-# UPS Management System — v2.1.0
+# VOLTAGETEST / UMS v2.1.0
 
-Professional UPS monitoring platform for ESP32-based UPS input, output, battery, current, and energy monitoring.
+Professional offline-capable UPS monitoring system with signed licensing, dashboard inventory, telemetry persistence, alarms, backup/restore, and field calibration workflow.
 
-## Quick Start
+## Official Release Packages
 
-```bash
-cd deployment
-cp .env.example .env          # fill in POSTGRES_PASSWORD, UPS_AUTH_TOKEN, MQTT_PASSWORD etc.
-bash setup-passwords.sh       # creates Mosquitto password file
-docker compose up -d --build  # start full stack
-bash certify.sh               # smoke-test
-```
+- Windows Installer Package: `VOLTAGETEST-v2.1.0-windows-installer.zip`
+- Linux Native Package: `VOLTAGETEST-v2.1.0-linux-native.tar.gz`
+- Optional clean source package: `VOLTAGETEST-v2.1.0-source-clean.zip`
 
-Dashboard: `http://localhost:3000`
+Docker is an optional development/deployment path and is not certified as an official package for this release.
 
-## Repository Structure
+## Core Runtime
 
-| Path | Purpose |
-|------|---------|
-| `firmware/VOLTAGETEST/` | **Canonical ESP32 firmware v2.1.0** |
-| `web-dashboard/` | Next.js dashboard + API (PostgreSQL, Prisma) |
-| `deployment/` | Docker Compose, Mosquitto ACL, certify.sh |
-| `docs/` | Architecture, firmware guide, MQTT topics, limitations |
-| `release/` | Release notes, operator guide, OTA binary |
-| `archive/firmware/legacy-monitor/` | Archived legacy firmware notes — do not flash for v2.1.0 |
+- Dashboard/API: `web-dashboard/`
+- Firmware: `firmware/VOLTAGETEST/`
+- Linux native package scripts: `release/linux-native/`
+- Windows installer scripts: `web-dashboard/installer/`
+- License docs: `docs/LICENSING.md`
 
-## Firmware
+## Required Production Secrets
 
-Canonical file: `firmware/VOLTAGETEST/VOLTAGETEST.ino`  
-Version: **v2.1.0**  
-MQTT topic: `ums/devices/<device_id>/data`  
-Pre-built OTA binary: `release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin`
+Production startup requires:
 
-See `docs/FIRMWARE_GUIDE.md` for compile/flash instructions.
+- `DATABASE_URL`
+- `UPS_AUTH_TOKEN`
+- `UPS_AUTH_PASSWORD_HASH`
+- `UMS_LICENSE_PUBLIC_KEY_PEM`
 
-## Documentation
+Plaintext admin passwords are not accepted in production.
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system overview
-- [`docs/FIRMWARE_GUIDE.md`](docs/FIRMWARE_GUIDE.md) — firmware compile/flash/OTA
-- [`docs/MQTT_TOPICS.md`](docs/MQTT_TOPICS.md) — topic scheme, payload format, auth
-- [`docs/MEASUREMENT_LIMITATIONS.md`](docs/MEASUREMENT_LIMITATIONS.md) — accuracy and calibration
-- [`docs/FIXING_GUIDELINES.md`](docs/FIXING_GUIDELINES.md) — rules for code changes
-- [`docs/TESTING_AND_CERTIFICATION.md`](docs/TESTING_AND_CERTIFICATION.md) — test and certify
+## Verification
 
-## Tests
-
-```bash
-cd web-dashboard
-npm run dev          # start dev server (terminal 1)
-npx playwright test  # run 74 e2e tests (terminal 2)
-```
+Release readiness is based on the Windows installer/service package and Linux native/systemd package. Live board proof/calibration is a separate hardware condition and must be documented with `release/UMS_FIELD_TEST_REPORT_TEMPLATE.md`.

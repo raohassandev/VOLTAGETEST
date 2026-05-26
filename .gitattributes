@@ -1,0 +1,12 @@
+docs/archive/** export-ignore
+docs/audit/** export-ignore
+.claude/** export-ignore
+web-dashboard/.claude/** export-ignore
+CREDENTIALS.md export-ignore
+VOLTAGETEST-*.zip export-ignore
+VOLTAGETEST-*.tar.gz export-ignore
+web-dashboard/node_modules/** export-ignore
+web-dashboard/.next/** export-ignore
+web-dashboard/.env* export-ignore
+web-dashboard/test-results/** export-ignore
+web-dashboard/e2e/report/** export-ignore

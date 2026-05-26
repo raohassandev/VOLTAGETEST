@@ -1,0 +1,18 @@
+[Unit]
+Description=VOLTAGETEST / UMS Dashboard
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=voltagetest
+Group=voltagetest
+WorkingDirectory=/opt/voltagetest/app
+EnvironmentFile=/etc/voltagetest/voltagetest.env
+ExecStart=/usr/bin/node /opt/voltagetest/app/.next/standalone/server.js
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/voltagetest/voltagetest.log
+StandardError=append:/var/log/voltagetest/voltagetest.err.log
+
+[Install]
+WantedBy=multi-user.target

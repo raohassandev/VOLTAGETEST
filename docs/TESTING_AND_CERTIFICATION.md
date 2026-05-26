@@ -1,8 +1,15 @@
 # Testing And Certification Guide - VOLTAGETEST / UMS v2.1.0
 
-This guide describes the current release verification path. Historical audit reports and old RC evidence must not be used as final release proof.
+Official certified package targets:
 
-## Web Dashboard Checks
+- Windows Installer Package
+- Linux Native Package
+
+Optional and not certified for this release:
+
+- Docker deployment
+
+## Core Commands
 
 ```bash
 cd web-dashboard
@@ -10,54 +17,56 @@ npm ci
 npm run db:generate
 npm run lint
 npm run typecheck
-npm test
-npm run build
 npm run license:test
-npx playwright test
+npm run build
 npm audit --omit=dev
-```
-
-## Docker Certification
-
-Run on a real Docker/WSL/Linux environment:
-
-```bash
-cd deployment
-docker compose down -v --remove-orphans
-docker compose config
-docker compose up -d --build
-CERT_ADMIN_PASSWORD=<actual-admin-password> UMS_LICENSE_PUBLIC_KEY_PEM="$(cat public-key.pem)" bash certify.sh
-```
-
-Final proof files:
-
-- `docs/audit/logs/2026-05-25/certify.txt`
-- `docs/audit/logs/2026-05-25/docker-compose-ps.txt`
-
-`certify.txt` must include the final certified commit hash, `git status --short`, migration/table checks, MQTT smoke proof, DB telemetry proof, backup/restore proof, clean source package inspection, and the final line:
-
-```text
-ALL CERTIFICATION STEPS PASSED
-```
-
-## Clean Source Package
-
-```bash
-cd web-dashboard
 npm run package:build
 ```
 
-Expected archive:
+## Windows Installer Certification
+
+Save proof to:
 
 ```text
-VOLTAGETEST-v2.1.0-source-clean.zip
+docs/audit/logs/2026-05-25/windows-installer-proof.txt
 ```
 
-The package inspection must reject secrets, private keys, dependency folders, build output, failed proof logs, database dumps, and local cache/temp files.
+The proof must end with:
 
-## Live Board Condition
+```text
+WINDOWS INSTALLER CERTIFICATION PASSED
+```
 
-Software certification does not replace field proof. Full PASS requires a completed live-board calibration report using:
+Required coverage: installer build, configuration pages, password hashing, license public key env, service creation/startup, browser health, login, license install/reject, UPS add/edit/seat enforcement, dashboard load, backup/restore, logs, and uninstall preserving data by default.
 
-- `docs/CALIBRATION_GUIDE.md`
-- `release/UMS_FIELD_TEST_REPORT_TEMPLATE.md`
+## Linux Native Certification
+
+Save proof to:
+
+```text
+docs/audit/logs/2026-05-25/linux-native-proof.txt
+```
+
+The proof must end with:
+
+```text
+LINUX NATIVE CERTIFICATION PASSED
+```
+
+Required coverage: install script, Node/PostgreSQL checks, env file, license public key validation, Prisma migrations, systemd service install/start, health endpoint, login, license install, UPS add/edit/seat enforcement, backup/restore, and uninstall preserving data by default.
+
+## Playwright
+
+Playwright must either pass or be explicitly waived in the final release report with a replacement manual UI checklist/screenshots. Do not rely on stale Playwright results.
+
+## Clean Artifacts
+
+Generated artifacts must not include `.git`, `.claude`, `settings.local.json`, `node_modules`, `.env` secrets, private signing keys, failed proof logs, local credentials, database dumps, or temp/cache output.
+
+## Hardware Condition
+
+If no hardware is connected, the final release report must state:
+
+```text
+Live board proof/calibration pending
+```

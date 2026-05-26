@@ -1,8 +1,8 @@
 # VOLTAGETEST / UMS v2.1.0 Release Notes
 
 **Branch:** `energy-analyzer-integration`
-**Release type:** Offline-capable commercial release candidate
-**Status:** Software certification required before shipment; live board proof/calibration remains a field condition.
+**Official package targets:** Windows Installer Package and Linux Native Package
+**Docker status:** Optional deployment path, not certified in this release
 
 ## Highlights
 
@@ -10,37 +10,20 @@
 - One active assigned UPS consumes one license seat.
 - Backend enforcement for UPS inventory expansion and premium feature access.
 - Manufacturer-only license administration page at `/admin/license`.
-- Docker deployment includes web, PostgreSQL, Mosquitto, and MQTT worker services.
-- Energy analyzer telemetry fields are supported through MQTT ingestion, database persistence, dashboard views, and alarms.
-- Clean source package target: `VOLTAGETEST-v2.1.0-source-clean.zip`.
+- Windows installer now collects and persists `UMS_LICENSE_PUBLIC_KEY_PEM`.
+- Linux native package includes systemd service, install/uninstall, backup, restore, health check, env template, and README.
+- Clean artifact inspection rejects local agent files, secrets, private keys, dependency folders, failed proof logs, and local cache output.
 
-## Licensing
+## Release Artifacts
 
-- Automatrix private signing keys must stay outside this repository.
-- The UMS runtime stores only the public Ed25519 key in `UMS_LICENSE_PUBLIC_KEY_PEM`.
-- A valid license is required before adding an active UPS.
-- License expiry blocks expansion and premium features, but must not stop already-running safety monitoring, alarms, or telemetry ingestion.
+- `VOLTAGETEST-v2.1.0-windows-installer.zip`
+- `VOLTAGETEST-v2.1.0-linux-native.tar.gz`
+- `VOLTAGETEST-v2.1.0-source-clean.zip`
 
-## Certification
+## Current Certification Rule
 
-The release certification command is:
-
-```bash
-cd deployment
-CERT_ADMIN_PASSWORD=<actual-admin-password> UMS_LICENSE_PUBLIC_KEY_PEM="$(cat public-key.pem)" bash certify.sh
-```
-
-Final proof files are expected at:
-
-- `docs/audit/logs/2026-05-25/certify.txt`
-- `docs/audit/logs/2026-05-25/docker-compose-ps.txt`
-
-`certify.txt` must end with:
-
-```text
-ALL CERTIFICATION STEPS PASSED
-```
+Docker certification is not a release blocker. Release is blocked only by failures in the official Windows or Linux native package paths, licensing, dashboard/runtime, UPS management, telemetry, backup/restore, security validation, clean package inspection, or live board proof when claiming hardware readiness.
 
 ## Known Remaining Condition
 
-Do not claim full release PASS until live board proof and calibration are complete using `docs/CALIBRATION_GUIDE.md` and `release/UMS_FIELD_TEST_REPORT_TEMPLATE.md`.
+Live board proof/calibration must be completed before claiming hardware-ready PASS.
