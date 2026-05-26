@@ -375,6 +375,9 @@ async function certifyManual() {
 async function main() {
   prepareKeys();
   sessionToken = crypto.randomBytes(32).toString("hex");
+  if (process.platform === "win32") {
+    process.env.Path = `${process.env.Path ?? ""};C:\\Program Files\\PostgreSQL\\16\\bin`;
+  }
   log(`Certification mode: ${mode}`);
   log(`Commit: ${run("git", ["rev-parse", "HEAD"]).trim()}`);
   log(`Package: ${mode === "windows" ? "VOLTAGETEST-v2.1.0-windows-installer.zip" : mode === "linux" ? "VOLTAGETEST-v2.1.0-linux-native.tar.gz" : "manual-ui"}`);

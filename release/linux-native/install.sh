@@ -75,5 +75,15 @@ else
   sleep 3
   systemctl is-active --quiet voltagetest.service
 fi
-curl -sf "http://localhost:${PORT:-3303}/api/health" >/dev/null
-echo "Linux native install completed."
+for _ in $(seq 1 45); do
+  if curl -sf "http://localhost:${PORT:-3303}/api/health" >/dev/null; then
+    echo "Linux native install completed."
+    exit 0
+  fi
+  sleep 1
+done
+echo "VOLTAGETEST health endpoint did not become ready."
+if [ "${VOLTAGETEST_CI_MODE:-0}" = "1" ]; then
+  cat "$LOG_DIR/service.err.log" 2>/dev/null || true
+fi
+exit 1
