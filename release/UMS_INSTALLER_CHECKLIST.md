@@ -1,15 +1,15 @@
-# UMS Installer Checklist - v2.1.0
+# UMS Installer Checklist - v1.0.0
 
-**Firmware:** v2.1.0  
-**Canonical source:** `firmware/VOLTAGETEST/VOLTAGETEST.ino`  
-**OTA binary:** `release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin`  
-**MQTT topic:** `ums/devices/<device_id>/data`  
+**Firmware:** v1.0.0
+**Canonical source:** `firmware/VOLTAGETEST/VOLTAGETEST.ino`
+**OTA binary:** `release/firmware/v1.0.0/VOLTAGETEST-v1.0.0.merged.bin`
+**MQTT topic:** `ums/devices/<device_id>/data`
 **Publish interval:** 1 second
 
-**Device ID:** ___________________  
-**UPS ID:** ___________________  
-**Site:** ___________________  
-**Date:** ___________________  
+**Device ID:** ___________________
+**UPS ID:** ___________________
+**Site:** ___________________
+**Date:** ___________________
 **Installer:** ___________________
 
 ## Licensing
@@ -24,7 +24,7 @@
 
 - [ ] Connected ESP32 to PC via USB.
 - [ ] Identified correct COM port.
-- [ ] Built or obtained the v2.1.0 firmware binary.
+- [ ] Built or obtained the v1.0.0 firmware binary.
 - [ ] Flashed with Arduino CLI:
 
 ```bash
@@ -39,7 +39,7 @@ arduino-cli upload -p <COM_PORT> --fqbn esp32:esp32:esp32 firmware/VOLTAGETEST
 
 - [ ] Connected to setup AP.
 - [ ] Opened `http://192.168.4.1`.
-- [ ] Confirmed `/api/info` returns firmware `2.1.0`.
+- [ ] Confirmed `/api/info` returns firmware `1.0.0`.
 - [ ] Confirmed `/data` loads and includes `device_id`, `firmware`, voltage fields, and MQTT status fields.
 
 ## 3. Identity
@@ -81,7 +81,7 @@ arduino-cli upload -p <COM_PORT> --fqbn esp32:esp32:esp32 firmware/VOLTAGETEST
 
 - [ ] Device appears online within the configured offline threshold.
 - [ ] UPS detail page opens.
-- [ ] Firmware shows `2.1.0`.
+- [ ] Firmware shows `1.0.0`.
 - [ ] `volt_in`, `volt_out`, `volt_dc`, `ct_in`, and `ct_out` are plausible.
 - [ ] W/PF/kWh/Q/Hz fields show values or `Not available` when signal/calibration is unavailable.
 - [ ] RSSI is acceptable for the site.

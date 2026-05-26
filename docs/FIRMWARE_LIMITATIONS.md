@@ -1,12 +1,12 @@
 # Firmware Limitations - UPS Monitoring System
 
-**Firmware version:** v2.1.0  
-**Canonical source:** `firmware/VOLTAGETEST/VOLTAGETEST.ino`  
+**Firmware version:** v1.0.0
+**Canonical source:** `firmware/VOLTAGETEST/VOLTAGETEST.ino`
 **Last updated:** 2026-05-25
 
 ## Config Push
 
-Remote config push over MQTT is not supported in firmware v2.1.0.
+Remote config push over MQTT is not supported in firmware v1.0.0.
 
 - Firmware does not subscribe to `ums/devices/{deviceId}/config`.
 - In external-broker/Docker mode, `/api/devices/{deviceId}/config` returns HTTP 501.
@@ -14,14 +14,14 @@ Remote config push over MQTT is not supported in firmware v2.1.0.
 
 ## Command Subscription
 
-Remote command topics are not supported in firmware v2.1.0.
+Remote command topics are not supported in firmware v1.0.0.
 
 - Firmware does not subscribe to `ums/devices/{deviceId}/command`.
 - Remote reset, relay control, and mode-change commands must remain disabled until firmware support is added.
 
 ## Energy Analyzer Accuracy
 
-Firmware v2.1.0 implements real power, power factor, reactive power, frequency, and kWh fields:
+Firmware v1.0.0 implements real power, power factor, reactive power, frequency, and kWh fields:
 
 - `p_in_w`, `p_out_w`
 - `pf_in`, `pf_out`
@@ -51,7 +51,7 @@ Energy counters are stored in NVS periodically.
 The ESP32 Arduino OTA partition scheme may roll back if a new image fails early boot.
 
 - Verify the `firmware` field in `/api/info`, `/data`, and dashboard telemetry after OTA.
-- If rollback is detected, reflash via USB or upload the correct v2.1.0 binary again.
+- If rollback is detected, reflash via USB or upload the correct v1.0.0 binary again.
 
 ## Calibration Persistence
 

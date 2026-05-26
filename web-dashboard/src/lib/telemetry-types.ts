@@ -28,13 +28,13 @@ export type RawTelemetry = Record<"volt_in" | "volt_out" | "volt_dc" | "ct_in" |
   uptime_ms?: number;
   ups_id?: string;
   /**
-   * v2.1.0 firmware publishes volt_dc already calibrated in volts.
+   * v1.0.0 firmware publishes volt_dc already calibrated in volts.
    * Server must NOT apply battery scaling to volt_dc.
    * If legacy raw-ADC support is needed later, use a separate volt_dc_raw field.
-   * @deprecated volt_dc_raw and volt_dc_calibration_source are no longer used in v2.1.0.
+   * @deprecated volt_dc_raw and volt_dc_calibration_source are no longer used in v1.0.0.
    */
   volt_dc_raw?: number;
-  /** @deprecated Removed in v2.1.0 — server no longer applies volt_dc scaling. */
+  /** @deprecated Removed in v1.0.0 â€” server no longer applies volt_dc scaling. */
   volt_dc_calibration_source?: "server_profile" | "server_default" | "passthrough";
   // Energy analyzer fields (null when firmware does not support or no waveform)
   freq_in?: number | null;

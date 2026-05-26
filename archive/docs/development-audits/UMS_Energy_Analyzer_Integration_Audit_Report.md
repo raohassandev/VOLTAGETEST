@@ -1,4 +1,4 @@
-# UMS Energy Analyzer Integration — Deep Audit Report
+# UMS Energy Analyzer Integration â€” Deep Audit Report
 
 ## Scope
 
@@ -30,8 +30,8 @@ This pass checked:
 | `npm run build` | FAIL in sandbox because Prisma engine download failed |
 | `npx prisma generate` | FAIL in sandbox: DNS `EAI_AGAIN binaries.prisma.sh` |
 | Shell syntax check: `certify.sh`, `setup-passwords.sh`, backups | PASS |
-| Docker compose runtime | NOT RUN — Docker unavailable in sandbox |
-| Firmware compile | NOT RUN — `arduino-cli` / `pio` unavailable in sandbox |
+| Docker compose runtime | NOT RUN â€” Docker unavailable in sandbox |
+| Firmware compile | NOT RUN â€” `arduino-cli` / `pio` unavailable in sandbox |
 
 Build failure reason is environmental in this sandbox: Prisma could not download query-engine binaries, so Prisma Client was not generated. The code may build on Claude/local machine, but this sandbox did not certify the build.
 
@@ -87,7 +87,7 @@ The firmware includes:
 - 1-second sampling window
 - `MQTT_PUBLISH_MS 1000UL`
 - RMS calculation
-- instantaneous V × I power calculation
+- instantaneous V Ã— I power calculation
 - PF calculation
 - unsigned Q calculation
 - kWh integration
@@ -206,7 +206,7 @@ Screenshots show the dark IoT theme on:
 
 # Critical Remaining Issues
 
-## P0-1 — Docker compose default MQTT topic is still old
+## P0-1 â€” Docker compose default MQTT topic is still old
 
 File:
 
@@ -235,7 +235,7 @@ Change both compose defaults to:
 
 ---
 
-## P0-2 — Firmware MQTT has no username/password support
+## P0-2 â€” Firmware MQTT has no username/password support
 
 Firmware uses bare MQTT over `WiFiClient` and sends only client ID.
 
@@ -265,7 +265,7 @@ Board config page must allow editing MQTT username/password/port.
 
 ---
 
-## P0-3 — Firmware does not expose `/api/info`, but LAN scanner requires it
+## P0-3 â€” Firmware does not expose `/api/info`, but LAN scanner requires it
 
 LAN scanner probes:
 
@@ -297,7 +297,7 @@ Example response:
 ```json
 {
   "device_id": "UMS-3076F5A5AD54",
-  "firmware": "2.1.0",
+  "firmware": "1.0.0",
   "ip": "192.168.0.100",
   "mac": "30:76:F5:A5:AD:54",
   "mqtt_topic": "ums/devices/UMS-3076F5A5AD54/data"
@@ -306,7 +306,7 @@ Example response:
 
 ---
 
-## P0-4 — Worker converts `null` energy fields to `0`
+## P0-4 â€” Worker converts `null` energy fields to `0`
 
 In `mqtt-worker.ts`, nullable fields are handled like:
 
@@ -363,7 +363,7 @@ Consider also using it for old fields if firmware may publish null.
 
 ---
 
-## P0-5 — Alarm engine does not receive new fields from worker
+## P0-5 â€” Alarm engine does not receive new fields from worker
 
 `TelemetrySnapshot` supports new fields and `snapValues` includes them.
 
@@ -408,7 +408,7 @@ Then verify:
 
 ---
 
-## P0-6 — Certification script and password setup mismatch
+## P0-6 â€” Certification script and password setup mismatch
 
 `certify.sh` publishes as:
 
@@ -436,7 +436,7 @@ No manual undocumented step should be required.
 
 ---
 
-## P0-7 — Current screenshots show live system not receiving real firmware board
+## P0-7 â€” Current screenshots show live system not receiving real firmware board
 
 Screenshots show:
 
@@ -483,7 +483,7 @@ select "deviceId", "receivedAt", "pOutW", "pfOut", "freqIn", "eOutKwh" from "Tel
 
 ---
 
-## P1-1 — Config route still uses embedded broker only
+## P1-1 â€” Config route still uses embedded broker only
 
 File:
 
@@ -510,7 +510,7 @@ Do not show it as working if firmware does not subscribe.
 
 ---
 
-## P1-2 — Firmware does not subscribe to command/config topics
+## P1-2 â€” Firmware does not subscribe to command/config topics
 
 Boards page says firmware does not support commands, which is honest.
 
@@ -529,7 +529,7 @@ Current firmware does not subscribe.
 
 ---
 
-## P1-3 — Firmware payload does not include `firmware`
+## P1-3 â€” Firmware payload does not include `firmware`
 
 Worker supports firmware version, boards page displays firmware, but firmware JSON does not include `"firmware"`.
 
@@ -538,20 +538,20 @@ Worker supports firmware version, boards page displays firmware, but firmware JS
 Add firmware constant:
 
 ```cpp
-#define FIRMWARE_VERSION "2.1.0"
+#define FIRMWARE_VERSION "1.0.0"
 ```
 
 Payload:
 
 ```json
-"firmware": "2.1.0"
+"firmware": "1.0.0"
 ```
 
 `/api/info` should also include firmware.
 
 ---
 
-## P1-4 — MQTT broker host defaults to public HiveMQ
+## P1-4 â€” MQTT broker host defaults to public HiveMQ
 
 Firmware default:
 
@@ -569,7 +569,7 @@ or use setup mode requiring user to configure MQTT broker before field deploymen
 
 ---
 
-## P1-5 — Firmware local config does not expose full board parameters
+## P1-5 â€” Firmware local config does not expose full board parameters
 
 Current local config supports:
 
@@ -595,11 +595,11 @@ Add these if manufacturer role/field configuration requires them.
 
 ---
 
-## P1-6 — Light/Dark theme toggle is not implemented
+## P1-6 â€” Light/Dark theme toggle is not implemented
 
 Current UI is dark theme only.
 
-If requirement is “light and dark theme,” this is incomplete.
+If requirement is â€œlight and dark theme,â€ this is incomplete.
 
 ### Required Decision
 
@@ -614,7 +614,7 @@ If switchable theme is required, add:
 
 ---
 
-## P1-7 — Firmware compile not independently run in sandbox
+## P1-7 â€” Firmware compile not independently run in sandbox
 
 The ZIP contains binaries and build options, but I could not compile because no `arduino-cli` or PlatformIO exists here.
 
@@ -629,7 +629,7 @@ Claude/local machine should provide:
 
 ---
 
-## P1-8 — Hardware calibration incomplete
+## P1-8 â€” Hardware calibration incomplete
 
 Claude report says:
 
@@ -667,7 +667,7 @@ Before calling energy analyzer accurate:
 ## Needs Improvement
 
 - Offline opacity makes UPS card values too dim.
-- Dashboard should show clearer “stale data / last seen” labels on each offline card.
+- Dashboard should show clearer â€œstale data / last seenâ€ labels on each offline card.
 - `Live Out W` card is blank/dash while all devices offline; this is technically okay but should show `0` or `No live load` consistently.
 - Test/smoke devices still visible.
 - Old alarm comments remain and should be cleaned before handover.

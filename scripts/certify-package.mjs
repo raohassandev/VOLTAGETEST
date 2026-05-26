@@ -11,12 +11,16 @@ const mode = process.argv[2] ?? "manual";
 const repo = process.cwd();
 const proofDir = path.join(repo, "docs", "audit", "logs", "2026-05-25");
 fs.mkdirSync(proofDir, { recursive: true });
+const VERSION = "1.0.0";
+const WINDOWS_ARTIFACT = `VOLTAGETEST-v${VERSION}-windows-offline-installer.zip`;
+const LINUX_ARTIFACT = `VOLTAGETEST-v${VERSION}-linux-native-offline.tar.gz`;
+const SOURCE_ARTIFACT = `VOLTAGETEST-v${VERSION}-source-clean.zip`;
 
 const proofPath = path.join(
   proofDir,
-  mode === "windows" ? "windows-installer-proof.txt" : mode === "linux" ? "linux-native-proof.txt" : "manual-ui-proof.txt",
+  mode === "windows" ? "windows-installer-proof.txt" : mode === "linux" ? "linux-native-proof.txt" : mode === "rollback" ? "rollback-proof.txt" : mode === "package" ? "package-inspection-proof.txt" : "manual-ui-proof.txt",
 );
-const finalLine = mode === "windows" ? "WINDOWS INSTALLER CERTIFICATION PASSED" : mode === "linux" ? "LINUX NATIVE CERTIFICATION PASSED" : "MANUAL UI PROOF PASSED";
+const finalLine = mode === "windows" ? "WINDOWS INSTALLER CERTIFICATION PASSED" : mode === "linux" ? "LINUX NATIVE CERTIFICATION PASSED" : mode === "rollback" ? "ROLLBACK CERTIFICATION PASSED" : mode === "package" ? "PACKAGE INSPECTION PASSED" : "MANUAL UI PROOF PASSED";
 const lines = [];
 const port = Number(process.env.CERT_PORT ?? (mode === "linux" ? 3304 : mode === "manual" ? 3305 : 3303));
 const baseUrl = `http://127.0.0.1:${port}`;
@@ -257,7 +261,7 @@ prisma.telemetryLatest.count({ where: { deviceId: 'CERT-DEVICE-1' } })
 }
 
 async function certifyWindows() {
-  const archive = path.join(repo, "VOLTAGETEST-v2.1.0-windows-installer.zip");
+  const archive = path.join(repo, WINDOWS_ARTIFACT);
   if (!fs.existsSync(archive)) throw new Error(`missing artifact: ${archive}`);
   const root = path.join(os.tmpdir(), `voltagetest-win-${Date.now()}`);
   extractZip(archive, root);
@@ -304,7 +308,7 @@ async function certifyWindows() {
 }
 
 async function certifyLinux() {
-  const archive = path.join(repo, "VOLTAGETEST-v2.1.0-linux-native.tar.gz");
+  const archive = path.join(repo, LINUX_ARTIFACT);
   if (!fs.existsSync(archive)) throw new Error(`missing artifact: ${archive}`);
   const root = path.join(os.tmpdir(), `voltagetest-linux-${Date.now()}`);
   extractTar(archive, root);
@@ -376,6 +380,56 @@ async function certifyManual() {
   }
 }
 
+function certifyPackageInspection() {
+  for (const artifact of [SOURCE_ARTIFACT, WINDOWS_ARTIFACT, LINUX_ARTIFACT]) {
+    const archive = path.join(repo, artifact);
+    if (!fs.existsSync(archive)) throw new Error(`missing artifact: ${artifact}`);
+    run("node", [path.join(repo, "web-dashboard", "scripts", "clean-package-inspect.js"), archive]);
+    log(`${artifact} inspection PASS`);
+  }
+}
+
+function certifyRollback() {
+  const root = path.join(os.tmpdir(), `voltagetest-rollback-${Date.now()}`);
+  const installDir = path.join(root, "install");
+  const dataDir = path.join(root, "data");
+  const envDir = path.join(root, "etc");
+  const logDir = path.join(root, "logs");
+  const backupDir = path.join(root, "backup");
+  fs.mkdirSync(path.join(backupDir, "app"), { recursive: true });
+  fs.mkdirSync(installDir, { recursive: true });
+  fs.mkdirSync(dataDir, { recursive: true });
+  fs.writeFileSync(path.join(backupDir, "app", "version.txt"), "previous-version", "utf8");
+  fs.writeFileSync(path.join(installDir, "version.txt"), "partial-version", "utf8");
+  fs.writeFileSync(path.join(backupDir, "voltagetest.env"), "PORT=3303\n", "utf8");
+
+  if (process.platform === "win32") {
+    run("powershell", [
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      path.join(repo, "release", "windows-service", "rollback.ps1"),
+      "-BackupDir",
+      backupDir,
+      "-InstallDir",
+      installDir,
+      "-DataDir",
+      dataDir,
+    ]);
+    if (fs.readFileSync(path.join(installDir, "version.txt"), "utf8") !== "previous-version") throw new Error("Windows rollback did not restore previous app");
+    if (!fs.existsSync(path.join(dataDir, "voltagetest.env"))) throw new Error("Windows rollback did not restore config");
+    log("Windows rollback simulation PASS");
+  } else {
+    run("bash", [path.join(repo, "release", "linux-native", "rollback.sh"), backupDir], {
+      env: { ...process.env, VOLTAGETEST_CI_MODE: "1", APP_DIR: installDir, ENV_DIR: envDir, DATA_DIR: dataDir, LOG_DIR: logDir },
+    });
+    if (fs.readFileSync(path.join(installDir, "version.txt"), "utf8") !== "previous-version") throw new Error("Linux rollback did not restore previous app");
+    if (!fs.existsSync(path.join(envDir, "voltagetest.env"))) throw new Error("Linux rollback did not restore config");
+    log("Linux rollback simulation PASS");
+  }
+}
+
 async function main() {
   prepareKeys();
   sessionToken = crypto.randomBytes(32).toString("hex");
@@ -384,11 +438,13 @@ async function main() {
   }
   log(`Certification mode: ${mode}`);
   log(`Commit: ${run("git", ["rev-parse", "HEAD"]).trim()}`);
-  log(`Package: ${mode === "windows" ? "VOLTAGETEST-v2.1.0-windows-installer.zip" : mode === "linux" ? "VOLTAGETEST-v2.1.0-linux-native.tar.gz" : "manual-ui"}`);
+  log(`Package: ${mode === "windows" ? WINDOWS_ARTIFACT : mode === "linux" ? LINUX_ARTIFACT : mode === "package" ? "release artifacts" : mode}`);
   log("UPS_AUTH_PASSWORD_HASH configured PASS");
   log("UMS_LICENSE_PUBLIC_KEY_PEM configured PASS");
   if (mode === "windows") await certifyWindows();
   else if (mode === "linux") await certifyLinux();
+  else if (mode === "package") certifyPackageInspection();
+  else if (mode === "rollback") certifyRollback();
   else await certifyManual();
   log(finalLine);
   writeProof();

@@ -223,7 +223,7 @@ function WelcomePageInner() {
       </div>
 
       <p className="mt-10 text-xs" style={{ color: "var(--text-muted)" }}>
-        (c) {new Date().getFullYear()} Automatrix Engineering - VOLTAGETEST / UMS v2.1.0
+        (c) {new Date().getFullYear()} Automatrix Engineering - VOLTAGETEST / UMS v1.0.0
       </p>
     </main>
   );

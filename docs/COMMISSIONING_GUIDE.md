@@ -1,12 +1,12 @@
-# Commissioning Guide — UPS Monitoring System
+# Commissioning Guide â€” UPS Monitoring System
 
-> **v2.1.0 — Updated for current firmware.**
+> **v1.0.0 â€” Updated for current firmware.**
 > Canonical firmware: `firmware/VOLTAGETEST/VOLTAGETEST.ino`
 > MQTT topic: `ums/devices/<device_id>/data`
 
 ---
 
-## Step 1 — Flash the Firmware
+## Step 1 â€” Flash the Firmware
 
 1. Open `firmware/VOLTAGETEST/VOLTAGETEST.ino` in Arduino IDE.
 2. Install board support: `esp32 by Espressif Systems` via Boards Manager.
@@ -18,7 +18,7 @@ Default publish interval is **5 seconds** (configurable via the portal).
 
 ---
 
-## Step 2 — Connect to the Commissioning Portal
+## Step 2 â€” Connect to the Commissioning Portal
 
 ### AP Behavior (v0.5.1+)
 
@@ -26,11 +26,11 @@ The setup AP (`UMS-SETUP-xxxx`) operates in three modes:
 
 | Scenario | AP Active? | Mode |
 |----------|------------|------|
-| No WiFi SSID configured (first boot) | **Yes** | Setup mode — AP required |
+| No WiFi SSID configured (first boot) | **Yes** | Setup mode â€” AP required |
 | WiFi SSID configured, STA not yet connected | No | STA connecting; AP off |
-| STA connection fails after 30 seconds | **Yes** | AP fallback — bad credentials or unreachable network |
-| STA connected, `setup_ap_always = OFF` (default) | **No** | STA-only — production mode |
-| STA connected, `setup_ap_always = ON` | **Yes** | AP+STA — technician convenience mode |
+| STA connection fails after 30 seconds | **Yes** | AP fallback â€” bad credentials or unreachable network |
+| STA connected, `setup_ap_always = OFF` (default) | **No** | STA-only â€” production mode |
+| STA connected, `setup_ap_always = ON` | **Yes** | AP+STA â€” technician convenience mode |
 
 **On first boot** (no SSID in NVS), the board starts the AP immediately:
 
@@ -46,7 +46,7 @@ Connect to the AP using a phone or laptop, then open `http://192.168.4.1` in a b
 
 ---
 
-## Step 3 — Configure via /config
+## Step 3 â€” Configure via /config
 
 Navigate to `http://192.168.4.1/config` (or click **Full Configuration** from the status page).
 
@@ -58,8 +58,8 @@ Set unique identifiers that match your site plan:
 
 | Field | Example | Notes |
 |-------|---------|-------|
-| Device ID | `UPSMON-B1-01` | Unique per ESP32 module — required |
-| UPS ID | `UPS-B1-F2-01` | Unique per UPS unit — required |
+| Device ID | `UPSMON-B1-01` | Unique per ESP32 module â€” required |
+| UPS ID | `UPS-B1-F2-01` | Unique per UPS unit â€” required |
 | Site ID | `SITE-HQ` | Matches your site naming |
 | Building | `Main Block` | Physical building name |
 | Floor | `Ground Floor` | Floor within building |
@@ -88,20 +88,20 @@ Static IP fields are hidden when DHCP is selected. They appear automatically whe
 | Broker Host | IP or hostname of your MQTT broker |
 | Port | 1883 (default) |
 | Username | MQTT credential (leave blank if no auth) |
-| Password | MQTT credential — leave blank to keep existing |
+| Password | MQTT credential â€” leave blank to keep existing |
 | Topic | `ums/devices/UPSMON-B1-01/data` |
-| Publish Interval | 1000 ms (fixed in v2.1.0) |
+| Publish Interval | 1000 ms (fixed in v1.0.0) |
 
-> **Topic convention (v2.1.0):** `ums/devices/<device-id>/data`
+> **Topic convention (v1.0.0):** `ums/devices/<device-id>/data`
 > The dashboard MQTT worker subscribes to `ums/devices/+/data`.
 
 ### 3d. Security
 
 | Field | Notes |
 |-------|-------|
-| AP Password | Password to join the `UMS-SETUP-xxxx` AP — leave blank to keep existing |
-| OTA Password | Password required for firmware update at `/update` — leave blank to keep existing |
-| Keep setup AP always enabled | Checkbox — keep AP broadcasting even when STA is connected |
+| AP Password | Password to join the `UMS-SETUP-xxxx` AP â€” leave blank to keep existing |
+| OTA Password | Password required for firmware update at `/update` â€” leave blank to keep existing |
+| Keep setup AP always enabled | Checkbox â€” keep AP broadcasting even when STA is connected |
 
 Password fields always appear blank. If you submit them blank, the existing saved value is preserved.
 
@@ -116,7 +116,7 @@ Adjust only after comparing measured values to a calibrated reference instrument
 
 ---
 
-## Step 4 — Save and Reboot
+## Step 4 â€” Save and Reboot
 
 After filling in the form, click **Save Configuration**.
 
@@ -126,12 +126,12 @@ Click the **Reboot** button (or navigate to `/reboot`) to apply the changes.
 
 After reboot, the board will:
 1. Attempt to connect to the configured WiFi SSID.
-2. **`setup_ap_always = OFF` (default):** No AP at boot. If STA connects within 30 seconds → STA-only mode (no AP broadcast). If STA fails → AP fallback starts after 30 seconds. The status page shows a banner: *"Setup/fallback AP active — STA not connected."* The board retries STA every 60 seconds automatically.
+2. **`setup_ap_always = OFF` (default):** No AP at boot. If STA connects within 30 seconds â†’ STA-only mode (no AP broadcast). If STA fails â†’ AP fallback starts after 30 seconds. The status page shows a banner: *"Setup/fallback AP active â€” STA not connected."* The board retries STA every 60 seconds automatically.
 3. **`setup_ap_always = ON`:** AP starts immediately at boot alongside the STA attempt. AP stays on regardless of STA status.
 
 ---
 
-## Step 5 — Factory Reset
+## Step 5 â€” Factory Reset
 
 To clear all saved settings and return to defaults:
 
@@ -142,7 +142,7 @@ To clear all saved settings and return to defaults:
 
 ---
 
-## Step 6 — Register in Dashboard
+## Step 6 â€” Register in Dashboard
 
 1. Log in to the dashboard at `http://<server>:3303`.
 2. Navigate to **Inventory** (`/admin/inventory`).
@@ -160,20 +160,20 @@ To clear all saved settings and return to defaults:
 
 ---
 
-## Step 7 — Verify Telemetry
+## Step 7 â€” Verify Telemetry
 
 After a few seconds, the device should appear in the dashboard fleet table with live values.
 
 Check:
 - Input voltage is ~230 VAC (or your local mains nominal)
 - Output voltage matches (UPS in bypass or online mode)
-- Battery voltage matches the charger output (typically 48–54 V for a 48V bank)
+- Battery voltage matches the charger output (typically 48â€“54 V for a 48V bank)
 - Load % is reasonable (not 0% or >100%)
-- RSSI is above –75 dBm
+- RSSI is above â€“75 dBm
 
 ---
 
-## Step 8 — Default Alarm Thresholds
+## Step 8 â€” Default Alarm Thresholds
 
 The system creates default alarm rules when telemetry is first received.
 Review these in the admin panel or adjust via the API.
@@ -186,15 +186,15 @@ Review these in the admin panel or adjust via the API.
 | Input current | > 28A | > 32A |
 | Output current | > 28A | > 32A |
 | Output load | > 80% capacity | > 95% capacity |
-| Device offline | — | No message for > 60s |
+| Device offline | â€” | No message for > 60s |
 
 Battery thresholds are computed relative to the `batteryNominalV` set in inventory.
 
 ---
 
-## Step 9 — Scaling to 50 Devices
+## Step 9 â€” Scaling to 50 Devices
 
-Repeat Steps 1–8 for each UPS module.
+Repeat Steps 1â€“8 for each UPS module.
 
 Naming convention recommendation:
 - Device ID: `UPSMON-<floor>-<sequence>` e.g. `UPSMON-B1-01`
@@ -210,7 +210,7 @@ All devices sharing a site should use the same MQTT broker.
 1. Navigate to `http://<device-ip>/update` (use AP IP `192.168.4.1` if on same LAN).
 2. Enter OTA password.
 3. Select the `.bin` firmware file.
-4. Click Upload — device will restart automatically.
+4. Click Upload â€” device will restart automatically.
 
 Verify the new firmware version appears in the dashboard device info.
 
@@ -257,7 +257,7 @@ All settings are stored in ESP32 non-volatile storage (NVS / Preferences):
 
 ---
 
-## MQTT Payload Reference (v2.1.0)
+## MQTT Payload Reference (v1.0.0)
 
 Published to `ums/devices/{device_id}/data` every 1000 ms.
 
@@ -290,7 +290,7 @@ Published to `ums/devices/{device_id}/data` every 1000 ms.
   "e_out_kwh": 11.802,
   "rssi": -62,
   "ip": "192.168.1.45",
-  "firmware": "2.1.0",
+  "firmware": "1.0.0",
   "uptime_ms": 86400000,
   "seq": 17280,
   "free_heap": 210432,

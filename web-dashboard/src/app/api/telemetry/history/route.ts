@@ -6,7 +6,7 @@ import { getTelemetryStore } from "@/lib/mqtt-ingestion";
 import type { RawTelemetry } from "@/lib/telemetry-types";
 import { requireFeature } from "@/lib/license/enforce";
 
-// Firmware v2.1.0 publishes volt_dc already calibrated in volts.
+// Firmware v1.0.0 publishes volt_dc already calibrated in volts.
 // Worker stores the firmware value as-is. This route returns it as-is.
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 

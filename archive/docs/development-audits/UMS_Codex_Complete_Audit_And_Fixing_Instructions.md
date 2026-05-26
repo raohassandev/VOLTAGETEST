@@ -1,9 +1,9 @@
-# UMS / VOLTAGETEST — Complete Repo Audit + Codex Fixing Instructions
+# UMS / VOLTAGETEST â€” Complete Repo Audit + Codex Fixing Instructions
 
-**Uploaded ZIP audited:** `VOLTAGETEST-energy-analyzer-integration (1).zip`  
-**Extracted path used for audit:** `/mnt/data/repo_audit_current/VOLTAGETEST-energy-analyzer-integration`  
-**Target branch expected:** `energy-analyzer-integration`  
-**Prepared for:** Codex / next coding assistant  
+**Uploaded ZIP audited:** `VOLTAGETEST-energy-analyzer-integration (1).zip`
+**Extracted path used for audit:** `/mnt/data/repo_audit_current/VOLTAGETEST-energy-analyzer-integration`
+**Target branch expected:** `energy-analyzer-integration`
+**Prepared for:** Codex / next coding assistant
 **Purpose:** Finish cleanup, fix remaining blockers, produce verifiable release evidence, and prepare for merge/tag only after gates pass.
 
 ---
@@ -173,7 +173,7 @@ npm run build
 Observed:
 
 ```text
-✓ Compiled successfully in 17.2s
+âœ“ Compiled successfully in 17.2s
 Running TypeScript ...
 Failed to type check.
 
@@ -321,12 +321,12 @@ worker/mqtt-worker.ts
 deployment/mosquitto/acl.example
 ```
 
-## 2.4 Firmware v2.1.0 features present
+## 2.4 Firmware v1.0.0 features present
 
 Verified in source:
 
 ```text
-FIRMWARE_VERSION "2.1.0"
+FIRMWARE_VERSION "1.0.0"
 MQTT_PUBLISH_MS 1000UL
 /api/info endpoint
 /data endpoint
@@ -356,9 +356,9 @@ alarm engine receives energy fields from external worker
 
 ---
 
-# 3. P0 blockers — must fix before merge/tag
+# 3. P0 blockers â€” must fix before merge/tag
 
-## P0-1 — ESLint fails
+## P0-1 â€” ESLint fails
 
 ### Evidence
 
@@ -445,7 +445,7 @@ Expected:
 
 ---
 
-## P0-2 — Build not certified from this ZIP
+## P0-2 â€” Build not certified from this ZIP
 
 ### Evidence
 
@@ -486,7 +486,7 @@ Do not claim build pass without raw logs.
 
 ---
 
-## P0-3 — Active release/handover docs are stale and contradictory
+## P0-3 â€” Active release/handover docs are stale and contradictory
 
 ### Evidence
 
@@ -542,7 +542,7 @@ Verify MQTT topic matches building/+/ups/+/telemetry
 `docs/FIRMWARE_LIMITATIONS.md` still says:
 
 ```text
-Active Power, Power Factor, Energy (kWh) — Not Available
+Active Power, Power Factor, Energy (kWh) â€” Not Available
 Fields p_in_w, p_out_w, pf_in, pf_out, e_in_kwh, e_out_kwh are always null
 A new TCP connection + MQTT CONNECT is opened every publish cycle (default 10 s)
 ```
@@ -551,7 +551,7 @@ But firmware source says:
 
 ```text
 MQTT_PUBLISH_MS 1000UL
-Real power via instantaneous V×I
+Real power via instantaneous VÃ—I
 PF calculation
 Q calculation
 Energy integration
@@ -567,7 +567,7 @@ Fields can publish numeric values or null depending signal/calibration
 Correct value is:
 
 ```json
-"firmware": "2.1.0"
+"firmware": "1.0.0"
 ```
 
 ### Required fix
@@ -577,9 +577,9 @@ Do not add warning banners only. Rewrite or archive stale docs.
 Current truth must be consistent everywhere:
 
 ```text
-Firmware version: v2.1.0
+Firmware version: v1.0.0
 Canonical source: firmware/VOLTAGETEST/VOLTAGETEST.ino
-Official OTA binary: release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin
+Official OTA binary: release/firmware/v1.0.0/VOLTAGETEST-v1.0.0.merged.bin
 Device MQTT topic: ums/devices/{device_id}/data
 Worker MQTT topic: ums/devices/+/data
 Publish interval: 1 second
@@ -594,10 +594,10 @@ Legacy firmware/docs are archived only
 
 #### `release/UMS_INSTALLER_CHECKLIST.md`
 
-Rewrite for v2.1.0:
+Rewrite for v1.0.0:
 
 - use `firmware/VOLTAGETEST/VOLTAGETEST.ino`
-- use `release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin`
+- use `release/firmware/v1.0.0/VOLTAGETEST-v1.0.0.merged.bin`
 - use topic `ums/devices/<device_id>/data`
 - publish interval `1 second`
 - verify `/api/info`
@@ -613,7 +613,7 @@ Rewrite:
 - remove v0.5.2
 - remove old topic
 - explain W/PF/kWh/Q/Hz UI behavior
-- explain `—` / `Not available` means null/unavailable/calibration pending
+- explain `â€”` / `Not available` means null/unavailable/calibration pending
 - explain offline status and last seen
 
 #### `docs/FIRMWARE_LIMITATIONS.md`
@@ -641,21 +641,21 @@ Rewrite calibration steps for:
 - W/PF validation with reference meter
 - kWh drift check
 
-Remove “cannot be calibrated: W/PF/kWh/Q not measured.”
+Remove â€œcannot be calibrated: W/PF/kWh/Q not measured.â€
 
 #### `firmware/README.md`
 
 Correct:
 
 ```json
-"firmware": "2.1.0"
+"firmware": "1.0.0"
 ```
 
 and remove `energy-analyzer-v1.0`.
 
 #### `RELEASE_NOTES.md`
 
-Either rewrite as v2.1.0 or move old content to:
+Either rewrite as v1.0.0 or move old content to:
 
 ```text
 archive/release/v0.2.0/RELEASE_NOTES.md
@@ -687,7 +687,7 @@ Historical mentions are allowed only inside `archive/`.
 
 ---
 
-## P0-4 — Runtime proof logs are missing
+## P0-4 â€” Runtime proof logs are missing
 
 ### Evidence
 
@@ -725,7 +725,7 @@ If Docker is not available, say so and keep ship decision as FAIL or PASS WITH C
 
 ---
 
-## P0-5 — Screenshots are offline/demo only
+## P0-5 â€” Screenshots are offline/demo only
 
 ### Evidence
 
@@ -734,7 +734,7 @@ Current dashboard screenshot shows:
 ```text
 Online: 0
 Offline: 3
-Live Out W: —
+Live Out W: â€”
 UPS-SMOKE-001
 UPS-COM11-TEST
 UPSMON-01
@@ -769,14 +769,14 @@ Required live-board screenshots after on-site proof:
 Dashboard Online >= 1
 Boards MQTT Connected >= 1
 LAN Scan result showing UMS-3076F5A5AD54
-UPS detail with firmware 2.1.0 and live values
+UPS detail with firmware 1.0.0 and live values
 Board /api/info
 Board /data
 ```
 
 ---
 
-## P0-6 — Live board proof still missing
+## P0-6 â€” Live board proof still missing
 
 ### Required proof
 
@@ -791,7 +791,7 @@ Expected:
 
 ```text
 device_id = UMS-3076F5A5AD54
-firmware = 2.1.0
+firmware = 1.0.0
 mqtt_host = local broker/server
 mqtt_port = 1883
 mqtt_auth = true
@@ -804,7 +804,7 @@ Then dashboard must show:
 Online >= 1
 UMS-3076F5A5AD54 visible
 lastSeenAt recent
-firmware 2.1.0
+firmware 1.0.0
 live voltage/current/W/PF/Hz/kWh fields or null where unavailable
 ```
 
@@ -819,7 +819,7 @@ If board is unreachable, final ship decision cannot be PASS. It can only be PASS
 
 ---
 
-## P0-7 — Production auth/secrets startup hardening still incomplete
+## P0-7 â€” Production auth/secrets startup hardening still incomplete
 
 ### Evidence
 
@@ -827,10 +827,10 @@ If board is unreachable, final ship decision cannot be PASS. It can only be PASS
 
 ```ts
 if (!process.env.UPS_AUTH_TOKEN) {
-  console.error("[auth] FATAL: UPS_AUTH_TOKEN not set — login blocked in production.");
+  console.error("[auth] FATAL: UPS_AUTH_TOKEN not set â€” login blocked in production.");
 }
 if (!process.env.UPS_AUTH_PASSWORD_HASH && !process.env.UPS_AUTH_PASSWORD) {
-  console.error("[auth] FATAL: No password configured — login blocked in production.");
+  console.error("[auth] FATAL: No password configured â€” login blocked in production.");
 }
 ```
 
@@ -890,7 +890,7 @@ Do the same for `DATABASE_URL` parts if possible.
 
 ---
 
-## P0-8 — Board config push UI is misleading
+## P0-8 â€” Board config push UI is misleading
 
 ### Evidence
 
@@ -914,10 +914,10 @@ This is misleading for manufacturer/admin users.
 
 If `ENABLE_EMBEDDED_BROKER=false` or backend reports config push unsupported:
 
-- disable the “Push Config to Board” button,
+- disable the â€œPush Config to Boardâ€ button,
 - show clear banner:
   ```text
-  Remote config push is not supported in production firmware v2.1.0. Use the board local web UI at http://<device-ip>/.
+  Remote config push is not supported in production firmware v1.0.0. Use the board local web UI at http://<device-ip>/.
   ```
 - do not imply push will work.
 
@@ -933,7 +933,7 @@ or hardcode in settings page for now.
 
 ---
 
-## P0-9 — Firmware default credentials / public broker defaults are unsafe
+## P0-9 â€” Firmware default credentials / public broker defaults are unsafe
 
 ### Evidence
 
@@ -968,7 +968,7 @@ Preferred production-safe defaults:
 Also add local portal warning if MQTT host is public HiveMQ:
 
 ```text
-Public test broker selected — not production safe.
+Public test broker selected â€” not production safe.
 ```
 
 If you keep the current defaults for lab convenience, document them as lab-only and block release builds from using them.
@@ -985,7 +985,7 @@ Recommended compile guard:
 
 ---
 
-## P0-10 — Docker certification not independently proved in package
+## P0-10 â€” Docker certification not independently proved in package
 
 ### Evidence
 
@@ -1003,9 +1003,9 @@ It must include:
 
 ---
 
-# 4. P1 issues — fix before customer handover
+# 4. P1 issues â€” fix before customer handover
 
-## P1-1 — Development-only prompt/audit docs remain in release package
+## P1-1 â€” Development-only prompt/audit docs remain in release package
 
 Root contains:
 
@@ -1037,7 +1037,7 @@ release/
 
 ---
 
-## P1-2 — Duplicate screenshot copies
+## P1-2 â€” Duplicate screenshot copies
 
 Screenshots exist in both:
 
@@ -1059,19 +1059,19 @@ Recommended:
 
 ---
 
-## P1-3 — In-process telemetry worker is a maintenance risk
+## P1-3 â€” In-process telemetry worker is a maintenance risk
 
 `web-dashboard/src/lib/telemetry-worker.ts` now mostly aligns with external worker, but it still maintains a separate normalization path. Production uses external `worker/mqtt-worker.ts`.
 
 ### Fix
 
 Either:
-1. keep it and add tests proving both workers normalize v2.1.0 payloads identically, or
+1. keep it and add tests proving both workers normalize v1.0.0 payloads identically, or
 2. remove/disable in-process worker from production docs and clearly mark it dev-only.
 
 ---
 
-## P1-4 — Security audit needs final upgrade plan
+## P1-4 â€” Security audit needs final upgrade plan
 
 Current vulnerabilities:
 
@@ -1087,7 +1087,7 @@ If deferring:
 
 ---
 
-## P1-5 — DB cleanup dry run still required on target DB
+## P1-5 â€” DB cleanup dry run still required on target DB
 
 Cleanup script includes test devices, but dry run was not executed here.
 
@@ -1108,7 +1108,7 @@ Do not actual delete until user approves.
 
 ---
 
-# 5. Codex fixing instructions — all in one prompt
+# 5. Codex fixing instructions â€” all in one prompt
 
 Send this complete instruction to Codex.
 
@@ -1132,9 +1132,9 @@ git log --oneline -5
 
 Then work through the following in order.
 
-────────────────────────────────
-A. Fix lint failures — P0
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+A. Fix lint failures â€” P0
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Run:
 
@@ -1169,9 +1169,9 @@ Save log:
 
 docs/audit/logs/2026-05-25/lint.log
 
-────────────────────────────────
-B. Certify build from clean install — P0
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+B. Certify build from clean install â€” P0
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Run:
 
@@ -1191,9 +1191,9 @@ docs/audit/logs/2026-05-25/npm-run-build.log
 Pass condition:
 Next build completes successfully.
 
-────────────────────────────────
-C. Rewrite stale release docs — P0
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+C. Rewrite stale release docs â€” P0
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Run grep:
 
@@ -1220,9 +1220,9 @@ Fix these especially:
 
 Current truth to use everywhere:
 
-Firmware: v2.1.0
+Firmware: v1.0.0
 Canonical source: firmware/VOLTAGETEST/VOLTAGETEST.ino
-OTA binary: release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin
+OTA binary: release/firmware/v1.0.0/VOLTAGETEST-v1.0.0.merged.bin
 Device MQTT topic: ums/devices/{device_id}/data
 Worker MQTT topic: ums/devices/+/data
 Publish interval: 1 second
@@ -1235,15 +1235,15 @@ Legacy firmware/docs are archived only
 
 Important:
 Do not just add banners saying "old guide".
-Customer-facing release docs must be usable and correct for v2.1.0.
+Customer-facing release docs must be usable and correct for v1.0.0.
 
 Save grep proof after fixing:
 
 docs/audit/logs/2026-05-25/stale-docs-grep.log
 
-────────────────────────────────
-D. Add raw test and certification logs — P0
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+D. Add raw test and certification logs â€” P0
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Create:
 
@@ -1273,9 +1273,9 @@ certify.log must include:
 
 ALL CERTIFICATION STEPS PASSED
 
-────────────────────────────────
-E. Run full Docker certification — P0
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+E. Run full Docker certification â€” P0
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 From repo root:
 
@@ -1293,9 +1293,9 @@ Save:
 docs/audit/logs/2026-05-25/docker-compose-ps.log
 docs/audit/logs/2026-05-25/certify.log
 
-────────────────────────────────
-F. Fix production auth/secret hardening — P0
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+F. Fix production auth/secret hardening â€” P0
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 File:
 web-dashboard/instrumentation.ts
@@ -1338,25 +1338,25 @@ ${MQTT_PASSWORD:?Set MQTT_PASSWORD}
 
 Update docs accordingly.
 
-────────────────────────────────
-G. Fix misleading config push UI — P0
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+G. Fix misleading config push UI â€” P0
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Problem:
 API route /api/devices/[deviceId]/config returns 501 in external broker mode.
-Firmware v2.1.0 does not subscribe to config topics.
+Firmware v1.0.0 does not subscribe to config topics.
 But Settings UI still shows "Push Config to Board".
 
 Fix:
 - Disable or hide "Push Config to Board" unless config push is truly supported.
 - Show a clear warning:
-  "Remote config push is not supported in firmware v2.1.0 / production external-broker mode. Use the board local web UI at http://<device-ip>/."
+  "Remote config push is not supported in firmware v1.0.0 / production external-broker mode. Use the board local web UI at http://<device-ip>/."
 - If button remains, it must be visibly disabled and not imply success.
 - Update docs.
 
-────────────────────────────────
-H. Harden firmware defaults — P0/P1
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+H. Harden firmware defaults â€” P0/P1
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 File:
 firmware/VOLTAGETEST/VOLTAGETEST.ino
@@ -1379,11 +1379,11 @@ Option 2:
 - Document that production build must not use lab defaults.
 
 Also add visible portal warning when MQTT host is broker.hivemq.com:
-"Public test broker selected — not production safe."
+"Public test broker selected â€” not production safe."
 
-────────────────────────────────
-I. Screenshots and live-board proof — P0/P1
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+I. Screenshots and live-board proof â€” P0/P1
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Current screenshots are offline/demo UI only. Keep them but label them correctly.
 
@@ -1407,9 +1407,9 @@ Required:
 
 If unreachable, final ship decision remains PASS WITH CONDITIONS maximum.
 
-────────────────────────────────
-J. DB cleanup dry-run — P1
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+J. DB cleanup dry-run â€” P1
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Run on target DB only:
 
@@ -1434,9 +1434,9 @@ SMOKE-TEST-001
 UPS-COM11-TEST
 old ACK comments: 099, kk, test, runtime certification ack
 
-────────────────────────────────
-K. Security audit — P1
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+K. Security audit â€” P1
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Run:
 
@@ -1457,9 +1457,9 @@ Current known chains:
 next -> postcss
 aedes -> hyperid -> uuid
 
-────────────────────────────────
-L. Archive internal audit-prompt docs — P1
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+L. Archive internal audit-prompt docs â€” P1
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Move internal prompt/audit working files to:
 
@@ -1473,24 +1473,24 @@ UMS_Audit_Closure_Report.md
 
 Customer/source package should not expose internal Claude/Codex process files unless intentionally included as development history.
 
-────────────────────────────────
-M. Final clean package — P0
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+M. Final clean package â€” P0
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Create from Git, not from working directory:
 
-git archive --format=zip --output VOLTAGETEST-v2.1.0-source-clean.zip HEAD
+git archive --format=zip --output VOLTAGETEST-v1.0.0-source-clean.zip HEAD
 
 Inspect:
 
-unzip -l VOLTAGETEST-v2.1.0-source-clean.zip | grep -E '\.env$|CREDENTIALS|passwords$|backups|node_modules|\.next|playwright-report|test-results|\.err\.log$|\.elf$|\.map$|tsconfig.tsbuildinfo|firmware/.*/build'
+unzip -l VOLTAGETEST-v1.0.0-source-clean.zip | grep -E '\.env$|CREDENTIALS|passwords$|backups|node_modules|\.next|playwright-report|test-results|\.err\.log$|\.elf$|\.map$|tsconfig.tsbuildinfo|firmware/.*/build'
 
 Expected:
 No matches, except intentionally committed redacted docs/audit/*.log if allowed.
 
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 N. Final report required
-────────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 Return exactly:
 
@@ -1559,7 +1559,7 @@ Before merge/tag, all must be true:
 [ ] npx playwright test passes
 [ ] docker certify.sh passes all 13 steps
 [ ] release docs no longer instruct old firmware/topic
-[ ] firmware docs show firmware=2.1.0
+[ ] firmware docs show firmware=1.0.0
 [ ] FIRMWARE_LIMITATIONS does not falsely say W/PF/kWh always null
 [ ] screenshots are correctly labelled offline/demo or live-board
 [ ] live board proof is attached or release decision is PASS WITH CONDITIONS only

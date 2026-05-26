@@ -1,4 +1,4 @@
-# Fixing Guidelines — UMS
+# Fixing Guidelines â€” UMS
 
 Rules for engineers making changes to this repository.
 
@@ -7,13 +7,13 @@ Rules for engineers making changes to this repository.
 ## Firmware
 
 - **Do not edit the root directory.** The canonical firmware is `firmware/VOLTAGETEST/VOLTAGETEST.ino`.
-- **Do not use legacy firmware.** Archived monitor sketches must not be flashed for v2.1.0 deployments.
+- **Do not use legacy firmware.** Archived monitor sketches must not be flashed for v1.0.0 deployments.
 - **Do not change the MQTT topic.** Active topic is `ums/devices/<device_id>/data`. The old `building/.../telemetry` scheme is retired.
 
 ## Telemetry / Data Integrity
 
 - **Do not store `null` as `0`.** Use `nullableNum()` in `mqtt-worker.ts` for all numeric energy fields. A missing sensor reading is `null`, not zero.
-- **Do not add dashboard fields** unless the API actually returns them. If a field is `null`, show `—` or `Not available`.
+- **Do not add dashboard fields** unless the API actually returns them. If a field is `null`, show `â€”` or `Not available`.
 - **Do not claim hardware accuracy** without a reference-meter calibration result. Energy fields (`p_out_w`, `pf_out`, `e_out_kwh`) may publish as `null` until the board is calibrated against a reference meter.
 
 ## Dashboard / UI

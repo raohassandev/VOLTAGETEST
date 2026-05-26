@@ -1,4 +1,4 @@
-# VOLTAGETEST / UMS v2.1.0 Release Notes
+# VOLTAGETEST / UMS v1.0.0 Release Notes
 
 **Branch:** `energy-analyzer-integration`
 **Official package targets:** Windows Installer Package and Linux Native Package
@@ -16,9 +16,9 @@
 
 ## Release Artifacts
 
-- `VOLTAGETEST-v2.1.0-windows-installer.zip`
-- `VOLTAGETEST-v2.1.0-linux-native.tar.gz`
-- `VOLTAGETEST-v2.1.0-source-clean.zip`
+- `VOLTAGETEST-v1.0.0-windows-offline-installer.zip`
+- `VOLTAGETEST-v1.0.0-linux-native-offline.tar.gz`
+- `VOLTAGETEST-v1.0.0-source-clean.zip`
 
 ## Current Certification Rule
 

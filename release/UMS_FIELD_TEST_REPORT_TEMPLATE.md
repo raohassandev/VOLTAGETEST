@@ -1,4 +1,4 @@
-# VOLTAGETEST / UMS v2.1.0 Field Test Report
+# VOLTAGETEST / UMS v1.0.0 Field Test Report
 
 Use one report per physical UPS/device installation. Attach screenshots and meter photos to the release evidence folder for the tested site.
 
@@ -12,7 +12,7 @@ Use one report per physical UPS/device installation. Attach screenshots and mete
 | UMS board/device ID | |
 | Board MAC address | |
 | Firmware version | |
-| Dashboard version | v2.1.0 |
+| Dashboard version | v1.0.0 |
 | Test date/time | |
 | Tested by | |
 

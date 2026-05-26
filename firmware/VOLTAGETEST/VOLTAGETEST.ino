@@ -1,33 +1,33 @@
 /**
- * VOLTAGETEST.ino — ESP32 UPS Energy Analyzer Firmware
+ * VOLTAGETEST.ino â€” ESP32 UPS Energy Analyzer Firmware
  * Branch: firmware-energy-analyzer
  *
  * Hardware:
- *   GPIO34 (ADC1_CH6) — DC battery voltage        (single-ended, no centering)
- *   GPIO35 (ADC1_CH7) — AC output voltage          (transformer-coupled, AC-centered)
- *   GPIO32 (ADC1_CH4) — AC input voltage            (transformer-coupled, AC-centered)
- *   GPIO36 (ADC1_CH0) — AC input CT current         (CT burden-resistor, AC-centered)
- *   GPIO39 (ADC1_CH3) — AC output CT current        (CT burden-resistor, AC-centered)
+ *   GPIO34 (ADC1_CH6) â€” DC battery voltage        (single-ended, no centering)
+ *   GPIO35 (ADC1_CH7) â€” AC output voltage          (transformer-coupled, AC-centered)
+ *   GPIO32 (ADC1_CH4) â€” AC input voltage            (transformer-coupled, AC-centered)
+ *   GPIO36 (ADC1_CH0) â€” AC input CT current         (CT burden-resistor, AC-centered)
+ *   GPIO39 (ADC1_CH3) â€” AC output CT current        (CT burden-resistor, AC-centered)
  *
  * Measurement methodology:
  *   - True RMS via sum-of-squares accumulation (not mean-absolute-deviation)
- *   - Real power via instantaneous V×I products (samples are time-aligned per ISR tick)
- *   - Frequency via zero-crossing counting over 1-second window (~±0.5 Hz accuracy)
- *   - Energy via W×elapsed_hours integration, persisted to NVS every 60 s
+ *   - Real power via instantaneous VÃ—I products (samples are time-aligned per ISR tick)
+ *   - Frequency via zero-crossing counting over 1-second window (~Â±0.5 Hz accuracy)
+ *   - Energy via WÃ—elapsed_hours integration, persisted to NVS every 60 s
  *
  * MQTT payload fields:
- *   volt_in, volt_out, volt_dc, ct_in, ct_out     — V / A  (calibrated)
- *   s_in_va, s_out_va                              — VA     (volt_in × ct_in)
- *   freq_in, freq_out                              — Hz     (zero-crossing, null if no waveform)
- *   p_in_w, p_out_w                                — W      (real power, calibrated)
- *   pf_in, pf_out                                  — n/a    (P/S, clamped ±1, null if S≈0)
- *   q_in_var, q_out_var                            — VAR    (√(S²-P²), unsigned, null if invalid)
- *   e_in_kwh, e_out_kwh                            — kWh    (lifetime counters, survive reboot)
- *   device_id, rssi, seq, ip                       — metadata
+ *   volt_in, volt_out, volt_dc, ct_in, ct_out     â€” V / A  (calibrated)
+ *   s_in_va, s_out_va                              â€” VA     (volt_in Ã— ct_in)
+ *   freq_in, freq_out                              â€” Hz     (zero-crossing, null if no waveform)
+ *   p_in_w, p_out_w                                â€” W      (real power, calibrated)
+ *   pf_in, pf_out                                  â€” n/a    (P/S, clamped Â±1, null if Sâ‰ˆ0)
+ *   q_in_var, q_out_var                            â€” VAR    (âˆš(SÂ²-PÂ²), unsigned, null if invalid)
+ *   e_in_kwh, e_out_kwh                            â€” kWh    (lifetime counters, survive reboot)
+ *   device_id, rssi, seq, ip                       â€” metadata
  *
  * Limitations / known gaps (do not fake):
- *   - Phase error from sequential ADC reads: ~20–100 µs → <1° @ 50 Hz. Negligible.
- *   - Frequency resolution: ±0.5 Hz (zero-crossing count over 1 s window).
+ *   - Phase error from sequential ADC reads: ~20â€“100 Âµs â†’ <1Â° @ 50 Hz. Negligible.
+ *   - Frequency resolution: Â±0.5 Hz (zero-crossing count over 1 s window).
  *     Not suitable for precision grid measurement; adequate for UPS alarming.
  *   - Phase correction (phaseInDeg / phaseOutDeg) is stored in calibration but
  *     NOT yet applied to P calculation. This means PF accuracy depends solely on
@@ -47,14 +47,14 @@
 #include <Preferences.h>
 #include <math.h>
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  Compile-time configuration
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 #define SERIAL_BAUD         921600UL
 #define SAMPLE_RATE_HZ      500UL
 #define TIMER_PERIOD_US     (1000000UL / SAMPLE_RATE_HZ)
 
-// 1-second window → 25 complete 50 Hz cycles; improves power/freq accuracy.
+// 1-second window â†’ 25 complete 50 Hz cycles; improves power/freq accuracy.
 #define SAMPLES_PER_UPDATE  500UL
 #define UPDATE_INTERVAL_S   (SAMPLES_PER_UPDATE / (float)SAMPLE_RATE_HZ)   // 1.0 s
 #define UPDATE_INTERVAL_H   (UPDATE_INTERVAL_S / 3600.0f)                  // 1/3600 h
@@ -73,46 +73,46 @@
 #define AP_SSID             "UMS-Setup"
 #define AP_PASS             "UMSSetup2026"
 
-// Firmware version — included in MQTT payload and /api/info
-#define FIRMWARE_VERSION    "2.1.0"
+// Firmware version â€” included in MQTT payload and /api/info
+#define FIRMWARE_VERSION    "1.0.0"
 
-// MQTT — topic: ums/devices/{device_id}/data
+// MQTT â€” topic: ums/devices/{device_id}/data
 #define MQTT_HOST_DEFAULT   "ums-server.local"
 #define MQTT_PORT_DEFAULT   1883
 #define MQTT_PUBLISH_MS     1000UL    // publish every 1 s (matches window)
 #define WIFI_RETRY_MS       30000UL
 #define ENERGY_SAVE_MS      60000UL   // write kWh to NVS every 60 s
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  ADC channel definitions
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 #define NUM_CH   5
-#define IDX_VDC   0   // GPIO34 — DC battery voltage
-#define IDX_VOUT  1   // GPIO35 — AC output voltage
-#define IDX_VIN   2   // GPIO32 — AC input voltage
-#define IDX_CTIN  3   // GPIO36 — AC input current (CT)
-#define IDX_CTOUT 4   // GPIO39 — AC output current (CT)
+#define IDX_VDC   0   // GPIO34 â€” DC battery voltage
+#define IDX_VOUT  1   // GPIO35 â€” AC output voltage
+#define IDX_VIN   2   // GPIO32 â€” AC input voltage
+#define IDX_CTIN  3   // GPIO36 â€” AC input current (CT)
+#define IDX_CTOUT 4   // GPIO39 â€” AC output current (CT)
 
 static const adc1_channel_t CH[NUM_CH] = {
-    ADC1_CHANNEL_6,   // GPIO34 — volt_dc
-    ADC1_CHANNEL_7,   // GPIO35 — volt_out
-    ADC1_CHANNEL_4,   // GPIO32 — volt_in
-    ADC1_CHANNEL_0,   // GPIO36 — ct_in
-    ADC1_CHANNEL_3    // GPIO39 — ct_out
+    ADC1_CHANNEL_6,   // GPIO34 â€” volt_dc
+    ADC1_CHANNEL_7,   // GPIO35 â€” volt_out
+    ADC1_CHANNEL_4,   // GPIO32 â€” volt_in
+    ADC1_CHANNEL_0,   // GPIO36 â€” ct_in
+    ADC1_CHANNEL_3    // GPIO39 â€” ct_out
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  Calibration structure
 //  Stored in NVS namespace "calib".  Editable via web UI (future) or Preferences.
 //
-//  AC channels  → realValue = sqrt(sumSq / N) * scale
-//                 where sumSq accumulates (raw - offset)²
+//  AC channels  â†’ realValue = sqrt(sumSq / N) * scale
+//                 where sumSq accumulates (raw - offset)Â²
 //
-//  DC channel   → realValue = (raw_average / N) * vDcScale + vDcOffset
+//  DC channel   â†’ realValue = (raw_average / N) * vDcScale + vDcOffset
 //
-//  Phase corr   → placeholder; NOT yet applied to P calculation.
+//  Phase corr   â†’ placeholder; NOT yet applied to P calculation.
 //                 Requires external phase reference to calibrate properly.
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 struct CalibData {
     int16_t vInOffset;    // ADC counts at AC zero-crossing for input voltage
     float   vInScale;     // V per RMS ADC count (input voltage)
@@ -124,14 +124,14 @@ struct CalibData {
     float   ctOutScale;
     float   vDcScale;     // V per raw ADC count (DC average)
     float   vDcOffset;    // V additive offset on DC channel
-    // Phase correction — placeholder, not applied. Document limitation above.
+    // Phase correction â€” placeholder, not applied. Document limitation above.
     float   phaseInDeg;
     float   phaseOutDeg;
 };
 
 // Defaults derived from legacy AC_SCALE_PER_SAMPLE=1.72 MAD approach:
-//   Old MAD result ≈ RMS × (2√2/π) / 1.72 ≈ RMS × 0.5234
-//   New:  rms_counts * vInScale  — set scale so output is ≈ same magnitude.
+//   Old MAD result â‰ˆ RMS Ã— (2âˆš2/Ï€) / 1.72 â‰ˆ RMS Ã— 0.5234
+//   New:  rms_counts * vInScale  â€” set scale so output is â‰ˆ same magnitude.
 //   The user adjusts these via calibration after measuring with a reference.
 static const CalibData CALIB_DEFAULTS = {
     .vInOffset   = 2048,
@@ -142,7 +142,7 @@ static const CalibData CALIB_DEFAULTS = {
     .ctInScale   = 0.5234f,
     .ctOutOffset = 2048,
     .ctOutScale  = 0.5234f,
-    .vDcScale    = 0.0442f,   // certified default: 12-bit ADC count → battery volts
+    .vDcScale    = 0.0442f,   // certified default: 12-bit ADC count â†’ battery volts
     .vDcOffset   = 0.0f,
     .phaseInDeg  = 0.0f,
     .phaseOutDeg = 0.0f,
@@ -150,9 +150,9 @@ static const CalibData CALIB_DEFAULTS = {
 
 static CalibData calib;
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  Per-window accumulators (written from sampler task, read from main loop)
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 struct Accumulators {
     // DC channel: simple sum for average
     uint64_t sumDc;
@@ -163,9 +163,9 @@ struct Accumulators {
     uint64_t sumSqCtIn;
     uint64_t sumSqCtOut;
 
-    // Real power: sum of instantaneous V×I products (signed)
-    int64_t  sumViIn;    // volt_in  × ct_in  per sample
-    int64_t  sumViOut;   // volt_out × ct_out per sample
+    // Real power: sum of instantaneous VÃ—I products (signed)
+    int64_t  sumViIn;    // volt_in  Ã— ct_in  per sample
+    int64_t  sumViOut;   // volt_out Ã— ct_out per sample
 
     // Frequency: count of positive-going zero crossings
     uint16_t zcVin;
@@ -179,10 +179,10 @@ static Accumulators acqBuf;
 static Accumulators readyBuf;
 static volatile bool windowReady = false;
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  Output values (computed from ready buffer, published to MQTT)
 //  NaN = field not valid / hardware cannot determine.
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 struct MeasValues {
     float volt_in;      // V rms
     float volt_out;     // V rms
@@ -195,9 +195,9 @@ struct MeasValues {
     float freq_out;     // Hz  (NaN if no waveform)
     float p_in_w;       // W   real power in
     float p_out_w;      // W   real power out
-    float pf_in;        // n/a (NaN if S≈0)
-    float pf_out;       // n/a (NaN if S≈0)
-    float q_in_var;     // VAR unsigned (NaN if S<P²)
+    float pf_in;        // n/a (NaN if Sâ‰ˆ0)
+    float pf_out;       // n/a (NaN if Sâ‰ˆ0)
+    float q_in_var;     // VAR unsigned (NaN if S<PÂ²)
     float q_out_var;    // VAR unsigned
     float e_in_kwh;     // kWh lifetime counter
     float e_out_kwh;    // kWh lifetime counter
@@ -210,23 +210,23 @@ static uint32_t   seqNo = 0;
 static double energyInKwh  = 0.0;
 static double energyOutKwh = 0.0;
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  Zero-crossing helper state (kept between samples for edge detection)
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 static int16_t prevSignedVin  = 0;
 static int16_t prevSignedVout = 0;
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  RTOS / timer state
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 static hw_timer_t*         sampleTimer  = nullptr;
 static TaskHandle_t        samplerTaskH = nullptr;
 static esp_adc_cal_characteristics_t adcChars;
 static portMUX_TYPE        bufMux = portMUX_INITIALIZER_UNLOCKED;
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  WiFi settings
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 struct WifiSettings {
     String    ssid;
     String    pass;
@@ -248,16 +248,16 @@ static String       mqttUser;   // empty = no auth
 static String       mqttPass;
 static String       deviceId;
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  Timing
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 static unsigned long lastMqttPublish = 0;
 static unsigned long lastWifiRetry   = 0;
 static unsigned long lastEnergySave  = 0;
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  TIMER ISR — fires at SAMPLE_RATE_HZ; notifies sampler task
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  TIMER ISR â€” fires at SAMPLE_RATE_HZ; notifies sampler task
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 void IRAM_ATTR onSampleTimer()
 {
     BaseType_t woken = pdFALSE;
@@ -265,27 +265,27 @@ void IRAM_ATTR onSampleTimer()
     if (woken) portYIELD_FROM_ISR();
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  SAMPLER TASK — high-priority; runs on core 1
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  SAMPLER TASK â€” high-priority; runs on core 1
 //  Reads all 5 ADC channels once per timer tick.
 //  Accumulates sum-of-squares (RMS), sum-of-products (power), zero-crossings.
 //  After SAMPLES_PER_UPDATE ticks, atomically swaps buffers and signals main.
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 void samplerTask(void* /*arg*/)
 {
     for (;;) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
-        // ── Read all 5 channels ──────────────────────────────────────────────
+        // â”€â”€ Read all 5 channels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         int16_t raw[NUM_CH];
         for (uint8_t i = 0; i < NUM_CH; i++) {
             raw[i] = (int16_t)adc1_get_raw(CH[i]);
         }
 
-        // ── DC channel: simple accumulation ──────────────────────────────────
+        // â”€â”€ DC channel: simple accumulation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         acqBuf.sumDc += (uint32_t)raw[IDX_VDC];
 
-        // ── AC channels: offset-remove then accumulate ────────────────────────
+        // â”€â”€ AC channels: offset-remove then accumulate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         int16_t sVin  = raw[IDX_VIN]   - calib.vInOffset;
         int16_t sVout = raw[IDX_VOUT]  - calib.vOutOffset;
         int16_t sCtin = raw[IDX_CTIN]  - calib.ctInOffset;
@@ -297,11 +297,11 @@ void samplerTask(void* /*arg*/)
         acqBuf.sumSqCtIn  += (int32_t)sCtin  * sCtin;
         acqBuf.sumSqCtOut += (int32_t)sCtout * sCtout;
 
-        // Instantaneous power: V × I products
+        // Instantaneous power: V Ã— I products
         acqBuf.sumViIn  += (int32_t)sVin  * sCtin;
         acqBuf.sumViOut += (int32_t)sVout * sCtout;
 
-        // Positive-going zero crossings (negative→positive)
+        // Positive-going zero crossings (negativeâ†’positive)
         if (prevSignedVin  < 0 && sVin  >= 0) acqBuf.zcVin++;
         if (prevSignedVout < 0 && sVout >= 0) acqBuf.zcVout++;
         prevSignedVin  = sVin;
@@ -309,7 +309,7 @@ void samplerTask(void* /*arg*/)
 
         acqBuf.count++;
 
-        // ── Window complete: swap buffers ─────────────────────────────────────
+        // â”€â”€ Window complete: swap buffers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (acqBuf.count >= SAMPLES_PER_UPDATE) {
             portENTER_CRITICAL(&bufMux);
             readyBuf   = acqBuf;
@@ -322,21 +322,21 @@ void samplerTask(void* /*arg*/)
     }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  COMPUTE MEASUREMENTS from a completed window buffer
-//  Called from main loop — no ISR constraints.
-// ═════════════════════════════════════════════════════════════════════════════
+//  Called from main loop â€” no ISR constraints.
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 static void computeMeasurements(const Accumulators& buf)
 {
     if (buf.count == 0) return;
 
     const float N = (float)buf.count;
 
-    // ── DC voltage (battery) ─────────────────────────────────────────────────
+    // â”€â”€ DC voltage (battery) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     float dcAvg = (float)buf.sumDc / N;
     meas.volt_dc = dcAvg * calib.vDcScale + calib.vDcOffset;
 
-    // ── True RMS counts ───────────────────────────────────────────────────────
+    // â”€â”€ True RMS counts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     float rmsVin   = sqrtf((float)buf.sumSqVin   / N);
     float rmsVout  = sqrtf((float)buf.sumSqVout  / N);
     float rmsCtIn  = sqrtf((float)buf.sumSqCtIn  / N);
@@ -354,14 +354,14 @@ static void computeMeasurements(const Accumulators& buf)
     meas.ct_in    = ctInValid  ? (rmsCtIn  * calib.ctInScale) : NAN;
     meas.ct_out   = ctOutValid ? (rmsCtOut * calib.ctOutScale): NAN;
 
-    // ── Apparent power ────────────────────────────────────────────────────────
+    // â”€â”€ Apparent power â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     meas.s_in_va  = (vInValid  && ctInValid)  ? (meas.volt_in  * meas.ct_in)  : NAN;
     meas.s_out_va = (vOutValid && ctOutValid) ? (meas.volt_out * meas.ct_out) : NAN;
 
-    // ── Frequency via zero-crossing count ────────────────────────────────────
+    // â”€â”€ Frequency via zero-crossing count â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // freq = crossings / window_duration_s
     // Each positive-going zero crossing = one half-period ending; so crossing
-    // count ≈ number of complete cycles.
+    // count â‰ˆ number of complete cycles.
     if (vInValid && buf.zcVin >= MIN_ZC_FOR_FREQ) {
         meas.freq_in  = (float)buf.zcVin / UPDATE_INTERVAL_S;
     } else {
@@ -374,13 +374,13 @@ static void computeMeasurements(const Accumulators& buf)
         meas.freq_out = NAN;  // No reliable waveform on output
     }
 
-    // ── Real power P = mean(V_inst × I_inst) × vScale × iScale ──────────────
+    // â”€â”€ Real power P = mean(V_inst Ã— I_inst) Ã— vScale Ã— iScale â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  NOTE: phaseInDeg / phaseOutDeg are stored but NOT applied here.
     //  Phase correction requires an external phase reference measurement.
     //  Current P accuracy depends on physical CT/voltage sensor alignment.
     //  If sensors are well-aligned, this gives a good approximation of true W.
     if (vInValid && ctInValid) {
-        float meanViIn = (float)buf.sumViIn / N;          // counts²
+        float meanViIn = (float)buf.sumViIn / N;          // countsÂ²
         meas.p_in_w    = meanViIn * calib.vInScale * calib.ctInScale;
     } else {
         meas.p_in_w    = NAN;
@@ -393,7 +393,7 @@ static void computeMeasurements(const Accumulators& buf)
         meas.p_out_w    = NAN;
     }
 
-    // ── Power factor PF = P / S (clamped to [-1, +1]) ────────────────────────
+    // â”€â”€ Power factor PF = P / S (clamped to [-1, +1]) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (!isnan(meas.p_in_w) && !isnan(meas.s_in_va) && meas.s_in_va > 0.001f) {
         meas.pf_in = constrain(meas.p_in_w / meas.s_in_va, -1.0f, 1.0f);
     } else {
@@ -406,7 +406,7 @@ static void computeMeasurements(const Accumulators& buf)
         meas.pf_out = NAN;
     }
 
-    // ── Reactive power Q = sqrt(S² - P²) (unsigned) ─────────────────────────
+    // â”€â”€ Reactive power Q = sqrt(SÂ² - PÂ²) (unsigned) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  Sign of Q (inductive vs capacitive) would require phase direction info.
     //  Without reliable phase measurement, publish unsigned Q only.
     if (!isnan(meas.s_in_va) && !isnan(meas.p_in_w)) {
@@ -423,7 +423,7 @@ static void computeMeasurements(const Accumulators& buf)
         meas.q_out_var = NAN;
     }
 
-    // ── Energy integration ────────────────────────────────────────────────────
+    // â”€â”€ Energy integration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  Only integrate if P is valid and positive (consuming, not feeding back).
     //  UPS input power is always positive (drawn from grid).
     //  Output power is positive when feeding load.
@@ -436,9 +436,9 @@ static void computeMeasurements(const Accumulators& buf)
     meas.e_out_kwh = (float)energyOutKwh;
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  NVS helpers
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 void loadCalib()
 {
     prefs.begin("calib", true);
@@ -512,9 +512,9 @@ void loadDeviceId()
     }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  WiFi helpers
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 void loadWifiSettings()
 {
     prefs.begin("wifi", true);
@@ -556,7 +556,7 @@ void connectWifi()
         WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
     }
 
-    Serial.print(F("WiFi → "));
+    Serial.print(F("WiFi â†’ "));
     Serial.println(wifiSettings.ssid);
     WiFi.begin(wifiSettings.ssid.c_str(), wifiSettings.pass.c_str());
 }
@@ -571,9 +571,9 @@ void reconnectWifiIfNeeded()
     }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  JSON builder helpers
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 static void appendFloat(String& s, const char* key, float val, uint8_t decimals = 2)
 {
     s += '"'; s += key; s += '"'; s += ':';
@@ -621,9 +621,9 @@ String buildDataJson()
     return j;
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  MQTT (bare TCP — no library dependency)
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  MQTT (bare TCP â€” no library dependency)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 static bool mqttWriteLength(WiFiClient& c, uint32_t len)
 {
     do {
@@ -691,7 +691,7 @@ static bool mqttPublish(WiFiClient& c, const String& topic, const String& payloa
     if (!mqttWriteLength(c, rem)) return false;
     if (!mqttWriteStr(c, topic)) return false;
 
-    // Write payload in chunks — WiFiClient::print() puts data into TCP send buffer
+    // Write payload in chunks â€” WiFiClient::print() puts data into TCP send buffer
     // but may return payload.length() before the bytes are actually transmitted.
     // Use write() loop to ensure all bytes are sent, then flush() before stop().
     const uint8_t* buf = (const uint8_t*)payload.c_str();
@@ -723,7 +723,7 @@ void publishMqttData()
 
     String clientId = "ums-" + deviceId;
     if (!mqttConnect(mc, clientId, mqttUser, mqttPass)) {
-        Serial.println(F("[MQTT] CONNACK failed — check credentials"));
+        Serial.println(F("[MQTT] CONNACK failed â€” check credentials"));
         mc.stop();
         return;
     }
@@ -737,16 +737,16 @@ void publishMqttData()
         Serial.println(F("MQTT: publish failed"));
     } else {
         Serial.printf("[MQTT] published seq=%u interval=%lums\n", seqNo, (unsigned long)publishIntervalMs);
-        Serial.print(F("MQTT → ")); Serial.println(topic);
+        Serial.print(F("MQTT â†’ ")); Serial.println(topic);
         Serial.println(payload);
     }
 
     mc.stop();
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  Web server — config page + live data endpoint
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  Web server â€” config page + live data endpoint
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 static String htmlEscape(const String& in)
 {
     String out;
@@ -880,7 +880,7 @@ void handleRoot()
               "function draw(d){"
               "grid.innerHTML=FIELDS.map(f=>"
               "'<div class=\"card\"><div class=\"lbl\">'+f.l+'</div>"
-              "<div class=\"val\">'+(d[f.k]===null||d[f.k]===undefined?'—':("
+              "<div class=\"val\">'+(d[f.k]===null||d[f.k]===undefined?'â€”':("
               "typeof d[f.k]==='number'?d[f.k].toFixed(f.u==='Hz'?2:f.u===''?3:2):d[f.k]))"
               "+'</div><div class=\"unit\">'+f.u+'</div></div>').join('')"
               "}"
@@ -900,7 +900,7 @@ void handleData()
 void handleSave()
 {
     wifiSettings.ssid = webServer.arg("ssid");
-    // wifiSettings.pass handled below — blank means "keep existing"
+    // wifiSettings.pass handled below â€” blank means "keep existing"
     wifiSettings.dhcp = (webServer.arg("mode") != "static");
 
     String newMqttHost = webServer.arg("mqttHost");
@@ -917,7 +917,7 @@ void handleSave()
     // Username: empty string clears auth (intentional).
     mqttUser = webServer.arg("mqttUser");
     mqttUser.trim();
-    // Password: blank means "keep existing" — never overwrite with an empty string.
+    // Password: blank means "keep existing" â€” never overwrite with an empty string.
     // To clear the password, the user must explicitly set username to empty first.
     String newMqttPass = webServer.arg("mqttPass");
     if (newMqttPass.length() > 0) mqttPass = newMqttPass;
@@ -991,18 +991,18 @@ void handleResetEnergy()
 }
 
 /**
- * GET /api/info — machine-readable device identity.
+ * GET /api/info â€” machine-readable device identity.
  * Required by the LAN scanner to identify boards on the network.
  *
  * Response fields:
- *   device_id   — NVS-configured or MAC-derived identifier
- *   firmware    — FIRMWARE_VERSION constant
- *   mac         — full MAC address (colon-separated)
- *   ip          — current STA IP (or AP IP if not connected)
- *   mqtt_host   — configured MQTT broker hostname
- *   mqtt_port   — configured MQTT broker port
- *   mqtt_topic  — the topic this device publishes to
- *   mqtt_auth   — true if username/password auth is configured
+ *   device_id   â€” NVS-configured or MAC-derived identifier
+ *   firmware    â€” FIRMWARE_VERSION constant
+ *   mac         â€” full MAC address (colon-separated)
+ *   ip          â€” current STA IP (or AP IP if not connected)
+ *   mqtt_host   â€” configured MQTT broker hostname
+ *   mqtt_port   â€” configured MQTT broker port
+ *   mqtt_topic  â€” the topic this device publishes to
+ *   mqtt_auth   â€” true if username/password auth is configured
  */
 void handleApiInfo()
 {
@@ -1040,18 +1040,18 @@ void setupWebServer()
     webServer.on("/save",         HTTP_POST, handleSave);
     webServer.on("/calib",        HTTP_POST, handleCalib);
     webServer.on("/resetenergy",  HTTP_POST, handleResetEnergy);
-    // OTA firmware update via HTTP — browse to http://<device-ip>/update
+    // OTA firmware update via HTTP â€” browse to http://<device-ip>/update
     httpUpdater.setup(&webServer, "/update");
     webServer.begin();
     Serial.println(F("[OTA] HTTP update server at /update"));
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Serial diagnostics
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 void printDiag()
 {
-    Serial.println(F("────── UMS Energy Analyzer ──────"));
+    Serial.println(F("â”€â”€â”€â”€â”€â”€ UMS Energy Analyzer â”€â”€â”€â”€â”€â”€"));
     Serial.print(F("Device  : ")); Serial.println(deviceId);
     Serial.print(F("WiFi    : "));
     Serial.println(WiFi.status() == WL_CONNECTED ? WiFi.localIP().toString() : F("offline"));
@@ -1073,12 +1073,12 @@ void printDiag()
     Serial.printf("E-in    : %.4f kWh\n",     meas.e_in_kwh);
     Serial.printf("E-out   : %.4f kWh\n",     meas.e_out_kwh);
     Serial.printf("Seq#    : %u\n",           seqNo);
-    Serial.println(F("─────────────────────────────────"));
+    Serial.println(F("â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€"));
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  SETUP
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 void setup()
 {
     Serial.begin(SERIAL_BAUD);
@@ -1121,7 +1121,7 @@ void setup()
     // Create high-priority sampler task on core 1
     BaseType_t ok = xTaskCreatePinnedToCore(
         samplerTask, "sampler",
-        8192,          // stack — increased for float ops
+        8192,          // stack â€” increased for float ops
         nullptr, 10,   // priority 10
         &samplerTaskH, 1
     );
@@ -1145,9 +1145,9 @@ void setup()
     Serial.println(F("Sampler running at 500 Hz, 500-sample window (1 s update)"));
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  LOOP — non-blocking; never delays
-// ═════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  LOOP â€” non-blocking; never delays
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 void loop()
 {
     webServer.handleClient();
@@ -1155,7 +1155,7 @@ void loop()
 
     unsigned long now = millis();
 
-    // ── Process completed sample window ──────────────────────────────────────
+    // â”€â”€ Process completed sample window â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     bool gotWindow = false;
     portENTER_CRITICAL(&bufMux);
     if (windowReady) {
@@ -1170,13 +1170,13 @@ void loop()
         printDiag();
     }
 
-    // ── MQTT publish ──────────────────────────────────────────────────────────
+    // â”€â”€ MQTT publish â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (now - lastMqttPublish >= MQTT_PUBLISH_MS) {
         lastMqttPublish = now;
         publishMqttData();
     }
 
-    // ── Persist energy counters ───────────────────────────────────────────────
+    // â”€â”€ Persist energy counters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (now - lastEnergySave >= ENERGY_SAVE_MS) {
         lastEnergySave = now;
         saveEnergy();

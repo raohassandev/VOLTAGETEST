@@ -1,23 +1,23 @@
-# UMS Architecture — v2.1.0
+# UMS Architecture â€” v1.0.0
 
 ## System Overview
 
 ```
-ESP32 Board (firmware v2.1.0)
-        │  WiFi / MQTT 3.1.1
-        ▼
-  Mosquitto Broker  ← deployment/mosquitto/
-        │  topic: ums/devices/+/data
-        ▼
+ESP32 Board (firmware v1.0.0)
+        â”‚  WiFi / MQTT 3.1.1
+        â–¼
+  Mosquitto Broker  â† deployment/mosquitto/
+        â”‚  topic: ums/devices/+/data
+        â–¼
   mqtt-worker.ts (Node.js process)
-        │  persists telemetry + alarms
-        ▼
+        â”‚  persists telemetry + alarms
+        â–¼
   PostgreSQL (via Prisma)
-        │
-        ▼
+        â”‚
+        â–¼
   Next.js App (web-dashboard/)
-        │  HTTP API + SSE push
-        ▼
+        â”‚  HTTP API + SSE push
+        â–¼
   Browser Dashboard
 ```
 
@@ -25,30 +25,30 @@ ESP32 Board (firmware v2.1.0)
 
 ## Components
 
-### Firmware — `firmware/VOLTAGETEST/VOLTAGETEST.ino`
+### Firmware â€” `firmware/VOLTAGETEST/VOLTAGETEST.ino`
 
 ESP32 Arduino firmware. Reads V/I/DC via ADC, publishes JSON to MQTT, serves HTTP API at `/api/info`, `/data`, `/calib`, `/update`.
 
-### MQTT Worker — `web-dashboard/worker/mqtt-worker.ts`
+### MQTT Worker â€” `web-dashboard/worker/mqtt-worker.ts`
 
 Standalone Node.js process. Subscribes to `ums/devices/+/data`, parses payloads, calls `persistTelemetry()` and `runAlarmEvaluation()`. Marks devices offline after `OFFLINE_THRESHOLD_SECS`.
 
-### Rollup — `web-dashboard/worker/rollup.ts`
+### Rollup â€” `web-dashboard/worker/rollup.ts`
 
 Aggregates `TelemetryRaw` into `Telemetry1m` (1-minute buckets) and applies retention cleanup.
 
-### Next.js App — `web-dashboard/src/`
+### Next.js App â€” `web-dashboard/src/`
 
-- `app/` — page routes (App Router)
-- `app/api/` — API routes
-- `lib/` — shared server-side libraries (broker, scanner, worker, prisma)
-- `components/` — shared UI components
+- `app/` â€” page routes (App Router)
+- `app/api/` â€” API routes
+- `lib/` â€” shared server-side libraries (broker, scanner, worker, prisma)
+- `components/` â€” shared UI components
 
-### Embedded Broker — `web-dashboard/src/lib/broker.ts`
+### Embedded Broker â€” `web-dashboard/src/lib/broker.ts`
 
 Optional Aedes MQTT broker for local dev (`ENABLE_EMBEDDED_BROKER=true`). Disabled in Docker (uses Mosquitto).
 
-### LAN Scanner — `web-dashboard/src/lib/lan-scanner.ts`
+### LAN Scanner â€” `web-dashboard/src/lib/lan-scanner.ts`
 
 Probes ARP table, hits `/api/info` on each candidate, registers discovered UMS boards.
 
@@ -60,7 +60,7 @@ Probes ARP table, hits `/api/info` on each candidate, registers discovered UMS b
 |-------|---------|
 | `Device` | Registered boards (deviceId, online, lastSeenAt, ip, firmware) |
 | `TelemetryRaw` | Raw per-publish telemetry rows |
-| `TelemetryLatest` | One row per device — latest values (upserted on each publish) |
+| `TelemetryLatest` | One row per device â€” latest values (upserted on each publish) |
 | `Telemetry1m` | 1-minute rollup aggregates |
 | `Alarm` | Active/cleared alarm records |
 | `AlarmEvent` | Per-alarm state change events |
@@ -104,7 +104,7 @@ Key variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DATABASE_URL` | — | PostgreSQL connection string |
+| `DATABASE_URL` | â€” | PostgreSQL connection string |
 | `MQTT_BROKER_URL` | `mqtt://localhost:1883` | Broker for mqtt-worker |
 | `MQTT_TOPIC` | `ums/devices/+/data` | Topic filter |
 | `ENABLE_EMBEDDED_BROKER` | `true` | `false` in Docker |

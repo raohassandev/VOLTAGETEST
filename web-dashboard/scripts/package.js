@@ -5,19 +5,26 @@ const path = require("node:path");
 const { inspectArtifact } = require("./clean-package");
 
 const repoRoot = path.resolve(__dirname, "..", "..");
+const VERSION = "1.0.0";
 const outputs = [
   {
-    file: path.join(repoRoot, "VOLTAGETEST-v2.1.0-source-clean.zip"),
+    file: path.join(repoRoot, `VOLTAGETEST-v${VERSION}-source-clean.zip`),
     args: ["archive", "--format=zip", "--output"],
     paths: [],
   },
   {
-    file: path.join(repoRoot, "VOLTAGETEST-v2.1.0-windows-installer.zip"),
+    file: path.join(repoRoot, `VOLTAGETEST-v${VERSION}-windows-offline-installer.zip`),
     args: ["archive", "--format=zip", "--output"],
     paths: [
       "web-dashboard/installer",
       "web-dashboard/SETUP.ps1",
       "release/windows-service",
+      "docs/INSTALLATION_GUIDE.md",
+      "docs/ROLLBACK_RECOVERY_GUIDE.md",
+      "docs/COMMISSIONING_ENGINEER_GUIDE.md",
+      "docs/LICENSING.md",
+      "docs/SECURITY_AUDIT.md",
+      "THIRD_PARTY_NOTICES.md",
       "web-dashboard/package.json",
       "web-dashboard/package-lock.json",
       "web-dashboard/prisma",
@@ -28,18 +35,22 @@ const outputs = [
       "web-dashboard/next.config.ts",
       "web-dashboard/tsconfig.json",
       "web-dashboard/README.md",
-      "docs/LICENSING.md",
-      "docs/SECURITY_AUDIT.md",
       "release/UMS_LICENSE_ACTIVATION_GUIDE.md",
       "release/UMS_OPERATOR_GUIDE.md",
       "release/UMS_INSTALLER_CHECKLIST.md",
     ],
   },
   {
-    file: path.join(repoRoot, "VOLTAGETEST-v2.1.0-linux-native.tar.gz"),
+    file: path.join(repoRoot, `VOLTAGETEST-v${VERSION}-linux-native-offline.tar.gz`),
     args: ["archive", "--format=tar.gz", "--output"],
     paths: [
       "release/linux-native",
+      "docs/INSTALLATION_GUIDE.md",
+      "docs/ROLLBACK_RECOVERY_GUIDE.md",
+      "docs/COMMISSIONING_ENGINEER_GUIDE.md",
+      "docs/LICENSING.md",
+      "docs/SECURITY_AUDIT.md",
+      "THIRD_PARTY_NOTICES.md",
       "web-dashboard/package.json",
       "web-dashboard/package-lock.json",
       "web-dashboard/prisma",
@@ -50,8 +61,6 @@ const outputs = [
       "web-dashboard/next.config.ts",
       "web-dashboard/tsconfig.json",
       "web-dashboard/README.md",
-      "docs/LICENSING.md",
-      "docs/SECURITY_AUDIT.md",
       "release/UMS_LICENSE_ACTIVATION_GUIDE.md",
       "release/UMS_OPERATOR_GUIDE.md",
     ],

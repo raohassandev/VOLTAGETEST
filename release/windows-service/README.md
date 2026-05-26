@@ -1,6 +1,8 @@
-# VOLTAGETEST Windows Service Package
+# Automatrix VOLTAGETEST / UMS Windows Offline Installer Package
 
-This portable package installs VOLTAGETEST / UMS v2.1.0 as a Windows service without Docker.
+This package installs Automatrix Engineering VOLTAGETEST / UMS v1.0.0 as the Windows service `Automatrix VOLTAGETEST UMS Service` without Docker.
+
+This package is offline-capable when Node.js, PostgreSQL, and NSSM are supplied in the approved customer dependency pack or already installed on the target machine. If those dependencies are not bundled, treat the package as an online/lightweight installer and install dependencies first.
 
 ## Install
 
@@ -21,7 +23,9 @@ Default paths:
 - Data: `C:\ProgramData\VOLTAGETEST`
 - Logs: `C:\ProgramData\VOLTAGETEST\logs`
 - Env: `C:\ProgramData\VOLTAGETEST\voltagetest.env`
-- Service: `VOLTAGETESTDashboard`
+- Service name: `VOLTAGETESTDashboard`
+- Service display name: `Automatrix VOLTAGETEST UMS Service`
+- Rollback log: `C:\ProgramData\VOLTAGETEST\logs\rollback.log`
 
 ## Operations
 
@@ -29,6 +33,7 @@ Default paths:
 .\release\windows-service\health-check.ps1
 .\release\windows-service\backup.ps1
 .\release\windows-service\restore.ps1 -BackupFile C:\ProgramData\VOLTAGETEST\backups\backup.sql
+.\release\windows-service\rollback.ps1 -BackupDir C:\ProgramData\VOLTAGETEST\rollback\<timestamp>
 .\release\windows-service\uninstall.ps1
 ```
 

@@ -55,16 +55,19 @@ jobs:
       - working-directory: web-dashboard
         run: npm run package:build
       - run: |
-          node web-dashboard/scripts/clean-package-inspect.js VOLTAGETEST-v2.1.0-source-clean.zip
-          node web-dashboard/scripts/clean-package-inspect.js VOLTAGETEST-v2.1.0-windows-installer.zip
-          node web-dashboard/scripts/clean-package-inspect.js VOLTAGETEST-v2.1.0-linux-native.tar.gz
+          node scripts/certify-package.mjs package
+          test "$(tail -n 1 docs/audit/logs/2026-05-25/package-inspection-proof.txt)" = "PACKAGE INSPECTION PASSED"
       - uses: actions/upload-artifact@v4
         with:
           name: release-artifacts
           path: |
-            VOLTAGETEST-v2.1.0-source-clean.zip
-            VOLTAGETEST-v2.1.0-windows-installer.zip
-            VOLTAGETEST-v2.1.0-linux-native.tar.gz
+            VOLTAGETEST-v1.0.0-source-clean.zip
+            VOLTAGETEST-v1.0.0-windows-offline-installer.zip
+            VOLTAGETEST-v1.0.0-linux-native-offline.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-inspection-proof
+          path: docs/audit/logs/2026-05-25/package-inspection-proof.txt
 
   windows-certification:
     runs-on: windows-latest
@@ -102,6 +105,8 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ums_local
         run: npm run package:build
       - shell: pwsh
+        run: node scripts/certify-package.mjs rollback
+      - shell: pwsh
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ums_local
           CERT_PORT: 3303
@@ -114,6 +119,10 @@ jobs:
         with:
           name: windows-installer-proof
           path: docs/audit/logs/2026-05-25/windows-installer-proof.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-rollback-proof
+          path: docs/audit/logs/2026-05-25/rollback-proof.txt
 
   linux-native-certification:
     runs-on: ubuntu-latest
@@ -150,6 +159,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
         run: npm run package:build
+      - run: node scripts/certify-package.mjs rollback
       - env:
           DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
           CERT_PORT: 3304
@@ -160,6 +170,10 @@ jobs:
         with:
           name: linux-native-proof
           path: docs/audit/logs/2026-05-25/linux-native-proof.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-rollback-proof
+          path: docs/audit/logs/2026-05-25/rollback-proof.txt
 
   manual-ui-proof:
     runs-on: ubuntu-latest

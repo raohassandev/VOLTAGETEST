@@ -5,10 +5,10 @@ import { prisma, isDbEnabled } from "@/lib/db";
 import { getTelemetryStore, recordTelemetry } from "@/lib/mqtt-ingestion";
 import { normalizeTelemetry, type RawTelemetry } from "@/lib/telemetry-types";
 
-// Firmware v2.1.0 publishes volt_dc already calibrated in volts (firmware applies vDcScale/vDcOffset
+// Firmware v1.0.0 publishes volt_dc already calibrated in volts (firmware applies vDcScale/vDcOffset
 // from NVS before publishing). The worker stores the firmware value as-is. This route returns it
 // as-is. No server-side re-calibration.
-// Example: firmware sends 24.4 V → stored as 24.4 → returned as 24.4.
+// Example: firmware sends 24.4 V â†’ stored as 24.4 â†’ returned as 24.4.
 
 export async function GET(request: Request) {
   const auth = requireApiAuth(request);
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Require admin or manufacturer — viewer and technician must never inject telemetry.
+  // Require admin or manufacturer â€” viewer and technician must never inject telemetry.
   const auth = requireRole(request, "admin");
   if (!auth.ok) return auth.response;
 

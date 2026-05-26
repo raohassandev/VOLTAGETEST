@@ -1,4 +1,4 @@
-# Playwright Status - v2.1.0
+# Playwright Status - v1.0.0
 
 Playwright is not certified for this release at the current commit.
 

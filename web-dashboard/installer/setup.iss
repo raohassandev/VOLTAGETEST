@@ -1,9 +1,9 @@
-; UMS — UPS Management System
+; UMS â€” UPS Management System
 ; Inno Setup 6 installer script
 ; Compile with: iscc setup.iss
 
 #define MyAppName      "UPS Management System"
-#define MyAppVersion   "2.1.0"
+#define MyAppVersion   "1.0.0"
 #define MyAppPublisher "Hadi Engineering"
 #define MyAppURL       "http://ums.local:3303"
 #define MyAppExeName   "ums-service.exe"
@@ -62,7 +62,7 @@ Source: "scripts\setup-db.ps1";     DestDir: "{app}\scripts"
 ; NSSM service manager
 Source: "tools\nssm.exe"; DestDir: "{app}\tools"
 
-; Node.js MSI (bundled — will be silently installed if Node not found)
+; Node.js MSI (bundled â€” will be silently installed if Node not found)
 Source: "tools\{#NodeMsi}"; DestDir: "{app}\tools"; Flags: deleteafterinstall
 
 [Icons]
@@ -97,7 +97,7 @@ var
   Lbl: TLabel;
 
 begin
-  { Page 1 — PostgreSQL connection }
+  { Page 1 â€” PostgreSQL connection }
   DbHostPage := CreateCustomPage(wpSelectDir, 'Database Connection',
     'Enter your PostgreSQL server details.');
 
@@ -151,7 +151,7 @@ begin
   DbPassEdit.Left := 120; DbPassEdit.Top := 124;
   DbPassEdit.Width := 240; DbPassEdit.PasswordChar := '*';
 
-  { Page 2 — Admin password }
+  { Page 2 â€” Admin password }
   AdminPassPage := CreateCustomPage(DbHostPage.ID, 'Admin Password',
     'Set the password for the Admin and Manufacturer roles.');
 
@@ -175,7 +175,7 @@ begin
   AdminPass2Edit.Left := 140; AdminPass2Edit.Top := 34;
   AdminPass2Edit.Width := 240; AdminPass2Edit.PasswordChar := '*';
 
-  { Page 3 — License public key }
+  { Page 3 â€” License public key }
   LicensePage := CreateCustomPage(AdminPassPage.ID, 'License Public Key',
     'Paste the Automatrix Ed25519 public key for offline license verification.');
 
@@ -190,7 +190,7 @@ begin
   LicenseKeyMemo.Width := 410; LicenseKeyMemo.Height := 110;
   LicenseKeyMemo.ScrollBars := ssVertical;
 
-  { Page 4 — Ports }
+  { Page 4 â€” Ports }
   PortsPage := CreateCustomPage(LicensePage.ID, 'Ports',
     'Configure the network ports used by UMS.');
 

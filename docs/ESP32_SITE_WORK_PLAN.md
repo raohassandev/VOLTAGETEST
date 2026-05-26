@@ -42,7 +42,7 @@ Recommended label fields:
 - Device ID: configured via firmware portal (e.g. `UMS-3076F5A5AD54` or site scheme `UPSMON-B1-01`)
 - MAC address
 - Hardware revision
-- Firmware version (v2.1.0)
+- Firmware version (v1.0.0)
 - QR code linking to dashboard device record, later phase
 
 ## 4. Electrical Safety And Installation Notes
@@ -305,4 +305,3 @@ Before production deployment, decide:
 - Whether the site network allows MQTT outbound directly from devices.
 - Whether a local building server/VPS/cloud server will host the backend.
 - Whether notifications will use email, SMS, WhatsApp, or local annunciation first.
-

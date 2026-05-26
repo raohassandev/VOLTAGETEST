@@ -4,10 +4,10 @@
 
 | Path | Description |
 |------|-------------|
-| `VOLTAGETEST/VOLTAGETEST.ino` | Canonical ESP32 energy analyzer firmware for UMS v2.1.0 |
-| `../archive/firmware/legacy-monitor/` | Archived legacy monitor notes; do not flash for v2.1.0 deployments |
+| `VOLTAGETEST/VOLTAGETEST.ino` | Canonical ESP32 energy analyzer firmware for UMS v1.0.0 |
+| `../archive/firmware/legacy-monitor/` | Archived legacy monitor notes; do not flash for v1.0.0 deployments |
 
-## VOLTAGETEST v2.1.0
+## VOLTAGETEST v1.0.0
 
 Full energy analysis firmware for ESP32-based UPS monitoring nodes.
 
@@ -41,7 +41,7 @@ arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:esp32 firmware/VOLTAGETEST
 The official OTA binary is:
 
 ```text
-release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin
+release/firmware/v1.0.0/VOLTAGETEST-v1.0.0.merged.bin
 ```
 
 ### MQTT Payload
@@ -71,7 +71,7 @@ Published to `ums/devices/{device_id}/data` every 1 second:
   "q_out_var": 145.3,
   "e_in_kwh": 12.345,
   "e_out_kwh": 11.802,
-  "firmware": "2.1.0"
+  "firmware": "1.0.0"
 }
 ```
 
@@ -79,7 +79,7 @@ Energy analyzer fields publish `null` when a waveform is unavailable, the channe
 
 ### Known Limitations
 
-- Phase correction is stored in NVS but not yet applied in v2.1.0.
+- Phase correction is stored in NVS but not yet applied in v1.0.0.
 - Reactive power sign is unsigned.
 - Frequency depends on clean zero-crossing detection.
 - Up to 60 seconds of kWh accumulation can be lost on unexpected power loss before the next NVS save.

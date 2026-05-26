@@ -1,5 +1,7 @@
 docs/archive export-ignore
 docs/archive/** export-ignore
+archive export-ignore
+archive/** export-ignore
 docs/audit export-ignore
 docs/audit/** export-ignore
 .claude/** export-ignore
@@ -12,3 +14,7 @@ web-dashboard/.next/** export-ignore
 web-dashboard/.env* export-ignore
 web-dashboard/test-results/** export-ignore
 web-dashboard/e2e/report/** export-ignore
+*.sh text eol=lf
+*.service text eol=lf
+*.mjs text eol=lf
+*.js text eol=lf

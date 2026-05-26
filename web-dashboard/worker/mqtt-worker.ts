@@ -1,5 +1,5 @@
 /**
- * MQTT Worker — runs as a separate process alongside Next.js.
+ * MQTT Worker â€” runs as a separate process alongside Next.js.
  * Connects to the MQTT broker, ingests telemetry, persists to PostgreSQL,
  * runs the alarm engine, and periodically marks offline devices.
  *
@@ -21,12 +21,12 @@ const ROLLUP_INTERVAL_MS = 60_000;
 const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 if (!BROKER_URL) {
-  console.error("[worker] MQTT_BROKER_URL is not set — exiting.");
+  console.error("[worker] MQTT_BROKER_URL is not set â€” exiting.");
   process.exit(1);
 }
 
 if (!process.env.DATABASE_URL) {
-  console.error("[worker] DATABASE_URL is not set — exiting.");
+  console.error("[worker] DATABASE_URL is not set â€” exiting.");
   process.exit(1);
 }
 
@@ -169,11 +169,11 @@ async function runAlarmEvaluation(deviceId: string, payload: RawPayload): Promis
   const batteryNominalV = device?.upsUnit?.batteryNominalV ?? 48;
   const capacityVa = device?.upsUnit?.capacityVa ?? 0;
 
-  // Firmware v2.1.0 publishes volt_dc already calibrated in volts (firmware applies vDcScale/vDcOffset
-  // from NVS before publishing). Do NOT re-apply calibration here — doing so causes double scaling.
-  // Example: firmware sends volt_dc=24.4 V; alarm engine must compare 24.4 V, not 24.4 * 0.0442 ≈ 1.08 V.
+  // Firmware v1.0.0 publishes volt_dc already calibrated in volts (firmware applies vDcScale/vDcOffset
+  // from NVS before publishing). Do NOT re-apply calibration here â€” doing so causes double scaling.
+  // Example: firmware sends volt_dc=24.4 V; alarm engine must compare 24.4 V, not 24.4 * 0.0442 â‰ˆ 1.08 V.
 
-  // Global fallback debounce/hysteresis — per-rule values from AlarmRule table
+  // Global fallback debounce/hysteresis â€” per-rule values from AlarmRule table
   // take precedence inside evaluateAlarms. These are used only when no rule exists.
   const FALLBACK_DEBOUNCE_SECS = 30;
   const FALLBACK_HYSTERESIS_PCT = 2;
@@ -194,7 +194,7 @@ async function runAlarmEvaluation(deviceId: string, payload: RawPayload): Promis
       ctOut: num(payload.ct_out),
       sInVa: num(payload.s_in_va),
       sOutVa: num(payload.s_out_va),
-      // Energy analyzer fields — null if firmware does not support or no waveform
+      // Energy analyzer fields â€” null if firmware does not support or no waveform
       pInW:    nullableNum(payload.p_in_w),
       pOutW:   nullableNum(payload.p_out_w),
       pfIn:    nullableNum(payload.pf_in),
@@ -218,14 +218,14 @@ async function handleMessage(topic: string, payloadBuffer: Buffer): Promise<void
   try {
     raw = JSON.parse(payloadBuffer.toString()) as object;
   } catch {
-    console.warn(`[worker] Invalid JSON on topic ${topic} — skipped`);
+    console.warn(`[worker] Invalid JSON on topic ${topic} â€” skipped`);
     return;
   }
 
   const payload = raw as RawPayload;
   const deviceId = await upsertDevice(payload);
   if (!deviceId) {
-    console.warn(`[worker] No device_id in payload on ${topic} — skipped`);
+    console.warn(`[worker] No device_id in payload on ${topic} â€” skipped`);
     return;
   }
 
@@ -309,13 +309,13 @@ function startWorker(): void {
   });
 
   client.on("connect", () => {
-    console.log(`[worker] Connected — subscribing to ${TOPIC}`);
+    console.log(`[worker] Connected â€” subscribing to ${TOPIC}`);
     client.subscribe(TOPIC, { qos: 1 }, (err) => {
       if (err) console.error("[worker] Subscribe error:", err.message);
     });
   });
 
-  client.on("reconnect", () => console.log("[worker] Reconnecting…"));
+  client.on("reconnect", () => console.log("[worker] Reconnectingâ€¦"));
   client.on("offline", () => console.warn("[worker] Offline"));
   client.on("error", (err) => console.error("[worker] MQTT error:", err.message));
 
@@ -360,7 +360,7 @@ function startWorker(): void {
 }
 
 process.on("SIGINT", async () => {
-  console.log("[worker] Shutting down…");
+  console.log("[worker] Shutting downâ€¦");
   await prisma.$disconnect();
   process.exit(0);
 });

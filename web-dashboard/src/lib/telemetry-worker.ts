@@ -1,9 +1,9 @@
 /**
- * Telemetry worker — runs in-process inside instrumentation.ts.
+ * Telemetry worker â€” runs in-process inside instrumentation.ts.
  * Subscribes to the embedded Aedes broker, ingests telemetry, persists to
  * PostgreSQL, and drives the alarm engine.
  *
- * Payload format — firmware v2.1.0:
+ * Payload format â€” firmware v1.0.0:
  *   volt_in, volt_out, volt_dc (calibrated), ct_in, ct_out, s_in_va, s_out_va,
  *   freq_in, freq_out, p_in_w, p_out_w, pf_in, pf_out, q_in_var, q_out_var,
  *   e_in_kwh, e_out_kwh, rssi, firmware, seq, ip, mac, free_heap, reset_reason
@@ -25,9 +25,9 @@ const OFFLINE_CHECK_MS     = 30_000;
 const ROLLUP_MS            = 60_000;
 const CLEANUP_MS           = 24 * 60 * 60 * 1_000;
 
-// ── Payload types ─────────────────────────────────────────────────────────────
+// â”€â”€ Payload types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-/** v2 payload — new ESP32 firmware */
+/** v2 payload â€” new ESP32 firmware */
 interface PayloadV2 {
   device_id?: string;
   ts?: number;
@@ -44,7 +44,7 @@ interface PayloadV2 {
   rssi?: number; ip?: string; fw?: string; mac?: string;
 }
 
-/** v1 payload — legacy firmware and current firmware v2.1.0 field names */
+/** v1 payload â€” legacy firmware and current firmware v1.0.0 field names */
 interface PayloadV1 {
   device_id?: string; ups_id?: string; site_id?: string;
   volt_in?: number;  volt_out?: number; volt_dc?: number;
@@ -52,7 +52,7 @@ interface PayloadV1 {
   s_in_va?: number;  s_out_va?: number;
   p_in_w?: number;   p_out_w?: number;
   pf_in?: number;    pf_out?: number;
-  freq_in?: number;  freq_out?: number;    // v2.1.0 firmware field names
+  freq_in?: number;  freq_out?: number;    // v1.0.0 firmware field names
   q_in_var?: number; q_out_var?: number;
   e_in_kwh?: number; e_out_kwh?: number;
   rssi?: number; ip?: string; firmware?: string; mac?: string; seq?: number;
@@ -60,7 +60,7 @@ interface PayloadV1 {
 
 type RawPayload = PayloadV1 & PayloadV2;
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function num(v: unknown, fallback = 0): number {
   const n = Number(v);
@@ -84,7 +84,7 @@ function normalise(p: RawPayload) {
     upsId:     str(p.ups_id),
     siteId:    str(p.site_id),
     seq:       optNum(p.seq),
-    // Voltages — v2 wins, fall back to v1
+    // Voltages â€” v2 wins, fall back to v1
     voltIn:    num(p.v_in  ?? p.volt_in),
     voltOut:   num(p.v_out ?? p.volt_out),
     voltDc:    num(p.v_batt ?? p.volt_dc),
@@ -106,7 +106,7 @@ function normalise(p: RawPayload) {
     // Energy
     eInKwh:    optNum(p.e_in_kwh),
     eOutKwh:   optNum(p.e_out_kwh),
-    // Frequency — v2.1.0 firmware: freq_in/freq_out; v2 proto used f_in_hz/f_out_hz
+    // Frequency â€” v1.0.0 firmware: freq_in/freq_out; v2 proto used f_in_hz/f_out_hz
     freqIn:    optNum(p.freq_in  ?? p.f_in_hz),
     freqOut:   optNum(p.freq_out ?? p.f_out_hz),
     // Device
@@ -117,7 +117,7 @@ function normalise(p: RawPayload) {
   };
 }
 
-// ── Database operations ───────────────────────────────────────────────────────
+// â”€â”€ Database operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function upsertDevice(prisma: PrismaClient, fields: ReturnType<typeof normalise>): Promise<void> {
   const { deviceId, ip, mac, firmware } = fields;
@@ -196,7 +196,7 @@ async function runAlarmEval(
 
   const device = await prisma.device.findUnique({ where: { deviceId }, include: { upsUnit: true } });
 
-  // Firmware v2.1.0 publishes volt_dc already calibrated in volts — do NOT re-apply calibration.
+  // Firmware v1.0.0 publishes volt_dc already calibrated in volts â€” do NOT re-apply calibration.
   await markDeviceOnline(prisma, deviceId);
 
   await evaluateAlarms(
@@ -240,13 +240,13 @@ async function handleMessage(
   try {
     raw = JSON.parse(payload.toString()) as object;
   } catch {
-    console.warn(`[worker] Bad JSON on ${topic} — skipped`);
+    console.warn(`[worker] Bad JSON on ${topic} â€” skipped`);
     return;
   }
 
   const fields = normalise(raw as RawPayload);
   if (!fields.deviceId) {
-    console.warn(`[worker] No device_id on ${topic} — skipped`);
+    console.warn(`[worker] No device_id on ${topic} â€” skipped`);
     return;
   }
 
@@ -297,11 +297,11 @@ async function deduplicateAlarms(prisma: PrismaClient): Promise<void> {
   if (removed > 0) console.log(`[worker] Dedup: removed ${removed} duplicate alarm(s)`);
 }
 
-// ── Public entry point ────────────────────────────────────────────────────────
+// â”€â”€ Public entry point â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function startTelemetryWorker(): Promise<void> {
   if (!process.env.DATABASE_URL) {
-    console.error("[worker] DATABASE_URL not set — worker disabled");
+    console.error("[worker] DATABASE_URL not set â€” worker disabled");
     return;
   }
 

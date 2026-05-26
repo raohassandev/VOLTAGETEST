@@ -1,4 +1,4 @@
-# Device telemetry topics — v2.1.0 topic scheme: ums/devices/{device_id}/data
+# Device telemetry topics â€” v1.0.0 topic scheme: ums/devices/{device_id}/data
 # Each device authenticates with its deviceId as MQTT username.
 pattern write ums/devices/%u/data
 

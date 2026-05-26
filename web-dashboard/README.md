@@ -1,4 +1,4 @@
-# UPS Monitoring Dashboard — v2.1.0
+# UPS Monitoring Dashboard â€” v1.0.0
 
 Next.js dashboard for live UPS monitoring with ESP32 energy-analyzer boards.
 
@@ -23,11 +23,11 @@ Open `http://localhost:3303`.  Default login: `admin` / value from `UPS_AUTH_PAS
 | `UPS_AUTH_PASSWORD` | *(secret)* | Admin login password |
 | `UPS_AUTH_TOKEN` | *(random 32+ chars)* | Session signing token |
 | `MQTT_BROKER_URL` | `mqtt://localhost:1883` | Broker URL (embedded mode) |
-| `MQTT_TOPIC` | `ums/devices/+/data` | v2.1.0 topic pattern |
+| `MQTT_TOPIC` | `ums/devices/+/data` | v1.0.0 topic pattern |
 
 ## MQTT Topic
 
-Firmware v2.1.0 publishes to:
+Firmware v1.0.0 publishes to:
 
 ```
 ums/devices/{device_id}/data
@@ -57,4 +57,4 @@ CERT_ADMIN_PASSWORD=<admin-password> bash certify.sh
 
 ## Firmware
 
-See `firmware/VOLTAGETEST/VOLTAGETEST.ino` — canonical v2.1.0 ESP32 sketch.
+See `firmware/VOLTAGETEST/VOLTAGETEST.ino` â€” canonical v1.0.0 ESP32 sketch.

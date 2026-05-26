@@ -1,6 +1,6 @@
 param(
   [string]$BaseUrl = "http://localhost:3000",
-  [string]$ArchiveName = "VOLTAGETEST-v2.1.0-source-clean.zip"
+  [string]$ArchiveName = "VOLTAGETEST-v1.0.0-source-clean.zip"
 )
 
 $ErrorActionPreference = "Continue"

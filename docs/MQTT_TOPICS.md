@@ -1,4 +1,4 @@
-# MQTT Topics — UMS v2.1.0
+# MQTT Topics â€” UMS v1.0.0
 
 ## Active Topic Scheme
 
@@ -19,7 +19,7 @@ ums/devices/+/data
 ```json
 {
   "device_id": "UMS-3076F5A5AD54",
-  "firmware": "2.1.0",
+  "firmware": "1.0.0",
   "ip": "192.168.0.100",
   "rssi": -62,
   "seq": 1234,
@@ -74,5 +74,5 @@ topic read ums/devices/+/data         # dashboard reads all device topics
 
 ## Legacy Topic (archived)
 
-The old topic scheme (`building/<site>/<ups>/<device>/telemetry`) was used in firmware ≤ v0.5.x.
+The old topic scheme (`building/<site>/<ups>/<device>/telemetry`) was used in firmware â‰¤ v0.5.x.
 It is **no longer supported**. Legacy notes are kept under `archive/` for development history only.

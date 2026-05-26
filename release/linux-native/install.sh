@@ -7,6 +7,9 @@ DATA_DIR="${DATA_DIR:-/var/lib/voltagetest}"
 LOG_DIR="${LOG_DIR:-/var/log/voltagetest}"
 ENV_FILE="${ENV_FILE:-${ENV_DIR}/voltagetest.env}"
 SERVICE_FILE="/etc/systemd/system/voltagetest.service"
+ROLLBACK_ROOT="$DATA_DIR/rollback"
+ROLLBACK_BACKUP="$ROLLBACK_ROOT/$(date +%Y%m%d-%H%M%S)"
+ROLLBACK_LOG="$LOG_DIR/rollback.log"
 
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || { echo "Missing required command: $1"; exit 1; }
@@ -27,9 +30,36 @@ if [ "$NODE_MAJOR" -lt 22 ]; then
   exit 1
 fi
 
-mkdir -p "$APP_DIR" "$ENV_DIR" "$DATA_DIR/license" "$DATA_DIR/backups" "$LOG_DIR"
+rollback_on_error() {
+  local status=$?
+  if [ "$status" -eq 0 ]; then
+    return 0
+  fi
+  mkdir -p "$LOG_DIR"
+  printf '%s Install failed with status %s; attempting rollback from %s\n' "$(date -Iseconds)" "$status" "$ROLLBACK_BACKUP" >>"$ROLLBACK_LOG"
+  if [ -d "$ROLLBACK_BACKUP" ]; then
+    VOLTAGETEST_CI_MODE="${VOLTAGETEST_CI_MODE:-0}" APP_DIR="$APP_DIR" ENV_DIR="$ENV_DIR" DATA_DIR="$DATA_DIR" LOG_DIR="$LOG_DIR" "$OLDPWD/release/linux-native/rollback.sh" "$ROLLBACK_BACKUP" || true
+  fi
+  exit "$status"
+}
+trap rollback_on_error ERR
+
+mkdir -p "$APP_DIR" "$ENV_DIR" "$DATA_DIR/license" "$DATA_DIR/backups" "$LOG_DIR" "$ROLLBACK_BACKUP"
 if [ "${VOLTAGETEST_CI_MODE:-0}" != "1" ]; then
   id voltagetest >/dev/null 2>&1 || useradd --system --home "$DATA_DIR" --shell /usr/sbin/nologin voltagetest
+fi
+
+if [ -d "$APP_DIR" ]; then
+  mkdir -p "$ROLLBACK_BACKUP/app"
+  rsync -a "$APP_DIR/" "$ROLLBACK_BACKUP/app/"
+fi
+if [ -f "$ENV_FILE" ]; then
+  cp "$ENV_FILE" "$ROLLBACK_BACKUP/voltagetest.env"
+fi
+
+if [ "${VOLTAGETEST_SIMULATE_INSTALL_FAILURE_AFTER_BACKUP:-0}" = "1" ]; then
+  printf '%s Simulated failure after backup. Rollback backup: %s\n' "$(date -Iseconds)" "$ROLLBACK_BACKUP" >>"$ROLLBACK_LOG"
+  false
 fi
 
 rsync -a --delete --exclude node_modules --exclude .next --exclude .env ./web-dashboard/ "$APP_DIR/app/"

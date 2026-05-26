@@ -18,7 +18,7 @@ npm run package:build
 iscc installer\setup.iss
 ```
 
-Output: `installer\dist\UMS-Setup-2.1.0.exe`
+Output: `installer\dist\UMS-Setup-1.0.0.exe`
 
 ## Installer wizard pages
 
@@ -54,7 +54,7 @@ Get-Content "C:\Program Files\UMS\logs\ums-stdout.log" -Tail 50
 
 ## Uninstall
 
-Use Windows "Add or Remove Programs" — the uninstaller stops the service and removes
+Use Windows "Add or Remove Programs" â€” the uninstaller stops the service and removes
 firewall rules automatically. To also drop the database, run:
 
 ```powershell

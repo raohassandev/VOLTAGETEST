@@ -59,7 +59,7 @@ Every item in the final report must show:
 
 ---
 
-# Part A — Repository Cleanup
+# Part A â€” Repository Cleanup
 
 ## A1. Identify duplicate/stale firmware files
 
@@ -170,7 +170,7 @@ If the project policy is source-only, remove build artifacts and add to `.gitign
 If binaries are intentionally committed for OTA release, move them to a clear release folder:
 
 ```text
-release/firmware/v2.1.0/
+release/firmware/v1.0.0/
 ```
 
 and document hash/checksum.
@@ -192,7 +192,7 @@ firmware/**/build/
 *.hex
 ```
 
-If keeping `.bin`, keep only the final OTA `.bin` under `release/firmware/v2.1.0/`.
+If keeping `.bin`, keep only the final OTA `.bin` under `release/firmware/v1.0.0/`.
 
 ---
 
@@ -254,7 +254,7 @@ They should not appear as production default data.
 
 ---
 
-# Part B — Naming Convention Cleanup
+# Part B â€” Naming Convention Cleanup
 
 ## B1. Firmware naming
 
@@ -367,7 +367,7 @@ Remove duplicate docs with similar names unless they contain unique content.
 
 ---
 
-# Part C — Code Dead-Path Audit
+# Part C â€” Code Dead-Path Audit
 
 ## C1. Search for old MQTT topics
 
@@ -418,7 +418,7 @@ If active power/PF/kWh are still not reliable on current hardware, state exactly
 Code supports the field, but production accuracy requires reference-meter calibration.
 ```
 
-Do not write contradictory “future hardware only” unless true.
+Do not write contradictory â€œfuture hardware onlyâ€ unless true.
 
 ---
 
@@ -481,7 +481,7 @@ Do not create massive unrelated formatting diffs.
 
 ---
 
-# Part D — Firmware Cleanup
+# Part D â€” Firmware Cleanup
 
 ## D1. Firmware code readability
 
@@ -542,7 +542,7 @@ Verify response includes:
 ```json
 {
   "device_id": "...",
-  "firmware": "2.1.0",
+  "firmware": "1.0.0",
   "mac": "...",
   "ip": "...",
   "mqtt_host": "...",
@@ -564,7 +564,7 @@ Do not return fake zero for invalid waveform values. Use `null`.
 
 ---
 
-# Part E — Backend Cleanup
+# Part E â€” Backend Cleanup
 
 ## E1. MQTT worker
 
@@ -624,13 +624,13 @@ rollup eOutKwhLast = 0.2
 
 ---
 
-# Part F — UI/UX Audit
+# Part F â€” UI/UX Audit
 
 Use Playwright/Chromium.
 
 ## F1. Required desktop screenshots
 
-Take screenshots at **1440×900**:
+Take screenshots at **1440Ã—900**:
 
 ```text
 Dashboard
@@ -676,7 +676,7 @@ Suggested filenames:
 
 ## F2. Required mobile screenshots
 
-Take screenshots at **390×844** or similar:
+Take screenshots at **390Ã—844** or similar:
 
 ```text
 Dashboard
@@ -727,7 +727,7 @@ Suggested filenames:
 If board is not reachable, report:
 
 ```text
-Board screenshots not taken — device unreachable from this machine.
+Board screenshots not taken â€” device unreachable from this machine.
 ```
 
 Do not fake board screenshots.
@@ -743,7 +743,7 @@ For each screenshot, verify:
 - no overlapping text
 - no old unsupported W/PF/kWh text
 - no old MQTT topic visible
-- values show `—` or `Not available` instead of fake 0 when null
+- values show `â€”` or `Not available` instead of fake 0 when null
 - dashboard shows online device if live telemetry is available
 - mobile layout has no horizontal overflow
 - buttons are not clipped
@@ -751,7 +751,7 @@ For each screenshot, verify:
 
 ---
 
-# Part G — Playwright / Chromium Commands
+# Part G â€” Playwright / Chromium Commands
 
 Run:
 
@@ -782,7 +782,7 @@ Store screenshots in `qa/screenshots/...`.
 
 ---
 
-# Part H — Runtime Proof
+# Part H â€” Runtime Proof
 
 ## H1. Docker proof
 
@@ -826,7 +826,7 @@ Expected:
 
 ```text
 device_id = UMS-3076F5A5AD54
-firmware = 2.1.0
+firmware = 1.0.0
 mqtt_auth = true if configured for production
 mqtt_host = local broker/server
 mqtt_topic = ums/devices/UMS-3076F5A5AD54/data
@@ -848,7 +848,7 @@ Dashboard should show the live board online.
 
 ---
 
-# Part I — Database Cleanup
+# Part I â€” Database Cleanup
 
 Do not delete production data blindly.
 
@@ -887,7 +887,7 @@ Do not remove real production inventory.
 
 ---
 
-# Part J — Audit Report and Fixing Guidelines
+# Part J â€” Audit Report and Fixing Guidelines
 
 Update or create:
 
@@ -937,7 +937,7 @@ Always include screenshots for UI changes.
 
 ---
 
-# Part K — Git Push
+# Part K â€” Git Push
 
 After fixes:
 
@@ -1047,18 +1047,18 @@ Ship decision:
 Ship decision options:
 
 ```text
-PASS — ready to merge and tag
-PASS WITH CONDITIONS — only physical calibration or customer-site config remains
-FAIL — code/runtime blocker remains
+PASS â€” ready to merge and tag
+PASS WITH CONDITIONS â€” only physical calibration or customer-site config remains
+FAIL â€” code/runtime blocker remains
 ```
 
 ---
 
 ## Strict Rules
 
-- Do not say “complete” if dashboard still shows real board offline.
-- Do not say “complete” if board screenshots are missing without reason.
-- Do not say “complete” if old firmware duplicates remain.
-- Do not say “complete” if old MQTT topic remains active.
-- Do not say “complete” if `npm run build` or Playwright fails.
-- Do not say “complete” if changes are not pushed.
+- Do not say â€œcompleteâ€ if dashboard still shows real board offline.
+- Do not say â€œcompleteâ€ if board screenshots are missing without reason.
+- Do not say â€œcompleteâ€ if old firmware duplicates remain.
+- Do not say â€œcompleteâ€ if old MQTT topic remains active.
+- Do not say â€œcompleteâ€ if `npm run build` or Playwright fails.
+- Do not say â€œcompleteâ€ if changes are not pushed.

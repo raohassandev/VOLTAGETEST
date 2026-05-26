@@ -1,4 +1,4 @@
-# Testing And Certification Guide - VOLTAGETEST / UMS v2.1.0
+# Testing And Certification Guide - VOLTAGETEST / UMS v1.0.0
 
 Official certified package targets:
 

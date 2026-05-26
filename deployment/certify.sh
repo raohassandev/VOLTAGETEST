@@ -4,7 +4,7 @@ set -euo pipefail
 COMPOSE="docker compose"
 BASE_URL="${BASE_URL:-http://localhost:3000}"
 COOKIES="/tmp/ums-cert-cookies.txt"
-ARCHIVE_NAME="VOLTAGETEST-v2.1.0-source-clean.zip"
+ARCHIVE_NAME="VOLTAGETEST-v1.0.0-source-clean.zip"
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 : "${CERT_ADMIN_PASSWORD:?Set CERT_ADMIN_PASSWORD to the current admin password before running certify.sh}"

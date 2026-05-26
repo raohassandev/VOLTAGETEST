@@ -1,12 +1,12 @@
-# VOLTAGETEST / UMS v2.1.0
+# VOLTAGETEST / UMS v1.0.0
 
 Professional offline-capable UPS monitoring system with signed licensing, dashboard inventory, telemetry persistence, alarms, backup/restore, and field calibration workflow.
 
 ## Official Release Packages
 
-- Windows Installer Package: `VOLTAGETEST-v2.1.0-windows-installer.zip`
-- Linux Native Package: `VOLTAGETEST-v2.1.0-linux-native.tar.gz`
-- Optional clean source package: `VOLTAGETEST-v2.1.0-source-clean.zip`
+- Windows Installer Package: `VOLTAGETEST-v1.0.0-windows-offline-installer.zip`
+- Linux Native Package: `VOLTAGETEST-v1.0.0-linux-native-offline.tar.gz`
+- Optional clean source package: `VOLTAGETEST-v1.0.0-source-clean.zip`
 
 Docker is an optional development/deployment path and is not certified as an official package for this release.
 

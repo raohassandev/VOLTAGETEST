@@ -1,5 +1,5 @@
 [Unit]
-Description=VOLTAGETEST / UMS Dashboard
+Description=Automatrix VOLTAGETEST UMS
 After=network.target postgresql.service
 
 [Service]

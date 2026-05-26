@@ -1,6 +1,8 @@
-# VOLTAGETEST / UMS v2.1.0 Linux Native Package
+# Automatrix VOLTAGETEST / UMS v1.0.0 Linux Native Offline Package
 
-This package installs UMS without Docker.
+This package installs Automatrix Engineering VOLTAGETEST / UMS without Docker as `voltagetest.service`.
+
+This package is offline-capable when Node.js 22+, PostgreSQL access, `rsync`, and `curl` are supplied by the target system or by an approved offline dependency pack. If those dependencies are installed through the OS package manager during commissioning, treat this as an online/lightweight installation.
 
 Default paths:
 
@@ -9,6 +11,8 @@ Default paths:
 - Data: `/var/lib/voltagetest`
 - Logs: `/var/log/voltagetest`
 - Service: `voltagetest.service`
+- Service description: `Automatrix VOLTAGETEST UMS`
+- Rollback log: `/var/log/voltagetest/rollback.log`
 
 ## Install
 
@@ -36,6 +40,7 @@ Copy `voltagetest.env.example` to `/etc/voltagetest/voltagetest.env` or pass val
 sudo /opt/voltagetest/scripts/health-check.sh
 sudo /opt/voltagetest/scripts/backup.sh
 sudo /opt/voltagetest/scripts/restore.sh /var/lib/voltagetest/backups/<file>.sql.gz
+sudo /opt/voltagetest/scripts/rollback.sh /var/lib/voltagetest/rollback/<timestamp>
 ```
 
 ## Uninstall

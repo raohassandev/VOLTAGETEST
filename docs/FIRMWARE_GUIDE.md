@@ -1,4 +1,4 @@
-# Firmware Guide — VOLTAGETEST v2.1.0
+# Firmware Guide â€” VOLTAGETEST v1.0.0
 
 ## Canonical file
 
@@ -6,14 +6,14 @@
 firmware/VOLTAGETEST/VOLTAGETEST.ino
 ```
 
-Do not flash any other `.ino` file. Archived legacy monitor sketches must not be used for v2.1.0 deployments.
+Do not flash any other `.ino` file. Archived legacy monitor sketches must not be used for v1.0.0 deployments.
 
 ---
 
 ## Prerequisites
 
 - Arduino IDE 2.x or Arduino CLI
-- Board support: `esp32 by Espressif Systems` ≥ 3.x (via Boards Manager)
+- Board support: `esp32 by Espressif Systems` â‰¥ 3.x (via Boards Manager)
 - Board target: **ESP32 Dev Module**
 - Upload baud: **921600**
 
@@ -27,7 +27,7 @@ arduino-cli compile \
   firmware/VOLTAGETEST/VOLTAGETEST.ino
 ```
 
-Pre-compiled binary: `release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin`
+Pre-compiled binary: `release/firmware/v1.0.0/VOLTAGETEST-v1.0.0.merged.bin`
 
 ---
 
@@ -44,7 +44,7 @@ Or use **esptool** with the merged binary:
 
 ```bash
 esptool.py --chip esp32 --port /dev/ttyUSB0 \
-  write_flash 0x0 release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin
+  write_flash 0x0 release/firmware/v1.0.0/VOLTAGETEST-v1.0.0.merged.bin
 ```
 
 ---
@@ -52,7 +52,7 @@ esptool.py --chip esp32 --port /dev/ttyUSB0 \
 ## Flash via OTA (after first flash)
 
 1. Open `http://<device-ip>/update` in a browser.
-2. Select `release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin`.
+2. Select `release/firmware/v1.0.0/VOLTAGETEST-v1.0.0.merged.bin`.
 3. Click **Update**. Device reboots automatically.
 
 ---
@@ -89,7 +89,7 @@ Response:
 ```json
 {
   "device_id": "UMS-3076F5A5AD54",
-  "firmware": "2.1.0",
+  "firmware": "1.0.0",
   "mac": "30:76:F5:A5:AD:54",
   "ip": "192.168.0.100",
   "mqtt_host": "192.168.0.104",
@@ -115,5 +115,5 @@ Returns the same fields as the MQTT payload. Fields are `null` when not availabl
 
 | Version | Notes |
 |---------|-------|
-| v2.1.0 | MQTT auth (NVS), `/api/info`, energy-analyzer fields, TCP flush fix, `FIRMWARE_VERSION` constant |
-| v0.5.x | Old topic scheme (`building/.../telemetry`) — archived |
+| v1.0.0 | MQTT auth (NVS), `/api/info`, energy-analyzer fields, TCP flush fix, `FIRMWARE_VERSION` constant |
+| v0.5.x | Old topic scheme (`building/.../telemetry`) â€” archived |

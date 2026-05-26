@@ -1,6 +1,6 @@
-# UMS Operator Guide - v2.1.0
+# UMS Operator Guide - v1.0.0
 
-The UPS Management System monitors ESP32 UPS boards running firmware v2.1.0. Boards publish telemetry every 1 second to:
+The UPS Management System monitors ESP32 UPS boards running firmware v1.0.0. Boards publish telemetry every 1 second to:
 
 ## License Activation
 
@@ -49,7 +49,7 @@ Click a UPS or device to inspect:
 | `p_in_w` / `p_out_w` | W | Active power; requires calibration |
 | `pf_in` / `pf_out` | ratio | Power factor; requires calibration |
 | `freq_in` / `freq_out` | Hz | Requires clean waveform crossing |
-| `q_in_var` / `q_out_var` | VAR | Unsigned in v2.1.0 |
+| `q_in_var` / `q_out_var` | VAR | Unsigned in v1.0.0 |
 | `e_in_kwh` / `e_out_kwh` | kWh | Energy counters persisted periodically |
 
 Accuracy depends on reference-meter calibration. See `docs/CALIBRATION_GUIDE.md`.
@@ -66,7 +66,7 @@ Alarms clear automatically after the measured value returns to normal with debou
 
 ## Board Configuration
 
-Firmware v2.1.0 does not support remote config push over MQTT. Use the board local web UI:
+Firmware v1.0.0 does not support remote config push over MQTT. Use the board local web UI:
 
 ```text
 http://<device-ip>/config
@@ -80,13 +80,13 @@ http://192.168.4.1
 
 ## OTA Update
 
-Upload the approved v2.1.0 binary through:
+Upload the approved v1.0.0 binary through:
 
 ```text
 http://<device-ip>/update
 ```
 
-After OTA, verify firmware `2.1.0` in `/api/info`, `/data`, and the dashboard.
+After OTA, verify firmware `1.0.0` in `/api/info`, `/data`, and the dashboard.
 
 ## Troubleshooting
 
@@ -107,7 +107,7 @@ After OTA, verify firmware `2.1.0` in `/api/info`, `/data`, and the dashboard.
 
 ### Energy Fields Not Available
 
-1. Confirm firmware is `2.1.0`.
+1. Confirm firmware is `1.0.0`.
 2. Confirm waveform signal quality.
 3. Perform reference-meter calibration.
 4. Check `docs/FIRMWARE_LIMITATIONS.md` for known limitations.

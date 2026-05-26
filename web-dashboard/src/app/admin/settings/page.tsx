@@ -8,18 +8,18 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { checkUnauthorized, guardManufacturer } from "@/lib/handle-unauthorized";
 
-// ── shared styles ─────────────────────────────────────────────────────────────
+// â”€â”€ shared styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const inp = "w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 transition-colors placeholder:text-slate-600";
 const lbl = "block text-xs font-semibold text-slate-400 mb-1";
 
-// ── types ─────────────────────────────────────────────────────────────────────
+// â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface SysSettings { rawRetentionDays: number; rollupRetentionMonths: number; alarmRetentionMonths: number; offlineThresholdSecs: number; }
 interface BoardInfo   { device_id: string; firmware: string; mac: string; ip: string; mqtt_host: string; mqtt_port: number; mqtt_topic: string; mqtt_auth: boolean; }
 interface BoardData   { volt_in?: number; volt_out?: number; volt_dc?: number; rssi?: number; seq?: number; }
 interface KnownDevice { deviceId: string; ip: string | null; mac: string | null; firmware: string | null; online: boolean; upsId: string | null; }
 interface MqttBroker  { id: string; name: string; host: string; port: number; username: string; password: string; enabled: boolean; notes: string; }
 
-// ── Section wrapper ───────────────────────────────────────────────────────────
+// â”€â”€ Section wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Section({
   icon: Icon, title, subtitle, defaultOpen = true, children,
 }: {
@@ -46,7 +46,7 @@ function Section({
   );
 }
 
-// ── MQTT broker row ───────────────────────────────────────────────────────────
+// â”€â”€ MQTT broker row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function BrokerRow({
   broker, onToggle, onDelete, onEdit,
 }: { broker: MqttBroker; onToggle: () => void; onDelete: () => void; onEdit: () => void }) {
@@ -75,7 +75,7 @@ function BrokerRow({
   );
 }
 
-// ── Broker form modal ─────────────────────────────────────────────────────────
+// â”€â”€ Broker form modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function BrokerModal({
   initial, onSave, onClose,
 }: {
@@ -121,7 +121,7 @@ function BrokerModal({
           {error && <p className="text-xs text-red-400 font-semibold">{error}</p>}
           <div className="flex gap-2 pt-1">
             <button onClick={submit} disabled={saving} type="button" className="flex-1 rounded-lg bg-cyan-700 hover:bg-cyan-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition-colors">
-              {saving ? "Saving…" : "Save Broker"}
+              {saving ? "Savingâ€¦" : "Save Broker"}
             </button>
             <button onClick={onClose} type="button" className="rounded-lg border border-slate-600 px-4 py-2.5 text-sm font-semibold text-slate-400 hover:bg-slate-700 transition-colors">Cancel</button>
           </div>
@@ -131,16 +131,16 @@ function BrokerModal({
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// â”€â”€ Main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function SettingsAdminPage() {
   guardManufacturer();
 
-  // ── System settings ──────────────────────────────────────────────────────
+  // â”€â”€ System settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [sys,     setSys]     = useState<SysSettings>({ rawRetentionDays: 30, rollupRetentionMonths: 12, alarmRetentionMonths: 24, offlineThresholdSecs: 60 });
   const [sysSaving, setSysSaving] = useState(false);
   const [sysMsg,  setSysMsg]  = useState("");
 
-  // ── Board config ─────────────────────────────────────────────────────────
+  // â”€â”€ Board config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [knownDevices,  setKnownDevices]  = useState<KnownDevice[]>([]);
   const [selectedDev,   setSelectedDev]   = useState<KnownDevice | null>(null);
   const [boardInfo,     setBoardInfo]     = useState<BoardInfo | null>(null);
@@ -160,12 +160,12 @@ export default function SettingsAdminPage() {
   const [cfgSaving,     setCfgSaving]     = useState(false);
   const [cfgMsg,        setCfgMsg]        = useState("");
 
-  // ── MQTT brokers ─────────────────────────────────────────────────────────
+  // â”€â”€ MQTT brokers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [brokers,      setBrokers]      = useState<MqttBroker[]>([]);
   const [brokerModal,  setBrokerModal]  = useState<"new" | MqttBroker | null>(null);
   const [brokerLoading, setBrokerLoading] = useState(true);
 
-  // ── Load known devices ───────────────────────────────────────────────────
+  // â”€â”€ Load known devices â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     fetch("/api/devices", { cache: "no-store" })
       .then((r) => r.json())
@@ -177,7 +177,7 @@ export default function SettingsAdminPage() {
   async function selectDevice(dev: KnownDevice) {
     setSelectedDev(dev);
     setBoardInfo(null); setBoardData(null); setBoardError(""); setCfgMsg("");
-    if (!dev.ip) { setBoardError("This device has no IP address on record — it may not have connected recently."); return; }
+    if (!dev.ip) { setBoardError("This device has no IP address on record â€” it may not have connected recently."); return; }
     setBoardLoading(true);
     try {
       const [infoRes, dataRes] = await Promise.all([
@@ -202,7 +202,7 @@ export default function SettingsAdminPage() {
     if (selectedDev) await selectDevice(selectedDev);
   }
 
-  // ── Load system settings ─────────────────────────────────────────────────
+  // â”€â”€ Load system settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     fetch("/api/settings", { cache: "no-store" })
       .then((r) => { if (checkUnauthorized(r)) throw new Error("401"); return r.json(); })
@@ -216,7 +216,7 @@ export default function SettingsAdminPage() {
       }).catch(() => undefined);
   }, []);
 
-  // ── Load MQTT brokers ────────────────────────────────────────────────────
+  // â”€â”€ Load MQTT brokers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     fetch("/api/mqtt-brokers", { cache: "no-store" })
       .then((r) => r.json())
@@ -229,7 +229,7 @@ export default function SettingsAdminPage() {
     setSysSaving(true); setSysMsg("");
     try {
       const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settings: sys, offlineThresholdSecs: sys.offlineThresholdSecs }) });
-      setSysMsg(res.ok ? "✓ Settings saved." : "Save failed.");
+      setSysMsg(res.ok ? "âœ“ Settings saved." : "Save failed.");
     } finally { setSysSaving(false); }
   }
 
@@ -246,11 +246,11 @@ export default function SettingsAdminPage() {
         }),
       });
       const d = (await res.json()) as { ok?: boolean; error?: string };
-      setCfgMsg(d.ok ? "✓ Config pushed — board will reconnect." : `Error: ${d.error ?? "Failed"}`);
+      setCfgMsg(d.ok ? "âœ“ Config pushed â€” board will reconnect." : `Error: ${d.error ?? "Failed"}`);
     } finally { setCfgSaving(false); }
   }
 
-  // ── MQTT broker actions ──────────────────────────────────────────────────
+  // â”€â”€ MQTT broker actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function addBroker(data: Omit<MqttBroker, "id" | "enabled">) {
     const res = await fetch("/api/mqtt-brokers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
     const d = (await res.json()) as { broker?: MqttBroker };
@@ -291,7 +291,7 @@ export default function SettingsAdminPage() {
           <p className="text-sm text-slate-400 mt-0.5">Manufacturer-level system, board, and broker configuration.</p>
         </div>
 
-        {/* ── 1. System Settings ──────────────────────────────────────── */}
+        {/* â”€â”€ 1. System Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <Section icon={Settings2} title="System Settings" subtitle="Data retention and device monitoring thresholds">
           <div className="mt-4 flex flex-col gap-5">
 
@@ -329,14 +329,14 @@ export default function SettingsAdminPage() {
             <div className="flex items-center gap-3 pt-1">
               <button onClick={saveSys} disabled={sysSaving} type="button"
                 className="flex items-center gap-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition-colors">
-                <Save size={14} />{sysSaving ? "Saving…" : "Save Settings"}
+                <Save size={14} />{sysSaving ? "Savingâ€¦" : "Save Settings"}
               </button>
               {sysMsg && <span className="text-sm font-semibold text-emerald-400 flex items-center gap-1"><CheckCircle2 size={13} />{sysMsg}</span>}
             </div>
           </div>
         </Section>
 
-        {/* ── 2. Board Configuration ──────────────────────────────────── */}
+        {/* â”€â”€ 2. Board Configuration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <Section icon={Router} title="Board Configuration" subtitle="Select a board to view and push parameters" defaultOpen={false}>
           <div className="mt-4 flex flex-col gap-4">
 
@@ -371,7 +371,7 @@ export default function SettingsAdminPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-100 truncate">{dev.deviceId}</p>
                         <p className="text-xs text-slate-500 font-mono truncate">
-                          {dev.ip ?? "no IP"} {dev.firmware ? `· fw ${dev.firmware}` : ""}
+                          {dev.ip ?? "no IP"} {dev.firmware ? `Â· fw ${dev.firmware}` : ""}
                         </p>
                         {dev.upsId && <p className="text-xs text-cyan-500 truncate">{dev.upsId}</p>}
                       </div>
@@ -385,10 +385,10 @@ export default function SettingsAdminPage() {
 
               {boardLoading && (
                 <div className="mt-3 flex items-center gap-2 text-sm text-slate-400">
-                  <RefreshCw size={13} className="animate-spin text-cyan-400" /> Connecting to board…
+                  <RefreshCw size={13} className="animate-spin text-cyan-400" /> Connecting to boardâ€¦
                 </div>
               )}
-              {boardError && <p className="mt-2 text-xs text-red-400 font-semibold">⚠ {boardError}</p>}
+              {boardError && <p className="mt-2 text-xs text-red-400 font-semibold">âš  {boardError}</p>}
             </div>
 
             {/* Board current status */}
@@ -412,10 +412,10 @@ export default function SettingsAdminPage() {
                 {boardData && (
                   <>
                     {[
-                      { label: "Pri. Voltage",  value: boardData.volt_in  != null ? `${boardData.volt_in.toFixed(1)} V` : "—" },
-                      { label: "Sec. Voltage", value: boardData.volt_out != null ? `${boardData.volt_out.toFixed(1)} V` : "—" },
-                      { label: "Battery V",  value: boardData.volt_dc  != null ? `${boardData.volt_dc.toFixed(2)} V` : "—" },
-                      { label: "RSSI",  value: boardData.rssi     != null ? `${boardData.rssi} dBm` : "—" },
+                      { label: "Pri. Voltage",  value: boardData.volt_in  != null ? `${boardData.volt_in.toFixed(1)} V` : "â€”" },
+                      { label: "Sec. Voltage", value: boardData.volt_out != null ? `${boardData.volt_out.toFixed(1)} V` : "â€”" },
+                      { label: "Battery V",  value: boardData.volt_dc  != null ? `${boardData.volt_dc.toFixed(2)} V` : "â€”" },
+                      { label: "RSSI",  value: boardData.rssi     != null ? `${boardData.rssi} dBm` : "â€”" },
                     ].map(({ label, value }) => (
                       <div key={label}>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{label}</p>
@@ -432,7 +432,7 @@ export default function SettingsAdminPage() {
               <div className="flex flex-col gap-4">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Board Configuration</p>
                 <div className="rounded-lg border border-amber-800 bg-amber-900/20 p-3 text-xs font-semibold text-amber-300">
-                  Remote config push is not supported in firmware v2.1.0 or production external-broker mode. Use the board local web UI at http://&lt;device-ip&gt;/config.
+                  Remote config push is not supported in firmware v1.0.0 or production external-broker mode. Use the board local web UI at http://&lt;device-ip&gt;/config.
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -502,13 +502,13 @@ export default function SettingsAdminPage() {
 
                 <div className="flex items-center gap-3 pt-1">
                   <button onClick={pushBoardConfig} disabled type="button"
-                    title="Remote config push is not supported in firmware v2.1.0 / production external-broker mode."
+                    title="Remote config push is not supported in firmware v1.0.0 / production external-broker mode."
                     className="flex items-center gap-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition-colors">
                     <Save size={14} />{cfgSaving ? "Pushing..." : "Config Push Unsupported"}
                   </button>
                   {cfgMsg && (
-                    <span className={`text-sm font-semibold flex items-center gap-1 ${cfgMsg.startsWith("✓") ? "text-emerald-400" : "text-red-400"}`}>
-                      {cfgMsg.startsWith("✓") && <CheckCircle2 size={13} />}{cfgMsg}
+                    <span className={`text-sm font-semibold flex items-center gap-1 ${cfgMsg.startsWith("âœ“") ? "text-emerald-400" : "text-red-400"}`}>
+                      {cfgMsg.startsWith("âœ“") && <CheckCircle2 size={13} />}{cfgMsg}
                     </span>
                   )}
                 </div>
@@ -518,15 +518,15 @@ export default function SettingsAdminPage() {
           </div>
         </Section>
 
-        {/* ── 3. MQTT Brokers ─────────────────────────────────────────── */}
+        {/* â”€â”€ 3. MQTT Brokers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <Section icon={Server} title="MQTT Broker Connections" subtitle="Dashboard worker connects to all enabled brokers" defaultOpen={true}>
           <div className="mt-4 flex flex-col gap-3">
             {brokerLoading ? (
-              <p className="text-sm text-slate-500 py-4 text-center">Loading brokers…</p>
+              <p className="text-sm text-slate-500 py-4 text-center">Loading brokersâ€¦</p>
             ) : brokers.length === 0 ? (
               <div className="rounded-lg border border-slate-700 border-dashed py-8 text-center">
                 <p className="text-sm text-slate-500">No MQTT brokers configured.</p>
-                <p className="text-xs text-slate-600 mt-1">Add one below — the worker will subscribe to <span className="font-mono">ums/devices/+/data</span> on each enabled broker.</p>
+                <p className="text-xs text-slate-600 mt-1">Add one below â€” the worker will subscribe to <span className="font-mono">ums/devices/+/data</span> on each enabled broker.</p>
               </div>
             ) : (
               <div className="flex flex-col gap-2">
@@ -551,7 +551,7 @@ export default function SettingsAdminPage() {
             </button>
 
             <p className="text-xs text-slate-600 pt-1">
-              ⚠️ Changes take effect after restarting the dashboard server. Brokers are persisted in the database.
+              âš ï¸ Changes take effect after restarting the dashboard server. Brokers are persisted in the database.
             </p>
           </div>
         </Section>

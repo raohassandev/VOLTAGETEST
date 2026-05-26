@@ -128,7 +128,7 @@ export async function GET(request: Request,
   const device = unit.devices.find((item) => item.deviceId === id) ?? unit.devices[0];
   const tl = device?.telemetryLatest;
 
-  // Firmware v2.1.0 publishes volt_dc already calibrated in volts.
+  // Firmware v1.0.0 publishes volt_dc already calibrated in volts.
   // Server must NOT re-apply battery scaling. Pass through directly.
   // If legacy raw-ADC support is needed later, use a separate volt_dc_raw field.
   const voltDc = tl?.voltDc ?? null;

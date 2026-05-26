@@ -1,4 +1,4 @@
-# Deployment Guide — UPS Monitoring System
+# Deployment Guide â€” UPS Monitoring System
 
 ## Prerequisites
 
@@ -24,8 +24,8 @@ POSTGRES_PASSWORD=change-this-to-a-strong-password
 
 # Admin credentials
 UPS_AUTH_USERNAME=admin
-UPS_AUTH_PASSWORD_HASH=<bcrypt hash — see below>
-UPS_AUTH_TOKEN=<64-char hex — see below>
+UPS_AUTH_PASSWORD_HASH=<bcrypt hash â€” see below>
+UPS_AUTH_TOKEN=<64-char hex â€” see below>
 
 # MQTT
 MQTT_USERNAME=dashboard
@@ -57,10 +57,10 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```bash
 cd deployment/mosquitto
 
-# Option A — if mosquitto_passwd is installed locally:
+# Option A â€” if mosquitto_passwd is installed locally:
 mosquitto_passwd -c -b passwords dashboard your-mqtt-password
 
-# Option B — using Docker (write directly into the deployment directory):
+# Option B â€” using Docker (write directly into the deployment directory):
 docker run --rm \
   -v "$(pwd):/mnt" \
   eclipse-mosquitto:2 \
@@ -77,10 +77,10 @@ docker compose --env-file .env up -d
 ```
 
 Services started:
-- `postgres` — PostgreSQL 16 on port 5432
-- `mosquitto` — MQTT broker on port 1883
-- `web` — Next.js dashboard on port 3000
-- `mqtt-worker` — Background MQTT ingestion + alarm engine
+- `postgres` â€” PostgreSQL 16 on port 5432
+- `mosquitto` â€” MQTT broker on port 1883
+- `web` â€” Next.js dashboard on port 3000
+- `mqtt-worker` â€” Background MQTT ingestion + alarm engine
 
 ### 4. Run database migrations
 
@@ -128,7 +128,7 @@ docker compose logs -f mqtt-worker
 The project uses **Prisma Migrate** with committed migration files.
 
 **Important:** Production always uses `prisma migrate deploy` against committed
-`prisma/migrations/` SQL files. `prisma db push` is for local exploration only —
+`prisma/migrations/` SQL files. `prisma db push` is for local exploration only â€”
 it does not create migration history and must not be used in production.
 
 ```bash
@@ -136,7 +136,7 @@ it does not create migration history and must not be used in production.
 cd web-dashboard
 npx prisma migrate deploy
 
-# Development — create a new migration after editing schema.prisma
+# Development â€” create a new migration after editing schema.prisma
 DATABASE_URL=postgresql://ups_user:password@localhost:5432/upsmon \
   npx prisma migrate dev --name describe-change
 
@@ -148,8 +148,8 @@ npm run db:reset:local
 ```
 
 Migrations run in order by timestamp:
-- `20260520000000_init` — creates all base tables
-- `20260523000001_v2_fields` — adds v2 telemetry columns (`qInVar`, `qOutVar`,
+- `20260520000000_init` â€” creates all base tables
+- `20260523000001_v2_fields` â€” adds v2 telemetry columns (`qInVar`, `qOutVar`,
   `freqIn`, `freqOut`, `freqInAvg`, `freqOutAvg`) and the `DeviceDiscovered` table
 
 Both migrations must be applied for a complete production schema.
@@ -169,7 +169,7 @@ DATABASE_URL=postgresql://... npx prisma migrate deploy   # apply committed migr
 npm run db:seed                                           # create default SystemSettings
 npm run dev                                               # start Next.js
 
-# In a second terminal (optional — only if DB is configured):
+# In a second terminal (optional â€” only if DB is configured):
 npm run worker:dev
 ```
 
@@ -189,7 +189,7 @@ POSTGRES_PASSWORD=yourpassword deployment/scripts/restore.sh deployment/backups/
 
 ## Firmware Flashing
 
-See `docs/FIRMWARE_GUIDE.md` for the Arduino IDE compile and flash instructions for firmware v2.1.0.
+See `docs/FIRMWARE_GUIDE.md` for the Arduino IDE compile and flash instructions for firmware v1.0.0.
 
 **Canonical firmware path:** `firmware/VOLTAGETEST/VOLTAGETEST.ino`
 
@@ -205,4 +205,4 @@ arduino-cli upload \
   firmware/VOLTAGETEST/VOLTAGETEST.ino
 ```
 
-Pre-compiled OTA binary for v2.1.0: `release/firmware/v2.1.0/VOLTAGETEST-v2.1.0.merged.bin`
+Pre-compiled OTA binary for v1.0.0: `release/firmware/v1.0.0/VOLTAGETEST-v1.0.0.merged.bin`
