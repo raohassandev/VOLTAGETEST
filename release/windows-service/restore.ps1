@@ -14,6 +14,6 @@ if (-not (Test-Path $BackupFile)) {
 }
 
 $databaseUrl = (Get-Content $EnvFile | Where-Object { $_ -like "DATABASE_URL=*" } | Select-Object -First 1).Substring("DATABASE_URL=".Length)
-& psql $databaseUrl --file $BackupFile
+& psql --file $BackupFile $databaseUrl
 if ($LASTEXITCODE -ne 0) { throw "psql restore failed" }
 Write-Host "VOLTAGETEST restore PASS"
