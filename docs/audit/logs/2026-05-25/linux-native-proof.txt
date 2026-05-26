@@ -1,0 +1,33 @@
+﻿Linux native certification status for VOLTAGETEST / UMS v2.1.0
+Commit under review: b8b0ee3
+
+Result: NOT CERTIFIED
+
+Reason:
+- This workspace is Windows and systemd is not available.
+- WSL bash is not usable on this machine.
+- release/linux-native/install.sh was not executed on a real Linux host.
+- voltagetest.service was not installed or started with systemctl.
+
+Implemented in source:
+- release/linux-native/install.sh
+- release/linux-native/uninstall.sh
+- release/linux-native/backup.sh
+- release/linux-native/restore.sh
+- release/linux-native/health-check.sh
+- release/linux-native/voltagetest.service
+- release/linux-native/voltagetest.env.example
+- release/linux-native/README.md
+
+Missing required pass proof:
+- Linux install script run.
+- Node/PostgreSQL checks on target.
+- UMS_LICENSE_PUBLIC_KEY_PEM validation on target.
+- Prisma migrations on target.
+- systemd service install/start.
+- Health endpoint.
+- Login/license/UPS/seat enforcement.
+- Backup/restore.
+- Uninstall preserving data by default.
+
+Final line intentionally not set to LINUX NATIVE CERTIFICATION PASSED because certification did not pass.
