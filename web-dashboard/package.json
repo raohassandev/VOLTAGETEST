@@ -1,14 +1,35 @@
 {
   "name": "ups-monitoring-system",
-  "version": "0.1.0",
+  "version": "2.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 3303",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "typecheck": "tsc --noEmit",
+    "start": "next start --port 3303",
+    "start:prod": "node .next/standalone/server.js",
+    "lint": "eslint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:reset:local": "prisma migrate reset --force && tsx scripts/seed.ts -- --demo",
+    "worker:dev": "tsx --watch worker/mqtt-worker.ts",
+    "worker:start": "tsx worker/mqtt-worker.ts",
+    "package:build": "npm run build && node scripts/package.js",
+    "test": "playwright test",
+    "license:test": "tsx scripts/test-license.ts",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report e2e/report",
+    "db:cleanup-test": "tsx scripts/cleanup-test-devices.ts",
+    "db:cleanup-test:dry": "tsx scripts/cleanup-test-devices.ts --dry-run"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "aedes": "^1.0.2",
+    "bcryptjs": "^2.4.3",
+    "bonjour-service": "^1.4.0",
     "lucide-react": "^1.14.0",
     "mqtt": "^5.15.1",
     "next": "16.2.6",
@@ -16,13 +37,21 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "prisma": "^5.22.0",
     "tailwindcss": "^4",
+    "tsx": "^4.22.3",
     "typescript": "^5"
+  },
+  "overrides": {
+    "postcss": "^8.5.15",
+    "uuid": "^11.1.1"
   }
 }

@@ -1,0 +1,86 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: upsmon
+      POSTGRES_USER: ups_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ups_user -d upsmon"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/passwords:/mosquitto/config/passwords:ro
+      - ./mosquitto/acl:/mosquitto/config/acl:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../web-dashboard
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://ups_user:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/upsmon
+      UPS_AUTH_USERNAME: ${UPS_AUTH_USERNAME:-admin}
+      UPS_AUTH_PASSWORD_HASH: ${UPS_AUTH_PASSWORD_HASH:?Set UPS_AUTH_PASSWORD_HASH}
+      UPS_AUTH_PASSWORD: ${UPS_AUTH_PASSWORD:-}
+      UPS_AUTH_TOKEN: ${UPS_AUTH_TOKEN:?Set UPS_AUTH_TOKEN}
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      MQTT_USERNAME: ${MQTT_USERNAME:-dashboard}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?Set MQTT_PASSWORD}
+      MQTT_TOPIC: ${MQTT_TOPIC:-ums/devices/+/data}
+      NODE_ENV: production
+      ENABLE_EMBEDDED_BROKER: "false"
+      UMS_LICENSE_ENFORCEMENT: "enabled"
+      UMS_LICENSE_PATH: /app/data/license/ums-license.json
+      UMS_LICENSE_PUBLIC_KEY_PEM: ${UMS_LICENSE_PUBLIC_KEY_PEM:?Set UMS_LICENSE_PUBLIC_KEY_PEM}
+    ports:
+      - "3000:3000"
+    volumes:
+      - web_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mqtt-worker:
+    build:
+      context: ../web-dashboard
+      dockerfile: Dockerfile.worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://ups_user:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/upsmon
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      MQTT_USERNAME: ${MQTT_USERNAME:-dashboard}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?Set MQTT_PASSWORD}
+      MQTT_TOPIC: ${MQTT_TOPIC:-ums/devices/+/data}
+      OFFLINE_THRESHOLD_SECS: ${OFFLINE_THRESHOLD_SECS:-60}
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  mosquitto_data:
+  mosquitto_log:
+  web_data:

@@ -1,24 +1,159 @@
 @import "tailwindcss";
 
+/* ── Industrial IoT Design Tokens ─────────────────────────────────────────── */
 :root {
-  --background: #f1f5f9;
-  --foreground: #0f172a;
+  /* Page background: deep navy */
+  --background: #0b1120;
+  /* Primary text: cool white */
+  --foreground: #e2e8f0;
+
+  /* Surface layers */
+  --surface-1: #111827;   /* cards, panels */
+  --surface-2: #1e2a3a;   /* elevated cards */
+  --surface-3: #253347;   /* hover/selected */
+
+  /* Border */
+  --border-subtle: #1e3a5f;
+  --border-default: #2d4a6e;
+  --border-bright: #3b6ea5;
+
+  /* Live accent: cyan */
+  --cyan-300: #67e8f9;
+  --cyan-400: #22d3ee;
+  --cyan-500: #06b6d4;
+  --cyan-900: #083344;
+
+  /* Good/Online: emerald */
+  --emerald-400: #34d399;
+  --emerald-500: #10b981;
+  --emerald-900: #064e3b;
+
+  /* Warning: amber */
+  --amber-400: #fbbf24;
+  --amber-500: #f59e0b;
+  --amber-900: #451a03;
+
+  /* Critical: red */
+  --red-400: #f87171;
+  --red-500: #ef4444;
+  --red-900: #450a0a;
+
+  /* Muted text */
+  --text-muted: #64748b;
+  --text-secondary: #94a3b8;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Inter", "ui-sans-serif", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+html {
+  background: var(--background);
+  color-scheme: dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-button,
-input {
+button, input, select, textarea {
   font: inherit;
+}
+
+/* ── Scrollbar (webkit) ───────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface-1); }
+::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
+
+/* ── IoT Animations ───────────────────────────────────────────────────────── */
+
+/* Pulse for live/online indicators */
+@keyframes iot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.iot-pulse { animation: iot-pulse 2s ease-in-out infinite; }
+
+/* Critical blink (faster) */
+@keyframes iot-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+.iot-blink { animation: iot-blink 1s ease-in-out infinite; }
+
+/* Card hover lift */
+.iot-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.iot-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(34, 211, 238, 0.12);
+}
+
+/* Loading shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.iot-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface-1) 25%,
+    var(--surface-2) 50%,
+    var(--surface-1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Page fade-in */
+@keyframes page-fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.iot-page { animation: page-fade 0.25s ease-out; }
+
+/* Metric value glow on update */
+@keyframes value-flash {
+  0%   { color: var(--cyan-300); }
+  100% { color: inherit; }
+}
+.value-flash { animation: value-flash 0.6s ease-out; }
+
+/* Status dot */
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.status-dot.online  { background: var(--emerald-400); box-shadow: 0 0 6px var(--emerald-500); }
+.status-dot.offline { background: #475569; }
+.status-dot.critical { background: var(--red-400); box-shadow: 0 0 6px var(--red-500); }
+.status-dot.warning  { background: var(--amber-400); box-shadow: 0 0 6px var(--amber-500); }
+
+/* ── Grid scan-line texture overlay (ultra-subtle) ───────────────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(6, 182, 212, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.015) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#__next, main, [data-nextjs-scroll-focus-boundary] {
+  position: relative;
+  z-index: 1;
 }

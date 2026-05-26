@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# UPS Monitoring Dashboard — v2.1.0
 
-## Getting Started
+Next.js dashboard for live UPS monitoring with ESP32 energy-analyzer boards.
 
-First, run the development server:
+## Quick Start
 
 ```bash
+cd web-dashboard
+cp .env.example .env          # then fill in values
+npm install
+npx prisma migrate deploy
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3303`.  Default login: `admin` / value from `UPS_AUTH_PASSWORD`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Example | Purpose |
+|----------|---------|---------|
+| `DATABASE_URL` | `postgresql://user:pass@localhost:5432/ums` | PostgreSQL connection |
+| `UPS_AUTH_USERNAME` | `admin` | Admin login username |
+| `UPS_AUTH_PASSWORD` | *(secret)* | Admin login password |
+| `UPS_AUTH_TOKEN` | *(random 32+ chars)* | Session signing token |
+| `MQTT_BROKER_URL` | `mqtt://localhost:1883` | Broker URL (embedded mode) |
+| `MQTT_TOPIC` | `ums/devices/+/data` | v2.1.0 topic pattern |
 
-## Learn More
+## MQTT Topic
 
-To learn more about Next.js, take a look at the following resources:
+Firmware v2.1.0 publishes to:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+ums/devices/{device_id}/data
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Worker subscribes to:
 
-## Deploy on Vercel
+```
+ums/devices/+/data
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Build Checks
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+npm run build
+npx playwright test
+```
+
+## Docker Deployment
+
+```bash
+cd ../deployment
+docker compose up -d --build
+CERT_ADMIN_PASSWORD=<admin-password> bash certify.sh
+```
+
+## Firmware
+
+See `firmware/VOLTAGETEST/VOLTAGETEST.ino` — canonical v2.1.0 ESP32 sketch.

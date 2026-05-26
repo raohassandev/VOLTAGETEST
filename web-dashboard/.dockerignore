@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+qa/screenshots
+test-results
+playwright-report
+dev-server.log
+playwright-core-run.log

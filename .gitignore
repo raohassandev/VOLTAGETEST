@@ -6,8 +6,27 @@ web-dashboard/.next/
 web-dashboard/out/
 web-dashboard/build/
 web-dashboard/.env*
+web-dashboard/data/
 web-dashboard/*.tsbuildinfo
 web-dashboard/next-env.d.ts
 
+deployment/mosquitto/passwords
+deployment/backups/
+
+CREDENTIALS.md
+.claude/
+settings.local.json
+VOLTAGETEST-*.zip
+VOLTAGETEST-*.tar.gz
+
 .DS_Store
 Thumbs.db
+
+firmware/**/build/
+*.elf
+*.map
+*.hex
+web-dashboard/test-results/
+web-dashboard/playwright-report/
+web-dashboard/e2e/report/
+qa/screenshots/

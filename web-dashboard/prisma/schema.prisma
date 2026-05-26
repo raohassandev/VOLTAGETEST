@@ -1,0 +1,353 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  role         String   @default("admin")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Site {
+  id        String    @id @default(cuid())
+  siteId    String    @unique
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  upsUnits  UpsUnit[]
+  devices   Device[]
+}
+
+model UpsUnit {
+  id              String      @id @default(cuid())
+  upsId           String      @unique
+  name            String      @default("")
+  serial          String      @default("")
+  siteId          String?
+  site            Site?       @relation(fields: [siteId], references: [id])
+  floor           String      @default("")
+  location        String      @default("")
+  capacityVa      Float       @default(0)
+  batteryNominalV Float       @default(48)
+  active          Boolean     @default(true)
+  notes           String      @default("")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  devices         Device[]
+  alarmRules      AlarmRule[]
+  alarms          Alarm[]
+}
+
+model Device {
+  id              String           @id @default(cuid())
+  deviceId        String           @unique
+  upsUnitId       String?
+  upsUnit         UpsUnit?         @relation(fields: [upsUnitId], references: [id])
+  siteId          String?
+  site            Site?            @relation(fields: [siteId], references: [id])
+  mac             String?
+  ip              String?
+  firmware        String?
+  mqttUsername    String?
+  lastSeenAt      DateTime?
+  online          Boolean          @default(false)
+  active          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  telemetryRaw    TelemetryRaw[]
+  telemetryLatest TelemetryLatest?
+  telemetry1m     Telemetry1m[]
+  alarmRules      AlarmRule[]
+  alarms          Alarm[]
+}
+
+model CalibrationProfile {
+  id         String   @id @default(cuid())
+  deviceId   String   @unique
+  vInScale   Float    @default(1)
+  vInOffset  Float    @default(0)
+  vOutScale  Float    @default(1)
+  vOutOffset Float    @default(0)
+  vDcScale   Float    @default(1)
+  vDcOffset  Float    @default(0)
+  iInScale   Float    @default(1)
+  iInOffset  Float    @default(0)
+  iOutScale  Float    @default(1)
+  iOutOffset Float    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AlarmRule {
+  id                String    @id @default(cuid())
+  siteId            String?
+  upsUnitId         String?
+  upsUnit           UpsUnit?  @relation(fields: [upsUnitId], references: [id])
+  deviceId          String?
+  device            Device?   @relation(fields: [deviceId], references: [deviceId])
+  key               String
+  label             String
+  metric            String
+  lowWarning        Float?
+  lowCritical       Float?
+  highWarning       Float?
+  highCritical      Float?
+  enabled           Boolean   @default(true)
+  debounceSeconds   Int       @default(30)
+  hysteresisPercent Float     @default(2)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  alarms            Alarm[]
+}
+
+model TelemetryRaw {
+  id         String    @id @default(cuid())
+  deviceId   String
+  device     Device    @relation(fields: [deviceId], references: [deviceId])
+  upsId      String?
+  siteId     String?
+  receivedAt DateTime  @default(now())
+  tsDevice   DateTime?
+  seq        Int?
+  voltIn     Float
+  voltOut    Float
+  voltDc     Float
+  ctIn       Float
+  ctOut      Float
+  sInVa      Float
+  sOutVa     Float
+  pInW       Float?
+  pOutW      Float?
+  pfIn       Float?
+  pfOut      Float?
+  qInVar     Float?
+  qOutVar    Float?
+  eInKwh     Float?
+  eOutKwh    Float?
+  freqIn     Float?
+  freqOut    Float?
+  rssi       Int?
+  ip         String?
+  firmware   String?
+  rawJson    Json
+
+  @@index([deviceId, receivedAt])
+  @@index([receivedAt])
+}
+
+model TelemetryLatest {
+  deviceId   String   @id
+  device     Device   @relation(fields: [deviceId], references: [deviceId])
+  upsId      String?
+  siteId     String?
+  receivedAt DateTime
+  seq        Int?
+  voltIn     Float
+  voltOut    Float
+  voltDc     Float
+  ctIn       Float
+  ctOut      Float
+  sInVa      Float
+  sOutVa     Float
+  pInW       Float?
+  pOutW      Float?
+  pfIn       Float?
+  pfOut      Float?
+  qInVar     Float?
+  qOutVar    Float?
+  eInKwh     Float?
+  eOutKwh    Float?
+  freqIn     Float?
+  freqOut    Float?
+  rssi       Int?
+  ip         String?
+  firmware   String?
+  rawJson    Json
+}
+
+model Alarm {
+  id             String     @id @default(cuid())
+  deviceId       String
+  device         Device     @relation(fields: [deviceId], references: [deviceId])
+  upsId          String?
+  siteId         String?
+  ruleId         String?
+  rule           AlarmRule? @relation(fields: [ruleId], references: [id])
+  upsUnitId      String?
+  upsUnit        UpsUnit?   @relation(fields: [upsUnitId], references: [id])
+  metric         String
+  severity       String
+  state          String     @default("active")
+  message        String
+  firstSeenAt    DateTime   @default(now())
+  lastSeenAt     DateTime   @default(now())
+  clearedAt      DateTime?
+  acknowledgedAt DateTime?
+  acknowledgedBy String?
+  comment        String?
+
+  @@index([deviceId, state])
+  @@index([state, firstSeenAt])
+}
+
+model AlarmEvent {
+  id        String   @id @default(cuid())
+  alarmId   String
+  event     String
+  message   String
+  createdAt DateTime @default(now())
+  userId    String?
+
+  @@index([alarmId])
+}
+
+model SystemSettings {
+  id                    String   @id @default("default")
+  rawRetentionDays      Int      @default(30)
+  rollupRetentionMonths Int      @default(12)
+  alarmRetentionMonths  Int      @default(24)
+  offlineThresholdSecs  Int      @default(60)
+  updatedAt             DateTime @updatedAt
+}
+
+model SystemLicense {
+  id                 String    @id @default("active")
+  licenseId          String    @unique
+  customerName       String
+  resellerName       String?
+  siteName           String?
+  plan               String    @default("basic")
+  maxUps             Int
+  features           Json
+  validFrom          DateTime
+  validUntil         DateTime?
+  graceDays          Int       @default(30)
+  machineCode        String
+  fingerprintVersion String    @default("v1")
+  payloadB64         String
+  signatureB64       String
+  rawLicense         Json
+  status             String    @default("active")
+  installedAt        DateTime  @default(now())
+  lastVerifiedAt     DateTime?
+  clockLastSeenAt    DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model LicenseSeat {
+  id                String    @id @default(cuid())
+  seatNo            Int
+  upsId             String    @unique
+  deviceId          String?
+  status            String    @default("active")
+  assignedAt        DateTime  @default(now())
+  assignedBy        String?
+  releasedAt        DateTime?
+  releaseEligibleAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status])
+  @@index([deviceId])
+}
+
+model Telemetry1m {
+  id          String   @id @default(cuid())
+  deviceId    String
+  device      Device   @relation(fields: [deviceId], references: [deviceId])
+  bucketStart DateTime
+  sampleCount Int
+  voltInAvg   Float
+  voltInMin   Float
+  voltInMax   Float
+  voltOutAvg  Float
+  voltOutMin  Float
+  voltOutMax  Float
+  voltDcAvg   Float
+  voltDcMin   Float
+  voltDcMax   Float
+  ctInAvg     Float
+  ctInMax     Float
+  ctOutAvg    Float
+  ctOutMax    Float
+  sInVaAvg    Float
+  sInVaMax    Float
+  sOutVaAvg   Float
+  sOutVaMax   Float
+  rssiAvg     Float?
+  freqInAvg   Float?
+  freqOutAvg  Float?
+  pInWAvg     Float?
+  pInWMax     Float?
+  pOutWAvg    Float?
+  pOutWMax    Float?
+  pfInAvg     Float?
+  pfOutAvg    Float?
+  qInVarAvg   Float?
+  qOutVarAvg  Float?
+  eInKwhLast  Float?
+  eOutKwhLast Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([deviceId, bucketStart])
+  @@index([deviceId, bucketStart])
+  @@index([bucketStart])
+}
+
+// Devices found on LAN by the scanner (may not have connected via MQTT yet)
+model DeviceDiscovered {
+  id             String   @id @default(cuid())
+  ip             String   @unique
+  mac            String?
+  hostname       String?
+  boardConfirmed Boolean  @default(false) // responded to GET /api/info
+  deviceId       String?  // linked to Device if MAC matched
+  firmware       String?
+  firstSeenAt    DateTime @default(now())
+  lastSeenAt     DateTime @default(now())
+  rawInfo        Json?    // full response from board /api/info
+
+  @@index([mac])
+  @@index([lastSeenAt])
+}
+
+// MQTT broker connections — dashboard worker connects to all enabled brokers
+model MqttBroker {
+  id        String   @id @default(cuid())
+  name      String                        // display name, e.g. "Site A Mosquitto"
+  host      String                        // hostname or IP
+  port      Int      @default(1883)
+  username  String   @default("")
+  password  String   @default("")
+  enabled   Boolean  @default(true)
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([enabled])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String?
+  entityId  String?
+  data      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+}

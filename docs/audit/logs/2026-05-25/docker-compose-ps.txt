@@ -1,0 +1,5 @@
+﻿NAME                       IMAGE                    COMMAND                  SERVICE       CREATED              STATUS                        PORTS
+deployment-mosquitto-1     eclipse-mosquitto:2      "/docker-entrypoint.…"   mosquitto     About a minute ago   Up About a minute             0.0.0.0:1883->1883/tcp, [::]:1883->1883/tcp
+deployment-mqtt-worker-1   deployment-mqtt-worker   "docker-entrypoint.s…"   mqtt-worker   About a minute ago   Up 57 seconds                 
+deployment-postgres-1      postgres:16-alpine       "docker-entrypoint.s…"   postgres      About a minute ago   Up About a minute (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+deployment-web-1           deployment-web           "docker-entrypoint.s…"   web           About a minute ago   Up 57 seconds (healthy)       0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
