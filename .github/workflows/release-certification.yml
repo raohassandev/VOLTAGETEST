@@ -23,7 +23,12 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout public source
+        run: |
+          git init .
+          git remote add origin https://github.com/raohassandev/VOLTAGETEST.git
+          git fetch --depth=1 origin ${{ github.sha }}
+          git checkout FETCH_HEAD
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -64,7 +69,13 @@ jobs:
   windows-certification:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout public source
+        shell: pwsh
+        run: |
+          git init .
+          git remote add origin https://github.com/raohassandev/VOLTAGETEST.git
+          git fetch --depth=1 origin $env:GITHUB_SHA
+          git checkout FETCH_HEAD
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -117,7 +128,12 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout public source
+        run: |
+          git init .
+          git remote add origin https://github.com/raohassandev/VOLTAGETEST.git
+          git fetch --depth=1 origin ${{ github.sha }}
+          git checkout FETCH_HEAD
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -158,7 +174,12 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout public source
+        run: |
+          git init .
+          git remote add origin https://github.com/raohassandev/VOLTAGETEST.git
+          git fetch --depth=1 origin ${{ github.sha }}
+          git checkout FETCH_HEAD
       - uses: actions/setup-node@v4
         with:
           node-version: 24
