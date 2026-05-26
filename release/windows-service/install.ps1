@@ -8,6 +8,7 @@ param(
   [Parameter(Mandatory = $true)][string]$DatabaseUrl,
   [Parameter(Mandatory = $true)][string]$AdminPassword,
   [string]$AdminUser = "admin",
+  [string]$AuthToken,
   [string]$LicensePublicKeyPem,
   [string]$LicensePublicKeyPath
 )
@@ -57,7 +58,7 @@ try {
   npm run db:generate
 
   $hash = node -e "const b=require('bcryptjs');process.stdout.write(b.hashSync(process.argv[1],12));" $AdminPassword
-  $token = node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('hex'))"
+  $token = if ($AuthToken) { $AuthToken } else { node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('hex'))" }
   $escapedKey = $LicensePublicKeyPem.Trim().Replace("`r", "").Replace("`n", "\n")
   $envFile = Join-Path $DataDir "voltagetest.env"
   @(

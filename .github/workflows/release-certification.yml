@@ -84,22 +84,26 @@ jobs:
       - working-directory: web-dashboard
         run: npm ci
       - shell: pwsh
-        run: choco install nssm postgresql16 --no-progress -y
-      - shell: pwsh
         run: |
-          docker run --name ums-cert-postgres -e POSTGRES_USER=ums_user -e POSTGRES_PASSWORD=ums_password -e POSTGRES_DB=ums_local -p 5432:5432 -d postgres:16-alpine
+          choco install nssm postgresql16 --params '/Password:postgres' --no-progress -y
+          $env:Path += ';C:\Program Files\PostgreSQL\16\bin'
+          Start-Service postgresql-x64-16 -ErrorAction SilentlyContinue
           for ($i=0; $i -lt 30; $i++) {
-            docker exec ums-cert-postgres pg_isready -U ums_user -d ums_local
+            & 'C:\Program Files\PostgreSQL\16\bin\pg_isready.exe' -h 127.0.0.1 -p 5432
             if ($LASTEXITCODE -eq 0) { break }
             Start-Sleep -Seconds 2
           }
+          $env:PGPASSWORD='postgres'
+          & 'C:\Program Files\PostgreSQL\16\bin\createdb.exe' -h 127.0.0.1 -U postgres ums_local
+      - shell: pwsh
+        run: echo "Using native PostgreSQL service for Windows certification"
       - working-directory: web-dashboard
         env:
-          DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ums_local
         run: npm run package:build
       - shell: pwsh
         env:
-          DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ums_local
           CERT_PORT: 3303
         run: node scripts/certify-package.mjs windows
       - shell: pwsh

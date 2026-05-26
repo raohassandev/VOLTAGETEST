@@ -22,6 +22,7 @@ const port = Number(process.env.CERT_PORT ?? (mode === "linux" ? 3304 : mode ===
 const baseUrl = `http://127.0.0.1:${port}`;
 const adminPass = "AdminTest123!";
 const dbUrl = process.env.DATABASE_URL ?? "postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local";
+let sessionToken = "";
 let publicPem = "";
 let privatePem = "";
 
@@ -61,6 +62,12 @@ function makeLicense(machineCode, maxUps) {
   const payloadB64 = b64url(JSON.stringify(payload));
   const signature = crypto.sign(null, Buffer.from(payloadB64), crypto.createPrivateKey(privatePem));
   return { algorithm: "Ed25519", payload: payloadB64, signature: signature.toString("base64url") };
+}
+
+function signedUserCookie(role = "manufacturer") {
+  const data = Buffer.from(JSON.stringify({ username: role, role })).toString("base64");
+  const sig = crypto.createHmac("sha256", sessionToken).update(data).digest("base64url");
+  return `${data}.${sig}`;
 }
 
 function request(method, route, { body, headers = {}, cookie = "" } = {}) {
@@ -120,7 +127,7 @@ async function exerciseCore({ browserProof = false } = {}) {
 
   const role = await request("POST", "/api/role-select", { cookie, body: { role: "manufacturer", password: adminPass } });
   if (role.status !== 200) throw new Error(`manufacturer role failed: ${role.status} ${role.body}`);
-  cookie = `${cookie}; ${cookieFrom(role.headers)}`;
+  cookie = `ups_session=${sessionToken}; ups_user=${encodeURIComponent(signedUserCookie("manufacturer"))}`;
 
   const machine = await request("GET", "/api/license/machine-code", { cookie });
   if (machine.status !== 200) throw new Error(`machine code failed: ${machine.status} ${machine.body}`);
@@ -179,19 +186,30 @@ async function captureBrowserProof() {
   const screenshotDir = path.join(proofDir, "manual-ui-screenshots");
   fs.mkdirSync(screenshotDir, { recursive: true });
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const page = await context.newPage();
   await page.goto(`${baseUrl}/login`, { waitUntil: "networkidle" });
   await page.screenshot({ path: path.join(screenshotDir, "01-login.png"), fullPage: true });
   await page.fill('input[name="username"]', "admin");
   await page.fill('input[name="password"]', adminPass);
   await Promise.all([page.waitForNavigation({ waitUntil: "networkidle" }), page.click('button[type="submit"]')]);
   await page.screenshot({ path: path.join(screenshotDir, "02-dashboard.png"), fullPage: true });
+  await context.addCookies([
+    { name: "ups_session", value: sessionToken, url: baseUrl, httpOnly: true, sameSite: "Lax" },
+    { name: "ups_user", value: signedUserCookie("manufacturer"), url: baseUrl, sameSite: "Lax" },
+  ]);
+  await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+  await page.screenshot({ path: path.join(screenshotDir, "03-manufacturer-sidebar.png"), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+  await page.screenshot({ path: path.join(screenshotDir, "04-manufacturer-mobile.png"), fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`${baseUrl}/admin/inventory`, { waitUntil: "networkidle" });
-  await page.screenshot({ path: path.join(screenshotDir, "03-ups-inventory.png"), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, "05-ups-inventory.png"), fullPage: true });
   await page.goto(`${baseUrl}/admin/license`, { waitUntil: "networkidle" });
-  await page.screenshot({ path: path.join(screenshotDir, "04-license.png"), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, "06-license.png"), fullPage: true });
   await page.goto(`${baseUrl}/admin/system`, { waitUntil: "networkidle" });
-  await page.screenshot({ path: path.join(screenshotDir, "05-system-health.png"), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, "07-system-health.png"), fullPage: true });
   await browser.close();
   log(`Browser screenshots written to ${screenshotDir}`);
   log("Browser-based manual UI proof PASS");
@@ -251,6 +269,8 @@ async function certifyWindows() {
     dbUrl,
     "-AdminPassword",
     adminPass,
+    "-AuthToken",
+    sessionToken,
     "-LicensePublicKeyPem",
     publicPem,
   ]);
@@ -284,8 +304,8 @@ async function certifyLinux() {
     `PORT=${port}`,
     `DATABASE_URL=${dbUrl}`,
     "UPS_AUTH_USERNAME=admin",
-    `UPS_AUTH_PASSWORD_HASH=${run("node", ["-e", `const b=require(${JSON.stringify(path.join(repo, "web-dashboard", "node_modules", "bcryptjs"))});process.stdout.write(b.hashSync(${JSON.stringify(adminPass)},12));`])}`,
-    `UPS_AUTH_TOKEN=${crypto.randomBytes(32).toString("hex")}`,
+    `UPS_AUTH_PASSWORD_HASH='${run("node", ["-e", `const b=require(${JSON.stringify(path.join(repo, "web-dashboard", "node_modules", "bcryptjs"))});process.stdout.write(b.hashSync(${JSON.stringify(adminPass)},12));`])}'`,
+    `UPS_AUTH_TOKEN=${sessionToken}`,
     `UMS_LICENSE_PUBLIC_KEY_PEM=${publicPem.trim().replace(/\n/g, "\\n")}`,
     `UMS_LICENSE_DIR=${path.join(dataDir, "license")}`,
     "ENABLE_MANUAL_TELEMETRY_POST=true",
@@ -320,7 +340,7 @@ async function certifyManual() {
     DATABASE_URL: dbUrl,
     UPS_AUTH_USERNAME: "admin",
     UPS_AUTH_PASSWORD_HASH: hash,
-    UPS_AUTH_TOKEN: crypto.randomBytes(32).toString("hex"),
+    UPS_AUTH_TOKEN: sessionToken,
     UMS_LICENSE_PUBLIC_KEY_PEM: publicPem,
     UMS_LICENSE_ENFORCEMENT: "enabled",
     UMS_LICENSE_DIR: path.join(os.tmpdir(), `voltagetest-license-manual-${Date.now()}`),
@@ -343,6 +363,7 @@ async function certifyManual() {
 
 async function main() {
   prepareKeys();
+  sessionToken = crypto.randomBytes(32).toString("hex");
   log(`Certification mode: ${mode}`);
   log(`Commit: ${run("git", ["rev-parse", "HEAD"]).trim()}`);
   log(`Package: ${mode === "windows" ? "VOLTAGETEST-v2.1.0-windows-installer.zip" : mode === "linux" ? "VOLTAGETEST-v2.1.0-linux-native.tar.gz" : "manual-ui"}`);
