@@ -3,12 +3,19 @@
 import {
   Bell,
   ChevronDown,
+  Cpu,
   Eye,
   FlaskConical,
   KeyRound,
+  LayoutDashboard,
+  ListChecks,
   LogOut,
   Menu,
+  Package,
   ShieldCheck,
+  Settings,
+  Siren,
+  Users,
   Wrench,
   X,
   Zap,
@@ -56,6 +63,19 @@ const NAV_LINKS: NavLink[] = [
   { key: "system",      label: "System",     href: "/admin/system",      minRole: "manufacturer" },
 ];
 
+const NAV_ICONS: Record<NavItem, React.ElementType> = {
+  dashboard: LayoutDashboard,
+  alarms: Siren,
+  inventory: Package,
+  "alarm-rules": ListChecks,
+  boards: Cpu,
+  license: KeyRound,
+  settings: Settings,
+  users: Users,
+  system: ShieldCheck,
+  calibration: Wrench,
+};
+
 const ROLE_RANK: Record<UserRole, number> = {
   viewer: 0,
   technician: 1,
@@ -88,6 +108,28 @@ function readRoleCookie(): UserRole {
 
 function canAccess(userRole: UserRole, minRole: UserRole): boolean {
   return (ROLE_RANK[userRole] ?? 0) >= (ROLE_RANK[minRole] ?? 0);
+}
+
+function BrandBlock({ compact = false }: { compact?: boolean }) {
+  return (
+    <Link href="/" className={`flex items-center ${compact ? "gap-3" : "gap-4"}`}>
+      <div className={`${compact ? "h-12 w-12" : "h-16 w-16"} relative flex shrink-0 items-center justify-center rounded-xl border border-cyan-500/30 bg-slate-950 shadow-lg shadow-cyan-950/40`}>
+        <Image
+          src="/brand/automatrix-logo.png"
+          alt="Automatrix Engineering"
+          width={compact ? 42 : 56}
+          height={compact ? 42 : 56}
+          className="object-contain"
+          priority
+        />
+      </div>
+      <div className="min-w-0">
+        <p className={`${compact ? "text-sm" : "text-base"} font-bold text-white`}>Automatrix Engineering</p>
+        <p className={`${compact ? "text-xs" : "text-sm"} font-semibold text-cyan-300`}>VOLTAGETEST / UMS</p>
+        <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Industrial UPS Monitoring</p>
+      </div>
+    </Link>
+  );
 }
 
 // ── Role switcher modal ───────────────────────────────────────────────────────
@@ -268,6 +310,143 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
   const visibleLinks = NAV_LINKS.filter((l) => canAccess(userRole, l.minRole));
   const meta = ROLE_META[userRole];
   const RoleIcon = meta.icon;
+  const isManufacturer = userRole === "manufacturer";
+
+  if (isManufacturer) {
+    return (
+      <div className="min-h-screen text-slate-100" style={{ background: "var(--background)" }}>
+        {showSwitcher && (
+          <RoleSwitcher
+            currentRole={userRole}
+            onClose={() => { setShowSwitcher(false); setUserRole(readRoleCookie()); }}
+          />
+        )}
+
+        <aside
+          className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r p-4 lg:flex"
+          style={{ background: "rgba(15, 23, 42, 0.98)", borderColor: "var(--border-subtle)" }}
+        >
+          <BrandBlock />
+          <nav className="mt-8 grid gap-1">
+            {visibleLinks.map(({ key, label, href }) => {
+              const Icon = NAV_ICONS[key];
+              return (
+                <Link
+                  key={key}
+                  href={href}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all ${
+                    activeNav === key
+                      ? "border border-cyan-700/70 bg-cyan-950/50 text-cyan-200 shadow-sm"
+                      : "text-slate-400 hover:bg-slate-800/80 hover:text-slate-100"
+                  }`}
+                >
+                  <Icon size={17} />
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="mt-auto grid gap-3 border-t border-slate-800 pt-4">
+            <button
+              onClick={() => setShowSwitcher(true)}
+              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold ${meta.bg} ${meta.color} ${meta.border}`}
+            >
+              <RoleIcon size={15} />
+              {meta.label}
+              <ChevronDown size={13} className="ml-auto opacity-70" />
+            </button>
+            <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs">
+              <span className="flex items-center gap-2 font-semibold text-slate-400">
+                <span
+                  className={`status-dot ${
+                    apiStatus === "ok" ? "online iot-pulse" : apiStatus === "degraded" ? "critical" : "offline"
+                  }`}
+                  style={{ width: "7px", height: "7px" }}
+                />
+                {apiStatus === "ok" ? "Live" : apiStatus === "degraded" ? "Degraded" : "Unknown"}
+              </span>
+              <Link href="/alarms" className={alarmCount > 0 ? "font-bold text-red-300" : "font-bold text-slate-500"}>
+                {alarmCount} alarms
+              </Link>
+            </div>
+            <form action="/api/logout" method="post">
+              <button
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-sm font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+                type="submit"
+              >
+                <LogOut size={15} />
+                Sign out
+              </button>
+            </form>
+          </div>
+        </aside>
+
+        <header
+          className="sticky top-0 z-30 border-b px-3 py-3 lg:hidden"
+          style={{ background: "rgba(15, 23, 42, 0.97)", borderColor: "var(--border-subtle)" }}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <BrandBlock compact />
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-slate-200"
+              onClick={() => setMobileOpen((v) => !v)}
+              type="button"
+              aria-label="Toggle manufacturer menu"
+            >
+              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+          </div>
+          {mobileOpen && (
+            <div className="mt-3 grid gap-2 border-t border-slate-800 pt-3">
+              {visibleLinks.map(({ key, label, href }) => {
+                const Icon = NAV_ICONS[key];
+                return (
+                  <Link
+                    key={key}
+                    href={href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold ${
+                      activeNav === key ? "bg-cyan-950/60 text-cyan-200" : "bg-slate-900/60 text-slate-300"
+                    }`}
+                  >
+                    <Icon size={16} />
+                    {label}
+                  </Link>
+                );
+              })}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setMobileOpen(false); setShowSwitcher(true); }}
+                  className={`flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold ${meta.bg} ${meta.color} ${meta.border}`}
+                >
+                  <RoleIcon size={14} />
+                  {meta.label}
+                </button>
+                <Link
+                  href="/alarms"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-slate-300"
+                >
+                  <Bell size={14} className="inline" /> {alarmCount}
+                </Link>
+              </div>
+              <form action="/api/logout" method="post">
+                <button className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 text-sm font-semibold text-slate-200" type="submit">
+                  Sign out
+                </button>
+              </form>
+            </div>
+          )}
+        </header>
+
+        <main className="lg:pl-72">
+          <div className="px-3 py-4 sm:px-6 sm:py-5 lg:px-8 iot-page">
+            {children}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen text-slate-100" style={{ background: "var(--background)" }}>
@@ -292,24 +471,23 @@ export default function AppShell({ children, activeNav }: AppShellProps) {
 
           {/* Brand */}
           <Link href="/" className="flex shrink-0 items-center gap-2 mr-2" onClick={() => setMobileOpen(false)}>
-            <div className="relative">
+            <div className="relative flex h-11 w-11 items-center justify-center rounded-lg border border-cyan-500/30 bg-slate-950 shadow-md shadow-cyan-950/30">
               <Image
                 src="/brand/automatrix-logo.png"
-                alt="Automatrix"
-                width={32}
-                height={32}
+                alt="Automatrix Engineering"
+                width={38}
+                height={38}
                 className="shrink-0 object-contain"
                 priority
               />
-              <div
-                className="absolute inset-0 rounded-full blur-md opacity-40 pointer-events-none"
-                style={{ background: "var(--cyan-500)" }}
-              />
             </div>
             <div className="flex flex-col leading-tight">
-              <span className="font-bold text-sm text-white tracking-tight">UMS</span>
-              <span className="hidden text-[10px] font-normal lg:block" style={{ color: "var(--text-secondary)" }}>
-                UPS Monitoring
+              <span className="font-bold text-sm text-white tracking-tight">Automatrix Engineering</span>
+              <span className="hidden text-[10px] font-semibold text-cyan-300 lg:block">
+                VOLTAGETEST / UMS
+              </span>
+              <span className="hidden text-[10px] font-normal xl:block" style={{ color: "var(--text-secondary)" }}>
+                Industrial UPS Monitoring
               </span>
             </div>
           </Link>

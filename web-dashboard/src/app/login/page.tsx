@@ -14,12 +14,6 @@ export default async function Login({
       className="flex min-h-screen items-center justify-center px-4"
       style={{ background: "var(--background)" }}
     >
-      {/* Ambient glow */}
-      <div
-        className="pointer-events-none fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full blur-3xl opacity-10"
-        style={{ background: "var(--cyan-500)" }}
-      />
-
       <section
         className="relative w-full max-w-sm rounded-2xl border p-8 shadow-2xl"
         style={{
@@ -28,29 +22,25 @@ export default async function Login({
           boxShadow: "0 0 40px rgba(6, 182, 212, 0.08), 0 20px 60px rgba(0,0,0,0.5)",
         }}
       >
-        {/* Header */}
         <div className="mb-8 flex flex-col items-center gap-4 text-center">
-          <div className="relative">
+          <div className="relative flex h-24 w-24 items-center justify-center rounded-2xl border border-cyan-500/30 bg-slate-950 shadow-xl shadow-cyan-950/40">
             <Image
               src="/brand/automatrix-logo.png"
-              alt="Automatrix"
-              width={60}
-              height={60}
-              className="object-contain relative z-10"
+              alt="Automatrix Engineering"
+              width={84}
+              height={84}
+              className="object-contain"
               priority
-            />
-            <div
-              className="absolute inset-0 rounded-full blur-xl opacity-50"
-              style={{ background: "var(--cyan-500)" }}
             />
           </div>
           <div>
-            <div className="flex items-center justify-center gap-2 mb-1">
+            <p className="text-sm font-bold text-white">Automatrix Engineering</p>
+            <div className="my-1 flex items-center justify-center gap-2">
               <Zap size={16} className="text-cyan-400" />
-              <h1 className="text-lg font-bold text-white tracking-tight">UMS — UPS Monitoring</h1>
+              <h1 className="text-xl font-bold tracking-tight text-cyan-200">VOLTAGETEST / UMS</h1>
             </div>
             <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-              Industrial Monitoring System · Automatrix
+              Industrial UPS Monitoring
             </p>
           </div>
         </div>
@@ -103,7 +93,7 @@ export default async function Login({
         </form>
 
         <p className="mt-6 text-center text-xs" style={{ color: "var(--text-muted)" }}>
-          © {new Date().getFullYear()} Automatrix
+          (c) {new Date().getFullYear()} Automatrix Engineering
         </p>
       </section>
     </main>

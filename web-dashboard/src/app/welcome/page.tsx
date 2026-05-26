@@ -56,7 +56,7 @@ const ROLES: RoleCard[] = [
   {
     role: "manufacturer",
     label: "Manufacturer",
-    description: "Full access: calibration, system parameters, feature flags, history.",
+    description: "Full access: licensing, boards, calibration, system parameters, and feature flags.",
     icon: FlaskConical,
     color: "text-amber-300",
     bg: "bg-amber-900/40",
@@ -112,48 +112,36 @@ function WelcomePageInner() {
       className="flex min-h-screen flex-col items-center justify-center px-4 py-10"
       style={{ background: "var(--background)" }}
     >
-      {/* Session expired banner */}
       {sessionExpired && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-lg border border-amber-700 bg-amber-900/80 px-4 py-2.5 text-sm font-semibold text-amber-200 shadow-xl backdrop-blur-sm">
-          <AlertTriangle size={15} className="text-amber-400 shrink-0" />
+        <div className="fixed left-1/2 top-4 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-amber-700 bg-amber-900/80 px-4 py-2.5 text-sm font-semibold text-amber-200 shadow-xl backdrop-blur-sm">
+          <AlertTriangle size={15} className="shrink-0 text-amber-400" />
           Your session has expired. Please sign in again.
         </div>
       )}
 
-      {/* Ambient glow */}
-      <div
-        className="pointer-events-none fixed top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full blur-3xl opacity-10"
-        style={{ background: "var(--cyan-500)" }}
-      />
-
-      {/* Header */}
       <div className="relative mb-10 flex flex-col items-center gap-4 text-center">
-        <div className="relative">
+        <div className="relative flex h-28 w-28 items-center justify-center rounded-3xl border border-cyan-500/30 bg-slate-950 shadow-2xl shadow-cyan-950/40">
           <Image
             src="/brand/automatrix-logo.png"
-            alt="Automatrix"
-            width={72}
-            height={72}
-            className="object-contain relative z-10"
+            alt="Automatrix Engineering"
+            width={98}
+            height={98}
+            className="object-contain"
             priority
-          />
-          <div
-            className="absolute inset-0 rounded-full blur-2xl opacity-40"
-            style={{ background: "var(--cyan-500)" }}
           />
         </div>
         <div>
-          <div className="flex items-center justify-center gap-2 mb-1">
+          <p className="text-base font-bold text-white">Automatrix Engineering</p>
+          <div className="mb-1 mt-1 flex items-center justify-center gap-2">
             <Zap size={18} className="text-cyan-400" />
-            <h1 className="text-2xl font-bold text-white tracking-tight">UPS Monitoring System</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-cyan-200">VOLTAGETEST / UMS</h1>
           </div>
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-            Industrial UPS Monitoring · Automatrix
+            Industrial UPS Monitoring
           </p>
         </div>
       </div>
 
-      {/* Role selector */}
       <div className="relative w-full max-w-2xl">
         <p className="mb-4 text-center text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
           Select your access level to continue
@@ -172,24 +160,20 @@ function WelcomePageInner() {
                 title={isStepDown ? "Login as Admin first, then switch role from the dashboard" : undefined}
                 className={`flex flex-col items-center gap-3 rounded-xl border-2 p-5 text-center transition-all duration-200 ${
                   isStepDown
-                    ? "border-slate-800 opacity-30 cursor-not-allowed"
+                    ? "cursor-not-allowed border-slate-800 opacity-30"
                     : isActive
                     ? `${r.border} ${r.bg} scale-[1.04] cursor-pointer`
-                    : "border-slate-700 bg-slate-900/60 hover:border-slate-600 hover:bg-slate-800/60 cursor-pointer hover:scale-[1.02]"
+                    : "cursor-pointer border-slate-700 bg-slate-900/60 hover:scale-[1.02] hover:border-slate-600 hover:bg-slate-800/60"
                 }`}
                 style={isActive ? { boxShadow: `0 0 24px ${r.glow}` } : undefined}
               >
-                <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-xl border ${
-                    isActive ? `${r.bg} ${r.border}` : "bg-slate-800 border-slate-700"
-                  }`}
-                >
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl border ${isActive ? `${r.bg} ${r.border}` : "border-slate-700 bg-slate-800"}`}>
                   <Icon size={22} className={isActive ? r.color : "text-slate-500"} />
                 </div>
                 <div>
                   <p className={`text-sm font-bold ${isActive ? r.color : "text-slate-400"}`}>{r.label}</p>
                   {r.needsPassword ? (
-                    <span className="inline-flex items-center gap-0.5 mt-1 text-xs text-slate-500">
+                    <span className="mt-1 inline-flex items-center gap-0.5 text-xs text-slate-500">
                       <KeyRound size={10} /> Password
                     </span>
                   ) : (
@@ -201,62 +185,45 @@ function WelcomePageInner() {
           })}
         </div>
 
-        {/* Password / confirm panel */}
         {card && (
           <div
             className={`mt-4 rounded-xl border-2 p-5 transition-all ${card.border}`}
-            style={{
-              background: "var(--surface-2)",
-              boxShadow: `0 0 20px ${card.glow}`,
-            }}
+            style={{ background: "var(--surface-2)", boxShadow: `0 0 20px ${card.glow}` }}
           >
-            <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>{card.description}</p>
-
-            {card.needsPassword ? (
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                  {card.label} Password
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    autoFocus
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                    onKeyDown={(e) => e.key === "Enter" && enter()}
-                    placeholder="Enter password…"
-                    className="flex-1 rounded-lg border px-3 py-2 text-sm text-slate-100 outline-none transition-colors focus:border-cyan-500 placeholder:text-slate-600"
-                    style={{ background: "var(--surface-1)", borderColor: "var(--border-default)" }}
-                  />
-                  <button
-                    onClick={enter}
-                    disabled={loading || !password}
-                    className={`rounded-lg px-5 py-2 text-sm font-bold text-white transition-all disabled:opacity-40 hover:brightness-110 ${
-                      card.role === "manufacturer"
-                        ? "bg-amber-600"
-                        : "bg-violet-600"
-                    }`}
-                  >
-                    {loading ? "…" : "Enter"}
-                  </button>
-                </div>
-                {error && <p className="text-xs font-semibold text-red-400">{error}</p>}
+            <p className="mb-4 text-sm" style={{ color: "var(--text-secondary)" }}>{card.description}</p>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                {card.label} Password
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  autoFocus
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && enter()}
+                  placeholder="Enter password"
+                  className="flex-1 rounded-lg border px-3 py-2 text-sm text-slate-100 outline-none transition-colors placeholder:text-slate-600 focus:border-cyan-500"
+                  style={{ background: "var(--surface-1)", borderColor: "var(--border-default)" }}
+                />
+                <button
+                  onClick={enter}
+                  disabled={loading || !password}
+                  className={`rounded-lg px-5 py-2 text-sm font-bold text-white transition-all hover:brightness-110 disabled:opacity-40 ${
+                    card.role === "manufacturer" ? "bg-amber-600" : "bg-violet-600"
+                  }`}
+                >
+                  {loading ? "..." : "Enter"}
+                </button>
               </div>
-            ) : (
-              <button
-                onClick={enter}
-                disabled={loading}
-                className="w-full rounded-lg bg-cyan-600 hover:bg-cyan-500 py-2.5 text-sm font-bold text-white disabled:opacity-40 transition-colors"
-              >
-                {loading ? "Entering…" : `Continue as ${card.label}`}
-              </button>
-            )}
+              {error && <p className="text-xs font-semibold text-red-400">{error}</p>}
+            </div>
           </div>
         )}
       </div>
 
       <p className="mt-10 text-xs" style={{ color: "var(--text-muted)" }}>
-        © {new Date().getFullYear()} Automatrix — UMS v0.2
+        (c) {new Date().getFullYear()} Automatrix Engineering - VOLTAGETEST / UMS v2.1.0
       </p>
     </main>
   );
