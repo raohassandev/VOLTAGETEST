@@ -236,7 +236,11 @@ function restoreDbUrl(label) {
   adminUrl.pathname = "/postgres";
   const targetUrl = new URL(dbUrl);
   targetUrl.pathname = `/${dbName}`;
-  run("psql", [adminUrl.toString(), "-c", `CREATE DATABASE "${dbName.replaceAll('"', '""')}"`], { env: process.env });
+  run("psql", ["-d", adminUrl.toString(), "-c", `CREATE DATABASE "${dbName.replaceAll('"', '""')}"`], { env: process.env });
+  const exists = run("psql", ["-d", adminUrl.toString(), "-tAc", `SELECT 1 FROM pg_database WHERE datname='${dbName.replaceAll("'", "''")}'`], { env: process.env }).trim();
+  if (exists !== "1") {
+    throw new Error(`Restore database was not created: ${dbName}`);
+  }
   return targetUrl.toString();
 }
 
