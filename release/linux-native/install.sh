@@ -55,7 +55,7 @@ if (key.asymmetricKeyType !== 'ed25519') throw new Error('UMS_LICENSE_PUBLIC_KEY
 NODE
 
 cd "$APP_DIR/app"
-npm ci
+npm ci --include=dev
 npm run db:generate
 npm run build
 npm run db:migrate

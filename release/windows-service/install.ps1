@@ -85,8 +85,8 @@ try {
   npm run db:migrate
   npm prune --omit=dev
 
-  nssm stop $ServiceName 2>$null | Out-Null
-  nssm remove $ServiceName confirm 2>$null | Out-Null
+  cmd /c "nssm stop $ServiceName 2>nul" | Out-Null
+  cmd /c "nssm remove $ServiceName confirm 2>nul" | Out-Null
   nssm install $ServiceName (Get-Command node).Source ".next\standalone\server.js"
   nssm set $ServiceName AppDirectory $InstallDir
   nssm set $ServiceName AppStdout (Join-Path $LogDir "service.out.log")

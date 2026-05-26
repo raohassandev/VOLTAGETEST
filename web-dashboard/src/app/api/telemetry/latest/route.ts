@@ -74,5 +74,46 @@ export async function POST(request: Request) {
   const payload = (await request.json()) as Partial<RawTelemetry>;
   const telemetry = normalizeTelemetry(payload, "api/manual");
   await recordTelemetry(telemetry);
+  if (isDbEnabled()) {
+    const deviceId = telemetry.device_id ?? "api/manual";
+    await prisma.device.upsert({
+      where: { deviceId },
+      create: { deviceId, lastSeenAt: new Date(), online: true },
+      update: { lastSeenAt: new Date(), online: true },
+    });
+    const data = {
+      deviceId,
+      upsId: telemetry.ups_id ?? null,
+      siteId: telemetry.site_id ?? null,
+      receivedAt: new Date(),
+      voltIn: telemetry.volt_in,
+      voltOut: telemetry.volt_out,
+      voltDc: telemetry.volt_dc,
+      ctIn: telemetry.ct_in,
+      ctOut: telemetry.ct_out,
+      sInVa: telemetry.s_in_va ?? telemetry.volt_in * telemetry.ct_in,
+      sOutVa: telemetry.s_out_va ?? telemetry.volt_out * telemetry.ct_out,
+      pInW: telemetry.p_in_w ?? null,
+      pOutW: telemetry.p_out_w ?? null,
+      pfIn: telemetry.pf_in ?? null,
+      pfOut: telemetry.pf_out ?? null,
+      qInVar: telemetry.q_in_var ?? null,
+      qOutVar: telemetry.q_out_var ?? null,
+      eInKwh: telemetry.e_in_kwh ?? null,
+      eOutKwh: telemetry.e_out_kwh ?? null,
+      freqIn: telemetry.freq_in ?? null,
+      freqOut: telemetry.freq_out ?? null,
+      rssi: telemetry.rssi ?? null,
+      ip: telemetry.ip ?? null,
+      firmware: telemetry.firmware ?? null,
+      rawJson: telemetry,
+    };
+    await prisma.telemetryRaw.create({ data });
+    await prisma.telemetryLatest.upsert({
+      where: { deviceId },
+      create: data,
+      update: data,
+    });
+  }
   return NextResponse.json({ telemetry });
 }
