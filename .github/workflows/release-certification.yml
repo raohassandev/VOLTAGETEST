@@ -72,6 +72,8 @@ jobs:
       - working-directory: web-dashboard
         run: npm ci
       - shell: pwsh
+        run: choco install nssm postgresql16 --no-progress -y
+      - shell: pwsh
         run: |
           docker run --name ums-cert-postgres -e POSTGRES_USER=ums_user -e POSTGRES_PASSWORD=ums_password -e POSTGRES_DB=ums_local -p 5432:5432 -d postgres:16-alpine
           for ($i=0; $i -lt 30; $i++) {
@@ -79,6 +81,10 @@ jobs:
             if ($LASTEXITCODE -eq 0) { break }
             Start-Sleep -Seconds 2
           }
+      - working-directory: web-dashboard
+        env:
+          DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
+        run: npm run package:build
       - shell: pwsh
         env:
           DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
@@ -116,8 +122,13 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: web-dashboard/package-lock.json
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client rsync
       - working-directory: web-dashboard
         run: npm ci
+      - working-directory: web-dashboard
+        env:
+          DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
+        run: npm run package:build
       - env:
           DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
           CERT_PORT: 3304
@@ -154,6 +165,7 @@ jobs:
           cache-dependency-path: web-dashboard/package-lock.json
       - working-directory: web-dashboard
         run: npm ci
+      - run: npx playwright install --with-deps chromium
       - env:
           DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
           CERT_PORT: 3305
