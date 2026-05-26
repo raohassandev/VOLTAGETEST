@@ -78,7 +78,7 @@ jobs:
           git checkout FETCH_HEAD
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
           cache-dependency-path: web-dashboard/package-lock.json
       - working-directory: web-dashboard
