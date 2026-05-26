@@ -15,6 +15,8 @@ need_cmd() {
 need_cmd node
 need_cmd npm
 need_cmd psql
+need_cmd rsync
+need_cmd curl
 need_cmd systemctl
 
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
@@ -49,10 +51,11 @@ if (key.asymmetricKeyType !== 'ed25519') throw new Error('UMS_LICENSE_PUBLIC_KEY
 NODE
 
 cd "$APP_DIR/app"
-npm ci --omit=dev
+npm ci
 npm run db:generate
 npm run build
 npm run db:migrate
+npm prune --omit=dev
 
 cp "$OLDPWD/release/linux-native/voltagetest.service" "$SERVICE_FILE"
 chown -R voltagetest:voltagetest "$APP_DIR" "$DATA_DIR" "$LOG_DIR"

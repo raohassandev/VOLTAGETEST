@@ -17,6 +17,7 @@ const outputs = [
     paths: [
       "web-dashboard/installer",
       "web-dashboard/SETUP.ps1",
+      "release/windows-service",
       "web-dashboard/package.json",
       "web-dashboard/package-lock.json",
       "web-dashboard/prisma",

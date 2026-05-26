@@ -1,0 +1,167 @@
+name: Release Certification
+
+on:
+  push:
+    branches: [energy-analyzer-integration]
+  workflow_dispatch:
+
+jobs:
+  web-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ums_user
+          POSTGRES_PASSWORD: ums_password
+          POSTGRES_DB: ums_local
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ums_user -d ums_local"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web-dashboard/package-lock.json
+      - working-directory: web-dashboard
+        run: npm ci
+      - working-directory: web-dashboard
+        env:
+          DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
+        run: npm run db:generate
+      - working-directory: web-dashboard
+        run: npm run lint
+      - working-directory: web-dashboard
+        run: npm run typecheck
+      - working-directory: web-dashboard
+        run: npm run license:test
+      - working-directory: web-dashboard
+        env:
+          DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
+        run: npm run build
+      - working-directory: web-dashboard
+        run: npm audit --omit=dev
+      - working-directory: web-dashboard
+        run: npm run package:build
+      - run: |
+          node web-dashboard/scripts/clean-package-inspect.js VOLTAGETEST-v2.1.0-source-clean.zip
+          node web-dashboard/scripts/clean-package-inspect.js VOLTAGETEST-v2.1.0-windows-installer.zip
+          node web-dashboard/scripts/clean-package-inspect.js VOLTAGETEST-v2.1.0-linux-native.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            VOLTAGETEST-v2.1.0-source-clean.zip
+            VOLTAGETEST-v2.1.0-windows-installer.zip
+            VOLTAGETEST-v2.1.0-linux-native.tar.gz
+
+  windows-certification:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web-dashboard/package-lock.json
+      - working-directory: web-dashboard
+        run: npm ci
+      - shell: pwsh
+        run: |
+          docker run --name ums-cert-postgres -e POSTGRES_USER=ums_user -e POSTGRES_PASSWORD=ums_password -e POSTGRES_DB=ums_local -p 5432:5432 -d postgres:16-alpine
+          for ($i=0; $i -lt 30; $i++) {
+            docker exec ums-cert-postgres pg_isready -U ums_user -d ums_local
+            if ($LASTEXITCODE -eq 0) { break }
+            Start-Sleep -Seconds 2
+          }
+      - shell: pwsh
+        env:
+          DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
+          CERT_PORT: 3303
+        run: node scripts/certify-package.mjs windows
+      - shell: pwsh
+        run: |
+          $p='docs/audit/logs/2026-05-25/windows-installer-proof.txt'
+          if ((Get-Content $p -Tail 1) -ne 'WINDOWS INSTALLER CERTIFICATION PASSED') { throw 'Windows proof final line missing' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer-proof
+          path: docs/audit/logs/2026-05-25/windows-installer-proof.txt
+
+  linux-native-certification:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ums_user
+          POSTGRES_PASSWORD: ums_password
+          POSTGRES_DB: ums_local
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ums_user -d ums_local"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web-dashboard/package-lock.json
+      - working-directory: web-dashboard
+        run: npm ci
+      - env:
+          DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
+          CERT_PORT: 3304
+        run: node scripts/certify-package.mjs linux
+      - run: |
+          test "$(tail -n 1 docs/audit/logs/2026-05-25/linux-native-proof.txt)" = "LINUX NATIVE CERTIFICATION PASSED"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-native-proof
+          path: docs/audit/logs/2026-05-25/linux-native-proof.txt
+
+  manual-ui-proof:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ums_user
+          POSTGRES_PASSWORD: ums_password
+          POSTGRES_DB: ums_local
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ums_user -d ums_local"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web-dashboard/package-lock.json
+      - working-directory: web-dashboard
+        run: npm ci
+      - env:
+          DATABASE_URL: postgresql://ums_user:ums_password@127.0.0.1:5432/ums_local
+          CERT_PORT: 3305
+        run: node scripts/certify-package.mjs manual
+      - run: |
+          test "$(tail -n 1 docs/audit/logs/2026-05-25/manual-ui-proof.txt)" = "MANUAL UI PROOF PASSED"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manual-ui-proof
+          path: docs/audit/logs/2026-05-25/manual-ui-proof.txt

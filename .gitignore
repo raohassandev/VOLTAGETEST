@@ -16,6 +16,8 @@ deployment/backups/
 CREDENTIALS.md
 .claude/
 settings.local.json
+VOLTAGETEST-*.zip
+VOLTAGETEST-*.tar.gz
 
 .DS_Store
 Thumbs.db
