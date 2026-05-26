@@ -171,8 +171,7 @@ async function exerciseCore({ browserProof = false } = {}) {
   if (telemetry.status !== 200) throw new Error(`telemetry failed: ${telemetry.status} ${telemetry.body}`);
   log("Telemetry ingestion path PASS");
 
-  const latest = await request("GET", "/api/telemetry/latest", { cookie });
-  if (latest.status !== 200 || !latest.body.includes("CERT-DEVICE-1")) throw new Error("DB telemetry persistence failed");
+  assertTelemetryPersisted();
   log("Database persistence PASS");
   log("Alarm/status path PASS");
   log("Energy analyzer/UPS communication screens reachable PASS");
@@ -241,6 +240,18 @@ function restoreDbUrl(label) {
   return targetUrl.toString();
 }
 
+function assertTelemetryPersisted() {
+  run("node", ["-e", `
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+prisma.telemetryLatest.count({ where: { deviceId: 'CERT-DEVICE-1' } })
+  .then((count) => {
+    if (!count) throw new Error('TelemetryLatest row missing');
+  })
+  .finally(() => prisma.$disconnect());
+`], { cwd: path.join(repo, "web-dashboard"), env: { ...process.env, DATABASE_URL: dbUrl } });
+}
+
 async function certifyWindows() {
   const archive = path.join(repo, "VOLTAGETEST-v2.1.0-windows-installer.zip");
   if (!fs.existsSync(archive)) throw new Error(`missing artifact: ${archive}`);
@@ -306,7 +317,7 @@ async function certifyLinux() {
     "UPS_AUTH_USERNAME=admin",
     `UPS_AUTH_PASSWORD_HASH='${run("node", ["-e", `const b=require(${JSON.stringify(path.join(repo, "web-dashboard", "node_modules", "bcryptjs"))});process.stdout.write(b.hashSync(${JSON.stringify(adminPass)},12));`])}'`,
     `UPS_AUTH_TOKEN=${sessionToken}`,
-    `UMS_LICENSE_PUBLIC_KEY_PEM=${publicPem.trim().replace(/\n/g, "\\n")}`,
+    `UMS_LICENSE_PUBLIC_KEY_PEM='${publicPem.trim().replace(/\n/g, "\\n")}'`,
     `UMS_LICENSE_DIR=${path.join(dataDir, "license")}`,
     "ENABLE_MANUAL_TELEMETRY_POST=true",
     "ENABLE_EMBEDDED_BROKER=false",
