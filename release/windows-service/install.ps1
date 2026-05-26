@@ -69,6 +69,7 @@ try {
     "UPS_AUTH_TOKEN=$token",
     "UMS_LICENSE_PUBLIC_KEY_PEM=$escapedKey",
     "UMS_LICENSE_DIR=$(Join-Path $DataDir "license")",
+    "ENABLE_MANUAL_TELEMETRY_POST=true",
     "ENABLE_EMBEDDED_BROKER=false",
     "ENABLE_INPROCESS_WORKER=true"
   ) | Set-Content -Encoding UTF8 -Path $envFile
@@ -89,7 +90,7 @@ try {
   nssm set $ServiceName AppDirectory $InstallDir
   nssm set $ServiceName AppStdout (Join-Path $LogDir "service.out.log")
   nssm set $ServiceName AppStderr (Join-Path $LogDir "service.err.log")
-  nssm set $ServiceName AppEnvironmentExtra "NODE_ENV=production" "PORT=$Port" "DATABASE_URL=$DatabaseUrl" "UPS_AUTH_USERNAME=$AdminUser" "UPS_AUTH_PASSWORD_HASH=$hash" "UPS_AUTH_TOKEN=$token" "UMS_LICENSE_PUBLIC_KEY_PEM=$escapedKey" "UMS_LICENSE_DIR=$(Join-Path $DataDir "license")" "ENABLE_EMBEDDED_BROKER=false" "ENABLE_INPROCESS_WORKER=true"
+  nssm set $ServiceName AppEnvironmentExtra "NODE_ENV=production" "PORT=$Port" "DATABASE_URL=$DatabaseUrl" "UPS_AUTH_USERNAME=$AdminUser" "UPS_AUTH_PASSWORD_HASH=$hash" "UPS_AUTH_TOKEN=$token" "UMS_LICENSE_PUBLIC_KEY_PEM=$escapedKey" "UMS_LICENSE_DIR=$(Join-Path $DataDir "license")" "ENABLE_MANUAL_TELEMETRY_POST=true" "ENABLE_EMBEDDED_BROKER=false" "ENABLE_INPROCESS_WORKER=true"
   nssm start $ServiceName
 }
 finally {

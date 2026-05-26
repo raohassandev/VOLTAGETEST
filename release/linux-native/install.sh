@@ -17,7 +17,9 @@ need_cmd npm
 need_cmd psql
 need_cmd rsync
 need_cmd curl
-need_cmd systemctl
+if [ "${VOLTAGETEST_CI_MODE:-0}" != "1" ]; then
+  need_cmd systemctl
+fi
 
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 if [ "$NODE_MAJOR" -lt 22 ]; then
@@ -26,7 +28,9 @@ if [ "$NODE_MAJOR" -lt 22 ]; then
 fi
 
 mkdir -p "$APP_DIR" "$ENV_DIR" "$DATA_DIR/license" "$DATA_DIR/backups" "$LOG_DIR"
-id voltagetest >/dev/null 2>&1 || useradd --system --home "$DATA_DIR" --shell /usr/sbin/nologin voltagetest
+if [ "${VOLTAGETEST_CI_MODE:-0}" != "1" ]; then
+  id voltagetest >/dev/null 2>&1 || useradd --system --home "$DATA_DIR" --shell /usr/sbin/nologin voltagetest
+fi
 
 rsync -a --delete --exclude node_modules --exclude .next --exclude .env ./web-dashboard/ "$APP_DIR/app/"
 rsync -a ./release/linux-native/*.sh "$APP_DIR/scripts/"
@@ -57,12 +61,19 @@ npm run build
 npm run db:migrate
 npm prune --omit=dev
 
-cp "$OLDPWD/release/linux-native/voltagetest.service" "$SERVICE_FILE"
-chown -R voltagetest:voltagetest "$APP_DIR" "$DATA_DIR" "$LOG_DIR"
-systemctl daemon-reload
-systemctl enable voltagetest.service
-systemctl restart voltagetest.service
-sleep 3
-systemctl is-active --quiet voltagetest.service
+if [ "${VOLTAGETEST_CI_MODE:-0}" != "1" ]; then
+  chown -R voltagetest:voltagetest "$APP_DIR" "$DATA_DIR" "$LOG_DIR"
+fi
+if [ "${VOLTAGETEST_CI_MODE:-0}" = "1" ]; then
+  nohup node "$APP_DIR/app/.next/standalone/server.js" >"$LOG_DIR/service.out.log" 2>"$LOG_DIR/service.err.log" &
+  echo "$!" > "$DATA_DIR/voltagetest.pid"
+else
+  cp "$OLDPWD/release/linux-native/voltagetest.service" "$SERVICE_FILE"
+  systemctl daemon-reload
+  systemctl enable voltagetest.service
+  systemctl restart voltagetest.service
+  sleep 3
+  systemctl is-active --quiet voltagetest.service
+fi
 curl -sf "http://localhost:${PORT:-3303}/api/health" >/dev/null
 echo "Linux native install completed."
